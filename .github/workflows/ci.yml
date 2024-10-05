@@ -24,7 +24,6 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
-            node_modules
             frontend/node_modules
             backend/node_modules
             shared/node_modules
@@ -50,24 +49,13 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            node_modules
-            frontend/node_modules
-            backend/node_modules
-            shared/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Install dependencies
         run: npm install
+        working-directory: ./${{ matrix.project }}
 
       - name: Lint ${{ matrix.project }}
         run: npm run lint --workspace=${{ matrix.project }}
-        working-directory: ${{ matrix.project }}
+        working-directory: ./${{ matrix.project }}
 
   build:
     runs-on: ubuntu-latest
@@ -76,10 +64,14 @@ jobs:
       matrix:
         project: [frontend, backend, shared]
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Build ${{ matrix.project }}
         run: npm run build --workspace=${{ matrix.project }}
-        working-directory: ${{ matrix.project }}
+        working-directory: ./${{ matrix.project }}
 
+  # Uncomment the test job when ready
   # test:
   #   runs-on: ubuntu-latest
   #   needs: build
@@ -89,4 +81,4 @@ jobs:
   #   steps:
   #     - name: Run tests for ${{ matrix.project }}
   #       run: npm run test --workspace=${{ matrix.project }}
-  #       working-directory: ${{ matrix.project }}
+  #       working-directory: ./${{ matrix.project }}

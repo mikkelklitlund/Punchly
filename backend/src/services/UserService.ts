@@ -11,7 +11,7 @@ class UserService {
     }
 
     async getAllUsers() {
-        return await UserRepository.getAllUsers();
+        return await UserRepository.getAllActiveUsers();
     }
 
     async updateUser(id: number, data: Partial<Omit<User, 'id'>>) {
@@ -19,7 +19,7 @@ class UserService {
     }
 
     async deleteUser(id: number) {
-        return await UserRepository.deleteUser(id);
+        return await UserRepository.softDeleteUser(id);
     }
 }
 
