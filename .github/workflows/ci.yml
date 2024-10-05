@@ -51,25 +51,34 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        working-directory: ./${{ matrix.project }}
+        working-directory: .
 
       - name: Lint ${{ matrix.project }}
         run: npm run lint --workspace=${{ matrix.project }}
-        working-directory: ./${{ matrix.project }}
+        working-directory: ${{ matrix.project }}
 
   build:
-    runs-on: ubuntu-latest
-    needs: install
-    strategy:
-      matrix:
-        project: [frontend, backend, shared]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  runs-on: ubuntu-latest
+  needs: install
+  strategy:
+    matrix:
+      project: [frontend, backend, shared]
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Build ${{ matrix.project }}
-        run: npm run build --workspace=${{ matrix.project }}
-        working-directory: ./${{ matrix.project }}
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm install
+      working-directory: .
+
+    - name: Build ${{ matrix.project }}
+      run: npm run build --workspace=${{ matrix.project }}
+      working-directory: .
 
   # Uncomment the test job when ready
   # test:
