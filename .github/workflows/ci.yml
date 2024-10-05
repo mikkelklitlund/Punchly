@@ -42,8 +42,32 @@ jobs:
       matrix:
         project: [frontend, backend]
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+            shared/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm install
+
       - name: Lint ${{ matrix.project }}
         run: npm run lint --workspace=${{ matrix.project }}
+        working-directory: ./${{ matrix.project }}
 
   build:
     runs-on: ubuntu-latest
@@ -54,6 +78,7 @@ jobs:
     steps:
       - name: Build ${{ matrix.project }}
         run: npm run build --workspace=${{ matrix.project }}
+        working-directory: ./${{ matrix.project }}
 
   test:
     runs-on: ubuntu-latest
@@ -64,3 +89,4 @@ jobs:
     steps:
       - name: Run tests for ${{ matrix.project }}
         run: npm run test --workspace=${{ matrix.project }}
+        working-directory: ./${{ matrix.project }}
