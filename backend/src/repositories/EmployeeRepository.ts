@@ -1,8 +1,6 @@
 import { PrismaClient, Employee } from '@prisma/client';
 import { Employee as DTOEmployee, CreateEmployee } from 'shared';
 
-
-
 class EmployeeRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
