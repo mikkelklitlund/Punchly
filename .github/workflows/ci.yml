@@ -20,6 +20,12 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Remove node_modules and package-lock
+        run: rm -rf node_modules package-lock.json
+
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
       - name: Cache node_modules
         uses: actions/cache@v3
         with:
@@ -32,8 +38,8 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm install
-        working-directory: . # Ensure installing at the root level
+        run: npm install --force
+        working-directory: .
 
   lint:
     runs-on: ubuntu-latest
@@ -51,7 +57,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --force
         working-directory: .
 
       - name: Lint ${{ matrix.project }}
@@ -74,7 +80,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --force
         working-directory: .
 
       - name: Build ${{ matrix.project }}
