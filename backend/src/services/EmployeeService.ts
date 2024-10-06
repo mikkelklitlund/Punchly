@@ -1,29 +1,33 @@
-import EmployeeRepository from '../repositories/EmployeeRepository';
-import { Employee } from '@prisma/client';
+import { Employee, CreateEmployee } from 'shared';
 import { Result, failure, success } from '../utils/Result';
-import CompanyRepository from '../repositories/CompanyRepository';
-import DepartmentRepository from '../repositories/DepartmentRepository';
-import EmployeeTypeRepository from '../repositories/EmployeeTypeRepository';
 import { DatabaseError, ValidationError } from '../utils/Errors';
+import EmployeeRepository from 'src/repositories/EmployeeRepository';
+import DepartmentRepository from 'src/repositories/DepartmentRepository';
+import CompanyRepository from 'src/repositories/CompanyRepository';
+import EmployeeTypeRepository from 'src/repositories/EmployeeTypeRepository';
 
 class EmployeeService {
-    async createEmployee(data: Omit<Employee, 'id'>): Promise<Result<Employee, ValidationError | DatabaseError>> {
+
+    constructor(private readonly employeeRepository: EmployeeRepository, private readonly companyRepository: CompanyRepository,
+        private readonly departmentRepository: DepartmentRepository, private readonly employeeTypeRepository: EmployeeTypeRepository
+    ) { }
+
+    async createEmployee(data: CreateEmployee): Promise<Result<Employee, ValidationError | DatabaseError>> {
         if (!data.name || data.name.trim().length === 0) {
             return failure(new ValidationError('Name is required', 'name'));
-
         }
 
-        const companyExists = await CompanyRepository.getCompanyById(data.companyId);
+        const companyExists = await this.companyRepository.getCompanyById(data.companyId);
         if (!companyExists) {
             return failure(new ValidationError('Invalid company ID', 'companyId'));
         }
 
-        const departmentExists = await DepartmentRepository.getDepartmentById(data.departmentId);
+        const departmentExists = await this.departmentRepository.getDepartmentById(data.departmentId);
         if (!departmentExists) {
             return failure(new ValidationError('Invalid department ID', 'departmentId'));
         }
 
-        const employeeTypeExists = await EmployeeTypeRepository.getEmployeeTypeById(data.employeeTypeId);
+        const employeeTypeExists = await this.employeeTypeRepository.getEmployeeTypeById(data.employeeTypeId);
         if (!employeeTypeExists) {
             return failure(new ValidationError('Invalid employee type', 'employeeTypeId'));
         }
@@ -47,7 +51,7 @@ class EmployeeService {
         }
 
         try {
-            const employee = await EmployeeRepository.createEmployee(data);
+            const employee = await this.employeeRepository.createEmployee(data);
             return success(employee);
         } catch (error) {
             console.error('Error creating employee:', error);
@@ -57,7 +61,7 @@ class EmployeeService {
 
     async getEmployeeById(id: number): Promise<Result<Employee, string>> {
         try {
-            const employee = await EmployeeRepository.getEmployeeById(id);
+            const employee = await this.employeeRepository.getEmployeeById(id);
             if (!employee) {
                 return failure(`Employee with ID ${id} not found`);
             }
@@ -70,7 +74,7 @@ class EmployeeService {
 
     async getAllEmployees(): Promise<Result<Employee[], string>> {
         try {
-            const employees = await EmployeeRepository.getAllEmployees();
+            const employees = await this.employeeRepository.getAllEmployees();
             return success(employees);
         } catch (error) {
             console.error('Error fetching all employees:', error);
@@ -80,7 +84,7 @@ class EmployeeService {
 
     async updateEmployee(id: number, data: Partial<Omit<Employee, 'id'>>): Promise<Result<Employee, ValidationError | DatabaseError>> {
         try {
-            const existingEmployee = await EmployeeRepository.getEmployeeById(id);
+            const existingEmployee = await this.employeeRepository.getEmployeeById(id);
             if (!existingEmployee) {
                 return failure(new ValidationError(`Employee with ID ${id} not found`, 'id'));
             }
@@ -90,21 +94,21 @@ class EmployeeService {
             }
 
             if (data.companyId) {
-                const companyExists = await CompanyRepository.getCompanyById(data.companyId);
+                const companyExists = await this.companyRepository.getCompanyById(data.companyId);
                 if (!companyExists) {
                     return failure(new ValidationError('Invalid company ID', 'companyId'));
                 }
             }
 
             if (data.departmentId) {
-                const departmentExists = await DepartmentRepository.getDepartmentById(data.departmentId);
+                const departmentExists = await this.departmentRepository.getDepartmentById(data.departmentId);
                 if (!departmentExists) {
                     return failure(new ValidationError('Invalid department ID', 'departmentId'));
                 }
             }
 
             if (data.employeeTypeId) {
-                const employeeTypeExists = await EmployeeTypeRepository.getEmployeeTypeById(data.employeeTypeId);
+                const employeeTypeExists = await this.employeeTypeRepository.getEmployeeTypeById(data.employeeTypeId);
                 if (!employeeTypeExists) {
                     return failure(new ValidationError('Invalid employee type ID', 'employeeTypeId'));
                 }
@@ -130,7 +134,7 @@ class EmployeeService {
                 }
             }
 
-            const updatedEmployee = await EmployeeRepository.updateEmployee(id, data);
+            const updatedEmployee = await this.employeeRepository.updateEmployee(id, data);
             return success(updatedEmployee);
         } catch (error) {
             console.error(`Error updating employee with ID ${id}:`, error);
@@ -140,12 +144,12 @@ class EmployeeService {
 
     async deleteEmployee(id: number): Promise<Result<Employee, string>> {
         try {
-            const employee = await EmployeeRepository.getEmployeeById(id);
+            const employee = await this.employeeRepository.getEmployeeById(id);
             if (!employee) {
                 return failure(`Employee with ID ${id} not found`);
             }
 
-            const deletedEmployee = await EmployeeRepository.softDeleteEmployee(id);
+            const deletedEmployee = await this.employeeRepository.softDeleteEmployee(id);
             return success(deletedEmployee);
         } catch (error) {
             console.error(`Error deleting employee with ID ${id}:`, error);
@@ -154,4 +158,4 @@ class EmployeeService {
     }
 }
 
-export default new EmployeeService();
+export default EmployeeService;
