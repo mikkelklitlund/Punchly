@@ -77,9 +77,13 @@ export interface AbsenceRecord {
 export interface AttendanceRecord {
     id: number;
     employeeId: number;
-    date: Date;
     checkIn: Date;
     checkOut?: Date;
+}
+
+export interface CreateAttendanceRecord {
+    employeeId: number;
+    checkIn: Date;
 }
 
 export enum AbsenceType {
