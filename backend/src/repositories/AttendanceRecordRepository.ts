@@ -1,54 +1,81 @@
 import { PrismaClient, AttendanceRecord } from '@prisma/client';
+import { CreateAttendanceRecord, AttendanceRecord as DTOAttendanceRecord } from 'shared';
 
 
 class AttendanceRecordRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
-    async createAttendanceRecord(employeeId: number, date: Date, checkIn: Date, checkOut?: Date): Promise<AttendanceRecord> {
-        return await this.prisma.attendanceRecord.create({
-            data: { employeeId, date, checkIn, checkOut },
+    async createAttendanceRecord(data: CreateAttendanceRecord): Promise<DTOAttendanceRecord> {
+        const ar = await this.prisma.attendanceRecord.create({
+            data,
         });
+
+        return this.translateToDto(ar)
     }
 
-    async getAttendanceRecordById(id: number): Promise<AttendanceRecord | null> {
-        return await this.prisma.attendanceRecord.findUnique({
+    async getAttendanceRecordById(id: number): Promise<DTOAttendanceRecord | null> {
+        const ar = await this.prisma.attendanceRecord.findUnique({
             where: { id },
         });
+
+        return ar ? this.translateToDto(ar) : null
     }
 
-    async getAttendanceRecordsByEmployeeId(employeeId: number): Promise<AttendanceRecord[]> {
-        return await this.prisma.attendanceRecord.findMany({
+    async getAttendanceRecordsByEmployeeId(employeeId: number): Promise<DTOAttendanceRecord[]> {
+        const ars = await this.prisma.attendanceRecord.findMany({
             where: { employeeId },
         });
+
+        return ars.map(this.translateToDto)
     }
 
-    async getAttendanceRecordsByEmployeeIdAndMonth(employeeId: number, monthStart: Date, monthEnd: Date): Promise<AttendanceRecord[]> {
-        return await this.prisma.attendanceRecord.findMany({
+    async getAttendanceRecordsByEmployeeIdAndPeriod(employeeId: number, periodStart: Date, periodEnd: Date): Promise<DTOAttendanceRecord[]> {
+        const ars = await this.prisma.attendanceRecord.findMany({
             where: {
                 employeeId,
-                date: {
-                    gte: monthStart,
-                    lte: monthEnd,
+                checkIn: {
+                    gte: periodStart,
+                    lte: periodEnd,
                 },
+            },
+        });
+
+        return ars.map(this.translateToDto)
+    }
+
+    async getOngoingAttendanceRecord(employeeId: number): Promise<AttendanceRecord | null> {
+        return await this.prisma.attendanceRecord.findFirst({
+            where: {
+                employeeId,
+                checkOut: null,
             },
         });
     }
 
-    async getAllAttendanceRecords(): Promise<AttendanceRecord[]> {
-        return await this.prisma.attendanceRecord.findMany();
-    }
-
-    async updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, 'id'>>): Promise<AttendanceRecord> {
-        return await this.prisma.attendanceRecord.update({
+    async updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, 'id'>>): Promise<DTOAttendanceRecord> {
+        const ar = await this.prisma.attendanceRecord.update({
             where: { id },
             data,
         });
+
+        return this.translateToDto(ar)
     }
 
-    async deleteAttendanceRecord(id: number): Promise<AttendanceRecord> {
-        return await this.prisma.attendanceRecord.delete({
+    async deleteAttendanceRecord(id: number): Promise<DTOAttendanceRecord> {
+        const ar = await this.prisma.attendanceRecord.delete({
             where: { id },
         });
+
+        return this.translateToDto(ar)
+    }
+
+    private translateToDto(attendance: AttendanceRecord): DTOAttendanceRecord {
+        return {
+            id: attendance.id,
+            employeeId: attendance.employeeId,
+            checkIn: attendance.checkIn,
+            checkOut: attendance.checkOut ? attendance.checkOut : undefined,
+        };
     }
 }
 
