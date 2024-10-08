@@ -12,7 +12,7 @@ class EmployeeService {
         private readonly departmentRepository: DepartmentRepository, private readonly employeeTypeRepository: EmployeeTypeRepository
     ) { }
 
-    async createEmployee(data: CreateEmployee): Promise<Result<Employee, ValidationError | DatabaseError>> {
+    async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
         if (!data.name || data.name.trim().length === 0) {
             return failure(new ValidationError('Name is required', 'name'));
         }
@@ -82,7 +82,7 @@ class EmployeeService {
         }
     }
 
-    async updateEmployee(id: number, data: Partial<Omit<Employee, 'id'>>): Promise<Result<Employee, ValidationError | DatabaseError>> {
+    async updateEmployee(id: number, data: Partial<Omit<Employee, 'id'>>): Promise<Result<Employee, Error>> {
         try {
             const existingEmployee = await this.employeeRepository.getEmployeeById(id);
             if (!existingEmployee) {
