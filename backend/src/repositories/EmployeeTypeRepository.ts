@@ -1,41 +1,64 @@
 import { PrismaClient, EmployeeType } from '@prisma/client';
+import { EmployeeType as EmployeeTypeDTO } from 'shared';
 
 class EmployeeTypeRepository {
     constructor(private readonly prisma: PrismaClient) { }
 
     async createEmployeeType(name: string, companyId: number): Promise<EmployeeType> {
-        return await this.prisma.employeeType.create({
+        const type = await this.prisma.employeeType.create({
             data: { name, companyId },
         });
+
+        return this.translateToDTO(type)
     }
 
     async getEmployeeTypeById(id: number): Promise<EmployeeType | null> {
-        return await this.prisma.employeeType.findUnique({
+        const type = await this.prisma.employeeType.findUnique({
             where: { id },
         });
+
+        return type ? this.translateToDTO(type) : null
     }
 
     async getEmployeeTypeByCompanyId(companyId: number): Promise<EmployeeType[]> {
-        return await this.prisma.employeeType.findMany({
+        const types = await this.prisma.employeeType.findMany({
             where: { companyId },
         });
+
+        return types.map(this.translateToDTO);
     }
 
-    async getAllEmployeeTypes(): Promise<EmployeeType[]> {
-        return await this.prisma.employeeType.findMany();
+    async employeeTypeExistsOnCompanyId(companyId: number, name: string): Promise<boolean> {
+        return await this.prisma.employeeType.findUnique({
+            where: {
+                typeCompany: { companyId, name }
+            },
+        }) !== null;
     }
 
     async updateEmployeeType(id: number, data: Partial<Omit<EmployeeType, 'id'>>): Promise<EmployeeType> {
-        return await this.prisma.employeeType.update({
+        const type = await this.prisma.employeeType.update({
             where: { id },
             data,
         });
+
+        return this.translateToDTO(type);
     }
 
     async deleteEmployeeType(id: number): Promise<EmployeeType> {
-        return await this.prisma.employeeType.delete({
+        const type = await this.prisma.employeeType.delete({
             where: { id },
         });
+
+        return this.translateToDTO(type);
+    }
+
+    private translateToDTO(employeeType: EmployeeType): EmployeeTypeDTO {
+        return {
+            id: employeeType.id,
+            name: employeeType.name,
+            companyId: employeeType.companyId
+        }
     }
 }
 
