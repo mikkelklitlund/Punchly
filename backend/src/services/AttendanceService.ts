@@ -29,9 +29,7 @@ class AttendanceRecordService {
 
     async checkInEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
         try {
-            const checkIn = new Date();
-
-            const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord({ employeeId, checkIn });
+            const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord({ employeeId, checkIn: new Date() });
             await this.employeeRepository.updateEmployee(employeeId, { checkedIn: false });
             return success(attendanceRecord);
         } catch (error) {
