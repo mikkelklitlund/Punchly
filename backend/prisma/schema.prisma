@@ -75,6 +75,8 @@ model EmployeeType {
   companyId Int
   company   Company    @relation(fields: [companyId], references: [id])
   employees Employee[]
+
+  @@unique(name: "typeCompany", [name, companyId])
 }
 
 model AbsenceRecord {
