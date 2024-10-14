@@ -9,12 +9,14 @@ datasource db {
 
 model Company {
   id            Int                 @id @default(autoincrement())
-  name          String
+  name          String              
   address       String
   employees     Employee[]
   departments   Department[]
   employeeTypes EmployeeType[]
   users         UserCompanyAccess[]
+
+  @@unique(name: "addressName", [name, address])
 }
 
 model User {
@@ -43,6 +45,8 @@ model Department {
   companyId Int
   company   Company    @relation(fields: [companyId], references: [id])
   employees Employee[]
+
+  @@unique(name: "departmentCompany", [name, companyId])
 }
 
 model Employee {
@@ -54,7 +58,7 @@ model Employee {
   departmentId       Int
   department         Department         @relation(fields: [departmentId], references: [id])
   checkedIn          Boolean            @default(false)
-  birthday           DateTime
+  birthdate          DateTime
   employeeTypeId     Int
   employeeType       EmployeeType       @relation(fields: [employeeTypeId], references: [id])
   monthlySalary      Float?
