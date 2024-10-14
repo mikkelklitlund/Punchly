@@ -13,3 +13,11 @@ export class DatabaseError extends Error {
         Object.setPrototypeOf(this, DatabaseError.prototype);
     }
 }
+
+export class EntityNotFoundError extends Error {
+    constructor(public message: string) {
+        super(message);
+        this.name = 'DatabaseError';
+        Object.setPrototypeOf(this, DatabaseError.prototype);
+    }
+}

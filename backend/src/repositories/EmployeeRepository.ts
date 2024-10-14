@@ -70,7 +70,7 @@ class EmployeeRepository {
             companyId: employee.companyId,
             departmentId: employee.departmentId,
             checkedIn: employee.checkedIn,
-            birthday: employee.birthday,
+            birthdate: employee.birthdate,
             employeeTypeId: employee.employeeTypeId,
             monthlySalary: employee.monthlySalary ?? undefined,
             hourlySalary: employee.hourlySalary ?? undefined,

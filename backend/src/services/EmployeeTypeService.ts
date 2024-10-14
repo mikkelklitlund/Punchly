@@ -25,8 +25,24 @@ class EmployeeTypeService {
     }
 
     async getEmployeeTypesByCompanyId(companyId: number): Promise<Result<EmployeeType[], Error>> {
-        const types = await this.employeeTypeRepository.getEmployeeTypeByCompanyId(companyId);
-        return success(types)
+        try {
+
+            const types = await this.employeeTypeRepository.getEmployeeTypeByCompanyId(companyId);
+            return success(types)
+        } catch (error) {
+            console.error('Error getting employee type:', error);
+            return failure(new DatabaseError('Database error occurred while getting the employee type.'));
+        }
+    }
+
+    async deleteEmployeeTypeFromCompany(companyId: number, typeName: string): Promise<Result<EmployeeType, Error>> {
+        try {
+            const type = await this.employeeTypeRepository.deleteEmployeeTypeByCompanyIdAndName(companyId, typeName)
+            return success(type)
+        } catch (error) {
+            console.error('Error deleting employee type:', error);
+            return failure(new DatabaseError('Database error occurred while deleting the employee type.'));
+        }
     }
 }
 

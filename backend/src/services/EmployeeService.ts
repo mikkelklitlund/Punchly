@@ -1,6 +1,6 @@
 import { Employee, CreateEmployee } from 'shared';
 import { Result, failure, success } from '../utils/Result';
-import { DatabaseError, ValidationError } from '../utils/Errors';
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors';
 import EmployeeRepository from 'src/repositories/EmployeeRepository';
 import DepartmentRepository from 'src/repositories/DepartmentRepository';
 import CompanyRepository from 'src/repositories/CompanyRepository';
@@ -45,7 +45,7 @@ class EmployeeService {
         }
 
         const currentDate = new Date();
-        const age = currentDate.getFullYear() - data.birthday.getFullYear();
+        const age = currentDate.getFullYear() - data.birthdate.getFullYear();
         if (age < 13) {
             return failure(new ValidationError('Must be over the age of 13 to be employed', 'birthday'));
         }
@@ -59,26 +59,26 @@ class EmployeeService {
         }
     }
 
-    async getEmployeeById(id: number): Promise<Result<Employee, string>> {
+    async getEmployeeById(id: number): Promise<Result<Employee, Error>> {
         try {
             const employee = await this.employeeRepository.getEmployeeById(id);
             if (!employee) {
-                return failure(`Employee with ID ${id} not found`);
+                return failure(new EntityNotFoundError(`Employee with ID ${id} not found`));
             }
             return success(employee);
         } catch (error) {
             console.error('Error fetching employee by ID:', error);
-            return failure('Database error occurred while fetching the employee');
+            return failure(new DatabaseError('Database error occurred while fetching the employee'));
         }
     }
 
-    async getAllEmployees(): Promise<Result<Employee[], string>> {
+    async getAllEmployees(): Promise<Result<Employee[], Error>> {
         try {
             const employees = await this.employeeRepository.getAllEmployees();
             return success(employees);
         } catch (error) {
             console.error('Error fetching all employees:', error);
-            return failure('Database error occurred while fetching employees');
+            return failure(new DatabaseError('Database error occurred while fetching employees'));
         }
     }
 
@@ -86,7 +86,7 @@ class EmployeeService {
         try {
             const existingEmployee = await this.employeeRepository.getEmployeeById(id);
             if (!existingEmployee) {
-                return failure(new ValidationError(`Employee with ID ${id} not found`, 'id'));
+                return failure(new EntityNotFoundError(`Employee with ID ${id} not found`));
             }
 
             if (data.name && data.name.trim().length === 0) {
@@ -126,9 +126,9 @@ class EmployeeService {
                 return failure(new ValidationError('Hourly salary must be a positive number', 'hourlySalary'));
             }
 
-            if (data.birthday) {
+            if (data.birthdate) {
                 const currentDate = new Date();
-                const age = currentDate.getFullYear() - data.birthday.getFullYear();
+                const age = currentDate.getFullYear() - data.birthdate.getFullYear();
                 if (age < 13) {
                     return failure(new ValidationError('Employee must be at least 13 years old', 'birthday'));
                 }
@@ -142,18 +142,23 @@ class EmployeeService {
         }
     }
 
-    async deleteEmployee(id: number): Promise<Result<Employee, string>> {
+    async deleteEmployee(id: number): Promise<Result<Employee, Error>> {
         try {
-            const employee = await this.employeeRepository.getEmployeeById(id);
-            if (!employee) {
-                return failure(`Employee with ID ${id} not found`);
-            }
-
             const deletedEmployee = await this.employeeRepository.softDeleteEmployee(id);
             return success(deletedEmployee);
         } catch (error) {
             console.error(`Error deleting employee with ID ${id}:`, error);
-            return failure('Database error occurred while deleting the employee');
+            return failure(new DatabaseError('Database error occurred while deleting the employee'));
+        }
+    }
+
+    async getAllEmployeesByDepartmentIdAndCompanyId(departmentId: number, companyId: number): Promise<Result<Employee[], Error>> {
+        try {
+            const employees = await this.employeeRepository.getAllEmployeesByCompanyIdAndDepartmentId(companyId, departmentId);
+            return success(employees)
+        } catch (error) {
+            console.error(`Error fetching employees: `, error);
+            return failure(new DatabaseError("Database error while fetching employees"));
         }
     }
 }

@@ -1,6 +1,6 @@
 import AttendanceRecordRepository from '../repositories/AttendanceRecordRepository';
 import { Result, success, failure } from '../utils/Result';
-import { ValidationError, DatabaseError } from '../utils/Errors';
+import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors';
 import { CreateAttendanceRecord, AttendanceRecord } from 'shared';
 import EmployeeRepository from 'src/repositories/EmployeeRepository';
 
@@ -9,14 +9,6 @@ class AttendanceRecordService {
     }
 
     async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {
-        if (!newAttendance.employeeId) {
-            return failure(new ValidationError('Employee ID is required.'));
-        }
-
-        if (!newAttendance.checkIn || !(newAttendance.checkIn instanceof Date)) {
-            return failure(new ValidationError('A valid check-in time is required.'));
-        }
-
         try {
             const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord(newAttendance);
             await this.employeeRepository.updateEmployee(newAttendance.employeeId, { checkedIn: true });
@@ -43,7 +35,7 @@ class AttendanceRecordService {
             const attendanceRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId);
 
             if (!attendanceRecord) {
-                return failure(new ValidationError('No ongoing attendance record found for this employee.'));
+                return failure(new EntityNotFoundError('No ongoing attendance record found for this employee.'));
             }
 
             const updatedRecord = await this.attendanceRecordRepository.updateAttendanceRecord(attendanceRecord.id, {
@@ -58,14 +50,11 @@ class AttendanceRecordService {
     }
 
     async getAttendanceRecordById(id: number): Promise<Result<AttendanceRecord, Error>> {
-        if (!id) {
-            return failure(new ValidationError('Attendance record ID is required.'));
-        }
 
         try {
             const attendanceRecord = await this.attendanceRecordRepository.getAttendanceRecordById(id);
             if (!attendanceRecord) {
-                return failure(new ValidationError(`Attendance record with ID ${id} not found.`));
+                return failure(new EntityNotFoundError(`Attendance record with ID ${id} not found.`));
             }
             return success(attendanceRecord);
         } catch (error) {
@@ -75,14 +64,6 @@ class AttendanceRecordService {
     }
 
     async getAttendanceRecordsByEmployeeIdAndPeriod(employeeId: number, periodStart: Date, periodEnd: Date): Promise<Result<AttendanceRecord[], Error>> {
-        if (!employeeId) {
-            return failure(new ValidationError('Employee ID is required.'));
-        }
-
-        if (!periodStart || !(periodStart instanceof Date) || !periodEnd || !(periodEnd instanceof Date)) {
-            return failure(new ValidationError('A valid date range is required.'));
-        }
-
         try {
             const attendanceRecords = await this.attendanceRecordRepository.getAttendanceRecordsByEmployeeIdAndPeriod(employeeId, periodStart, periodEnd);
             return success(attendanceRecords);
@@ -93,10 +74,6 @@ class AttendanceRecordService {
     }
 
     async updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, 'id'>>): Promise<Result<AttendanceRecord, Error>> {
-        if (!id) {
-            return failure(new ValidationError('Attendance record ID is required.'));
-        }
-
         if (!data) {
             return failure(new ValidationError('Update data is required.'));
         }
@@ -111,10 +88,6 @@ class AttendanceRecordService {
     }
 
     async deleteAttendanceRecord(id: number): Promise<Result<AttendanceRecord, Error>> {
-        if (!id) {
-            return failure(new ValidationError('Attendance record ID is required.'));
-        }
-
         try {
             const deletedAttendanceRecord = await this.attendanceRecordRepository.deleteAttendanceRecord(id);
             return success(deletedAttendanceRecord);

@@ -53,6 +53,16 @@ class EmployeeTypeRepository {
         return this.translateToDTO(type);
     }
 
+    async deleteEmployeeTypeByCompanyIdAndName(companyId: number, name: string): Promise<EmployeeType> {
+        const type = await this.prisma.employeeType.delete({
+            where: {
+                typeCompany: { companyId, name }
+            },
+        });
+
+        return this.translateToDTO(type);
+    }
+
     private translateToDTO(employeeType: EmployeeType): EmployeeTypeDTO {
         return {
             id: employeeType.id,
