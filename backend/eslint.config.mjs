@@ -18,6 +18,7 @@ export default [
       quotes: [2, 'single', { avoidEscape: true }],
       semi: [2, 'never'],
       'max-len': ['error', { code: 120 }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
 ]
