@@ -1,24 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { socket } from './socket';
+import React, { useEffect, useState } from 'react'
+import { socket } from './socket'
 
 const App: React.FC = () => {
-	const [message, setMessage] = useState<string>('');
-	const [messages, setMessages] = useState<string[]>([]);
+	const [message, setMessage] = useState<string>('')
+	const [messages, setMessages] = useState<string[]>([])
 
 	useEffect(() => {
 		socket.on('message', (data: string) => {
-			setMessages((prevMessages) => [...prevMessages, data]);
-		});
+			setMessages((prevMessages) => [...prevMessages, data])
+		})
 
 		return () => {
-			socket.off('message');
-		};
-	}, []);
+			socket.off('message')
+		}
+	}, [])
 
 	const sendMessage = () => {
-		socket.emit('message', message);
-		setMessage('');
-	};
+		socket.emit('message', message)
+		setMessage('')
+	}
 
 	return (
 		<div>
@@ -36,7 +36,7 @@ const App: React.FC = () => {
 			/>
 			<button onClick={sendMessage}>Send</button>
 		</div>
-	);
-};
+	)
+}
 
-export default App;
+export default App
