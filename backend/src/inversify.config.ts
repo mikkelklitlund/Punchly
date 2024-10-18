@@ -48,6 +48,8 @@ const TYPES = {
 
 const container = new Container()
 
+//Can be used like this:   const userService = container.get<IUserService>(TYPES.IUserService)
+
 // Repositories
 container.bind<IAbsenceRecordRepository>(TYPES.IAbsenceRecordRepository).to(AbsenceRecordRepository)
 container.bind<IAttendanceRecordRepository>(TYPES.IAttendanceRecordRepository).to(AttendanceRecordRepository)

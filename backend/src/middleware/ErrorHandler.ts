@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import { DatabaseError, EntityNotFoundError, ValidationError } from 'src/utils/Errors'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
 
 export const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof EntityNotFoundError) {
