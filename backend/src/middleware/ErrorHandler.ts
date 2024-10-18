@@ -4,15 +4,11 @@ import { DatabaseError, EntityNotFoundError, ValidationError } from 'src/utils/E
 export const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof EntityNotFoundError) {
     res.status(404).send({ errors: [{ message: err.message }] })
-  }
-
-  if (err instanceof ValidationError) {
+  } else if (err instanceof ValidationError) {
     res.status(400).send({ errors: [{ message: err.field, field: err.field }] })
-  }
-
-  if (err instanceof DatabaseError) {
+  } else if (err instanceof DatabaseError) {
     res.status(500).send({ errors: [{ message: err.message }] })
+  } else {
+    res.status(500).send({ errors: [{ message: 'Something went wrong' }] })
   }
-
-  res.status(500).send({ errors: [{ message: 'Something went wrong' }] })
 }

@@ -1,7 +1,10 @@
 import { PrismaClient, Department } from '@prisma/client'
+import { injectable } from 'inversify'
 import { Department as DepartmentDTO } from 'shared'
+import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
 
-class DepartmentRepository {
+@injectable()
+export class DepartmentRepository implements IDepartmentRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createDepartment(name: string, companyId: number): Promise<DepartmentDTO> {
@@ -68,5 +71,3 @@ class DepartmentRepository {
     }
   }
 }
-
-export default DepartmentRepository

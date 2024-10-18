@@ -1,10 +1,13 @@
+import { inject, injectable } from 'inversify'
 import { Department } from 'shared'
-import DepartmentRepository from 'src/repositories/DepartmentRepository'
+import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
+import { IDepartmentService } from 'src/interfaces/services/IDepartmentService'
 import { DatabaseError } from 'src/utils/Errors'
 import { failure, Result, success } from 'src/utils/Result'
 
-class DepartmentService {
-  constructor(private readonly departmentRepository: DepartmentRepository) {}
+@injectable()
+export class DepartmentService implements IDepartmentService {
+  constructor(@inject('IDepartmentRepository') private readonly departmentRepository: IDepartmentRepository) {}
 
   async createDepartment(companyId: number, name: string): Promise<Result<Department, Error>> {
     try {
@@ -36,5 +39,3 @@ class DepartmentService {
     }
   }
 }
-
-export default DepartmentService

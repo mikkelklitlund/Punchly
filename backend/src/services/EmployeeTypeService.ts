@@ -1,10 +1,13 @@
+import { injectable, inject } from 'inversify'
 import { EmployeeType } from 'shared'
-import EmployeeTypeRepository from 'src/repositories/EmployeeTypeRepository'
+import { IEmployeeTypeRepository } from 'src/interfaces/repositories/IEmployeeTypeRepository'
+import { IEmployeeTypeService } from 'src/interfaces/services/IEmployeeTypeService'
 import { DatabaseError, ValidationError } from 'src/utils/Errors'
 import { failure, Result, success } from 'src/utils/Result'
 
-class EmployeeTypeService {
-  constructor(private readonly employeeTypeRepository: EmployeeTypeRepository) {}
+@injectable()
+export class EmployeeTypeService implements IEmployeeTypeService {
+  constructor(@inject('IEmployeeTypeRepository') private readonly employeeTypeRepository: IEmployeeTypeRepository) {}
 
   async createEmployeeType(typeName: string, companyId: number): Promise<Result<EmployeeType, Error>> {
     if (!typeName || typeName.trim().length === 0) {
@@ -44,5 +47,3 @@ class EmployeeTypeService {
     }
   }
 }
-
-export default EmployeeTypeService

@@ -1,13 +1,17 @@
-import AttendanceRecordRepository from '../repositories/AttendanceRecordRepository'
 import { Result, success, failure } from '../utils/Result'
 import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors'
 import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
-import EmployeeRepository from 'src/repositories/EmployeeRepository'
+import { IAttendanceRecordRepository } from 'src/interfaces/repositories/IAttendanceRecordRepository'
+import { IEmployeeRepository } from 'src/interfaces/repositories/IEmployeeRepositry'
+import { IAttendanceService } from 'src/interfaces/services/IAttendanceService'
+import { injectable } from 'inversify'
+import { inject } from 'inversify'
 
-class AttendanceRecordService {
+@injectable()
+export class AttendanceService implements IAttendanceService {
   constructor(
-    private readonly attendanceRecordRepository: AttendanceRecordRepository,
-    private readonly employeeRepository: EmployeeRepository
+    @inject('IAttendanceRecordRepository') private readonly attendanceRecordRepository: IAttendanceRecordRepository,
+    @inject('IEmployeeRepository') private readonly employeeRepository: IEmployeeRepository
   ) {}
 
   async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {
@@ -112,5 +116,3 @@ class AttendanceRecordService {
     }
   }
 }
-
-export default AttendanceRecordService

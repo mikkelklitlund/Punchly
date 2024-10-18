@@ -1,11 +1,14 @@
 import { PrismaClient, Company } from '@prisma/client'
+import { injectable } from 'inversify'
 import { Company as CompanyDTO } from 'shared'
+import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyRepository'
 
-class CompanyRepository {
+@injectable()
+export class CompanyRepository implements ICompanyRepository {
   constructor(private readonly prisma: PrismaClient) {}
-  async createCompany(data: Omit<Company, 'id'>): Promise<CompanyDTO> {
+  async createCompany(name: string, address: string): Promise<CompanyDTO> {
     const company = await this.prisma.company.create({
-      data,
+      data: { name, address },
     })
 
     return this.translateToDTO(company)
@@ -57,5 +60,3 @@ class CompanyRepository {
     }
   }
 }
-
-export default CompanyRepository

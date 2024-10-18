@@ -1,17 +1,20 @@
 import { Employee, CreateEmployee } from 'shared'
 import { Result, failure, success } from '../utils/Result'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
-import EmployeeRepository from 'src/repositories/EmployeeRepository'
-import DepartmentRepository from 'src/repositories/DepartmentRepository'
-import CompanyRepository from 'src/repositories/CompanyRepository'
-import EmployeeTypeRepository from 'src/repositories/EmployeeTypeRepository'
+import { IEmployeeRepository } from 'src/interfaces/repositories/IEmployeeRepositry'
+import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyRepository'
+import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
+import { IEmployeeTypeRepository } from 'src/interfaces/repositories/IEmployeeTypeRepository'
+import { IEmployeeService } from 'src/interfaces/services/IEmployeeService'
+import { inject, injectable } from 'inversify'
 
-class EmployeeService {
+@injectable()
+export class EmployeeService implements IEmployeeService {
   constructor(
-    private readonly employeeRepository: EmployeeRepository,
-    private readonly companyRepository: CompanyRepository,
-    private readonly departmentRepository: DepartmentRepository,
-    private readonly employeeTypeRepository: EmployeeTypeRepository
+    @inject('IEmployeeRepository') private readonly employeeRepository: IEmployeeRepository,
+    @inject('ICompanyRepository') private readonly companyRepository: ICompanyRepository,
+    @inject('IDepartmentRepository') private readonly departmentRepository: IDepartmentRepository,
+    @inject('IEmployeeTypeRepository') private readonly employeeTypeRepository: IEmployeeTypeRepository
   ) {}
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
@@ -169,5 +172,3 @@ class EmployeeService {
     }
   }
 }
-
-export default EmployeeService

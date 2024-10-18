@@ -1,7 +1,10 @@
 import { PrismaClient, AbsenceRecord, AbsenceType as PrismaAbsenceType } from '@prisma/client'
+import { injectable } from 'inversify'
 import { CreateAbsenceRecord, AbsenceRecord as AbsenceRecordDTO, AbsenceType } from 'shared'
+import { IAbsenceRecordRepository } from 'src/interfaces/repositories/IAbsenceRecordRepository'
 
-class AbsenceRecordRepository {
+@injectable()
+export class AbsenceRecordRepository implements IAbsenceRecordRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createAbsenceRecord(data: CreateAbsenceRecord): Promise<AbsenceRecordDTO> {
@@ -96,5 +99,3 @@ class AbsenceRecordRepository {
     }
   }
 }
-
-export default AbsenceRecordRepository
