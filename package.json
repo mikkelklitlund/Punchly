@@ -7,6 +7,9 @@
     "backend",
     "shared"
   ],
+  "prisma": {
+    "schema": "./backend/prisma/schema.prisma"
+  },
   "scripts": {
     "start:frontend": "npm run start --workspace frontend",
     "start:backend": "npm run start --workspace backend",
