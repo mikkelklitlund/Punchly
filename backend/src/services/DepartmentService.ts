@@ -1,0 +1,40 @@
+import { Department } from 'shared'
+import DepartmentRepository from 'src/repositories/DepartmentRepository'
+import { DatabaseError } from 'src/utils/Errors'
+import { failure, Result, success } from 'src/utils/Result'
+
+class DepartmentService {
+  constructor(private readonly departmentRepository: DepartmentRepository) {}
+
+  async createDepartment(companyId: number, name: string): Promise<Result<Department, Error>> {
+    try {
+      const department = await this.departmentRepository.createDepartment(name, companyId)
+      return success(department)
+    } catch (error) {
+      console.log('Error during creation of department: ', error)
+      return failure(new DatabaseError('Database error occured during creation of department'))
+    }
+  }
+
+  async getDepartmentsByCompanyId(companyId: number): Promise<Result<Department[], Error>> {
+    try {
+      const departments = await this.departmentRepository.getAllDepartmentsByCompanyId(companyId)
+      return success(departments)
+    } catch (error) {
+      console.log('Database error while getting departments: ', error)
+      return failure(new DatabaseError('Database error occured during fetching of departments'))
+    }
+  }
+
+  async deleteDepartmentByNameAndCompanyId(companyId: number, name: string): Promise<Result<Department, Error>> {
+    try {
+      const department = await this.departmentRepository.deleteDepartmentByCompanyIdAndName(companyId, name)
+      return success(department)
+    } catch (error) {
+      console.log('Database error while deleting department: ', error)
+      return failure(new DatabaseError('Database error occured during deletion of department'))
+    }
+  }
+}
+
+export default DepartmentService

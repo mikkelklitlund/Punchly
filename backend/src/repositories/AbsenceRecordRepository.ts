@@ -1,63 +1,100 @@
-import { PrismaClient, AbsenceRecord, AbsenceType } from '@prisma/client';
-
+import { PrismaClient, AbsenceRecord, AbsenceType as PrismaAbsenceType } from '@prisma/client'
+import { CreateAbsenceRecord, AbsenceRecord as AbsenceRecordDTO, AbsenceType } from 'shared'
 
 class AbsenceRecordRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+  constructor(private readonly prisma: PrismaClient) {}
 
-    async createAbsenceRecord(employeeId: number, startDate: Date, endDate: Date, absenceType: AbsenceType): Promise<AbsenceRecord> {
-        return await this.prisma.absenceRecord.create({
-            data: { employeeId, startDate, endDate, absenceType },
-        });
-    }
+  async createAbsenceRecord(data: CreateAbsenceRecord): Promise<AbsenceRecordDTO> {
+    const absence = await this.prisma.absenceRecord.create({
+      data,
+    })
 
-    async getAbsenceRecordById(id: number): Promise<AbsenceRecord | null> {
-        return await this.prisma.absenceRecord.findUnique({
-            where: { id },
-        });
-    }
+    return this.translateToDTO(absence)
+  }
 
-    async getAllAbsenceRecords(): Promise<AbsenceRecord[]> {
-        return await this.prisma.absenceRecord.findMany();
-    }
+  async getAbsenceRecordById(id: number): Promise<AbsenceRecordDTO | null> {
+    const absence = await this.prisma.absenceRecord.findUnique({
+      where: { id },
+    })
 
-    async getAbsenceRecordsByEmployeeId(employeeId: number): Promise<AbsenceRecord[]> {
-        return await this.prisma.absenceRecord.findMany({
-            where: { employeeId },
-        });
-    }
+    return absence ? this.translateToDTO(absence) : null
+  }
 
-    async getAbsenceRecordsByEmployeeIdAndMonth(employeeId: number, monthStart: Date, monthEnd: Date): Promise<AbsenceRecord[]> {
-        return await this.prisma.absenceRecord.findMany({
-            where: {
-                employeeId,
-                AND: [
-                    {
-                        startDate: {
-                            lte: monthEnd,
-                        },
-                    },
-                    {
-                        endDate: {
-                            gte: monthStart,
-                        },
-                    },
-                ],
+  async getAbsenceRecordsByEmployeeId(employeeId: number): Promise<AbsenceRecordDTO[]> {
+    const absences = await this.prisma.absenceRecord.findMany({
+      where: { employeeId },
+    })
+
+    return absences.map(this.translateToDTO)
+  }
+
+  async getAbsenceRecordsByEmployeeIdAndRange(
+    employeeId: number,
+    periodStart: Date,
+    periodEnd: Date
+  ): Promise<AbsenceRecordDTO[]> {
+    const absences = await this.prisma.absenceRecord.findMany({
+      where: {
+        employeeId,
+        AND: [
+          {
+            startDate: {
+              lte: periodEnd,
             },
-        });
-    }
+          },
+          {
+            endDate: {
+              gte: periodStart,
+            },
+          },
+        ],
+      },
+    })
 
-    async updateAbsenceRecord(id: number, data: Partial<Omit<AbsenceRecord, 'id'>>): Promise<AbsenceRecord> {
-        return await this.prisma.absenceRecord.update({
-            where: { id },
-            data,
-        });
-    }
+    return absences.map(this.translateToDTO)
+  }
 
-    async deleteAbsenceRecord(id: number): Promise<AbsenceRecord> {
-        return await this.prisma.absenceRecord.delete({
-            where: { id },
-        });
+  async updateAbsenceRecord(id: number, data: Partial<Omit<AbsenceRecord, 'id'>>): Promise<AbsenceRecordDTO> {
+    const absence = await this.prisma.absenceRecord.update({
+      where: { id },
+      data,
+    })
+
+    return this.translateToDTO(absence)
+  }
+
+  async deleteAbsenceRecord(id: number): Promise<AbsenceRecordDTO> {
+    const absence = await this.prisma.absenceRecord.delete({
+      where: { id },
+    })
+
+    return this.translateToDTO(absence)
+  }
+
+  private translateToDTO(absenceRecord: AbsenceRecord): AbsenceRecordDTO {
+    return {
+      id: absenceRecord.id,
+      employeeId: absenceRecord.employeeId,
+      startDate: absenceRecord.startDate,
+      endDate: absenceRecord.endDate,
+      absenceType: this.mapAbsenceType(absenceRecord.absenceType),
     }
+  }
+
+  private mapAbsenceType(absenceType: PrismaAbsenceType): AbsenceType {
+    switch (absenceType) {
+      case 'VACATION':
+        return AbsenceType.VACATION
+      case 'SICK':
+        return AbsenceType.SICK
+      case 'HOMEDAY':
+        return AbsenceType.HOMEDAY
+      case 'PUBLIC_HOLIDAY':
+        return AbsenceType.PUBLIC_HOLIDAY
+      default:
+        throw new Error('Unknown absence type')
+    }
+  }
 }
 
-export default AbsenceRecordRepository;
+export default AbsenceRecordRepository

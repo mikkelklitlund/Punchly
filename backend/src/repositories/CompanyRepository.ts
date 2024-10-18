@@ -1,42 +1,61 @@
-import { PrismaClient, Company } from '@prisma/client';
-
+import { PrismaClient, Company } from '@prisma/client'
+import { Company as CompanyDTO } from 'shared'
 
 class CompanyRepository {
-    constructor(private readonly prisma: PrismaClient) { }
-    async createCompany(data: Omit<Company, 'id'>): Promise<Company> {
-        return await this.prisma.company.create({
-            data,
-        });
-    }
+  constructor(private readonly prisma: PrismaClient) {}
+  async createCompany(data: Omit<Company, 'id'>): Promise<CompanyDTO> {
+    const company = await this.prisma.company.create({
+      data,
+    })
 
-    async getCompanyById(id: number): Promise<Company | null> {
-        return await this.prisma.company.findUnique({
-            where: { id },
-        });
-    }
+    return this.translateToDTO(company)
+  }
 
-    async getCompanyByName(name: string): Promise<Company | null> {
-        return await this.prisma.company.findFirst({
-            where: { name },
-        });
-    }
+  async getCompanyById(id: number): Promise<CompanyDTO | null> {
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+    })
 
-    async getAllCompanies(): Promise<Company[]> {
-        return await this.prisma.company.findMany();
-    }
+    return company ? this.translateToDTO(company) : null
+  }
 
-    async updateCompany(id: number, data: Partial<Omit<Company, 'id'>>): Promise<Company> {
-        return await this.prisma.company.update({
-            where: { id },
-            data,
-        });
-    }
+  async getCompanyByName(name: string): Promise<CompanyDTO | null> {
+    const company = await this.prisma.company.findFirst({
+      where: { name },
+    })
 
-    async deleteCompany(id: number): Promise<Company> {
-        return await this.prisma.company.delete({
-            where: { id },
-        });
+    return company ? this.translateToDTO(company) : null
+  }
+
+  async getAllCompanies(): Promise<CompanyDTO[]> {
+    const companies = await this.prisma.company.findMany()
+    return companies.map(this.translateToDTO)
+  }
+
+  async updateCompany(id: number, data: Partial<Omit<Company, 'id'>>): Promise<CompanyDTO> {
+    const company = await this.prisma.company.update({
+      where: { id },
+      data,
+    })
+
+    return this.translateToDTO(company)
+  }
+
+  async deleteCompany(id: number): Promise<Company> {
+    const company = await this.prisma.company.delete({
+      where: { id },
+    })
+
+    return this.translateToDTO(company)
+  }
+
+  private translateToDTO(company: Company): CompanyDTO {
+    return {
+      id: company.id,
+      address: company.address,
+      name: company.name,
     }
+  }
 }
 
-export default CompanyRepository;
+export default CompanyRepository

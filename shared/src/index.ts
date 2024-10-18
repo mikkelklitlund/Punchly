@@ -2,10 +2,6 @@ export interface Company {
     id: number;
     address: string;
     name: string;
-    employees: Employee[];
-    department: Department[];
-    employeeTypes: EmployeeType[];
-    users: UserCompanyAccess[];
 }
 
 export interface User {
@@ -26,7 +22,6 @@ export interface Department {
     id: number;
     name: string;
     companyId: number;
-    employees: Employee[];
 }
 
 export interface Employee {
@@ -36,7 +31,7 @@ export interface Employee {
     companyId: number;
     departmentId: number;
     checkedIn: boolean;
-    birthday: Date;
+    birthdate: Date;
     employeeTypeId: number;
     monthlySalary?: number;
     hourlySalary?: number;
@@ -52,7 +47,7 @@ export interface CreateEmployee {
     companyId: number;
     departmentId: number;
     checkedIn: boolean;
-    birthday: Date;
+    birthdate: Date;
     employeeTypeId: number;
     monthlySalary?: number;
     hourlySalary?: number;
@@ -66,27 +61,38 @@ export interface EmployeeType {
     companyId: number;
 }
 
+export interface CreateAbsenceRecord {
+    employeeId: number;
+    startDate: Date;
+    endDate: Date;
+    absenceType: AbsenceType;
+}
+
 export interface AbsenceRecord {
     id: number;
     employeeId: number;
     startDate: Date;
-    endDate?: Date;
+    endDate: Date;
     absenceType: AbsenceType;
 }
 
 export interface AttendanceRecord {
     id: number;
     employeeId: number;
-    date: Date;
     checkIn: Date;
     checkOut?: Date;
 }
 
+export interface CreateAttendanceRecord {
+    employeeId: number;
+    checkIn: Date;
+}
+
 export enum AbsenceType {
-    VACATION,
-    SICK,
-    HOMEDAY,
-    PUBLIC_HOLIDAY
+    VACATION = 'VACATION',
+    SICK = 'SICK',
+    HOMEDAY = 'HOMEDAY',
+    PUBLIC_HOLIDAY = 'PUBLIC_HOLIDAY'
 }
 
 export enum Role {

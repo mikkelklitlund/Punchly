@@ -1,42 +1,72 @@
-import { PrismaClient, Department } from '@prisma/client';
+import { PrismaClient, Department } from '@prisma/client'
+import { Department as DepartmentDTO } from 'shared'
 
 class DepartmentRepository {
-    constructor(private readonly prisma: PrismaClient) { }
+  constructor(private readonly prisma: PrismaClient) {}
 
-    async createDepartment(name: string, companyId: number): Promise<Department> {
-        return await this.prisma.department.create({
-            data: { name, companyId },
-        });
-    }
+  async createDepartment(name: string, companyId: number): Promise<DepartmentDTO> {
+    const department = await this.prisma.department.create({
+      data: { name, companyId },
+    })
 
-    async getDepartmentById(id: number): Promise<Department | null> {
-        return await this.prisma.department.findUnique({
-            where: { id },
-        });
-    }
+    return this.translateToDTO(department)
+  }
 
-    async getAllDepartments(): Promise<Department[]> {
-        return await this.prisma.department.findMany();
-    }
+  async getDepartmentById(id: number): Promise<DepartmentDTO | null> {
+    const department = await this.prisma.department.findUnique({
+      where: { id },
+    })
 
-    async getAllDepartmentsByCompanyId(companyId: number): Promise<Department[]> {
-        return await this.prisma.department.findMany({
-            where: { companyId }
-        });
-    }
+    return department ? this.translateToDTO(department) : null
+  }
 
-    async updateDepartment(id: number, data: Partial<Omit<Department, 'id'>>): Promise<Department> {
-        return await this.prisma.department.update({
-            where: { id },
-            data,
-        });
-    }
+  async getAllDepartments(): Promise<DepartmentDTO[]> {
+    const departments = await this.prisma.department.findMany()
+    return departments.map(this.translateToDTO)
+  }
 
-    async deleteDepartment(id: number): Promise<Department> {
-        return await this.prisma.department.delete({
-            where: { id },
-        });
+  async getAllDepartmentsByCompanyId(companyId: number): Promise<DepartmentDTO[]> {
+    const departments = await this.prisma.department.findMany({
+      where: { companyId },
+    })
+
+    return departments.map(this.translateToDTO)
+  }
+
+  async updateDepartment(id: number, data: Partial<Omit<Department, 'id'>>): Promise<DepartmentDTO> {
+    const department = await this.prisma.department.update({
+      where: { id },
+      data,
+    })
+
+    return this.translateToDTO(department)
+  }
+
+  async deleteDepartment(id: number): Promise<DepartmentDTO> {
+    const department = await this.prisma.department.delete({
+      where: { id },
+    })
+
+    return this.translateToDTO(department)
+  }
+
+  async deleteDepartmentByCompanyIdAndName(companyId: number, name: string): Promise<DepartmentDTO> {
+    const department = await this.prisma.department.delete({
+      where: {
+        departmentCompany: { companyId, name },
+      },
+    })
+
+    return this.translateToDTO(department)
+  }
+
+  private translateToDTO(department: Department): DepartmentDTO {
+    return {
+      id: department.id,
+      name: department.name,
+      companyId: department.companyId,
     }
+  }
 }
 
-export default DepartmentRepository;
+export default DepartmentRepository
