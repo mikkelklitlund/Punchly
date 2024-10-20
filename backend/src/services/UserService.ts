@@ -5,7 +5,8 @@ import { User } from 'shared'
 import { IUserRepository } from 'src/interfaces/repositories/IUserRepository'
 import { IUserService } from 'src/interfaces/services/IUserService'
 import { Result, success, failure } from 'src/utils/Result'
-import { DatabaseError, EntityNotFoundError, ValidationError } from 'src/utils/Errors'
+import { DatabaseError, EntityNotFoundError } from 'src/utils/Errors'
+import { JwtPayload } from 'src/types/jwt'
 
 @injectable()
 export class UserService implements IUserService {
@@ -22,23 +23,24 @@ export class UserService implements IUserService {
     }
   }
 
-  async login(username: string, password: string): Promise<Result<string, Error>> {
+  async login(
+    username: string,
+    password: string
+  ): Promise<Result<{ accessToken: string; refreshToken: string }, Error>> {
     try {
       const user = await this.userRepository.getUserByUsername(username)
       if (!user || !(await bcrypt.compare(password, user.password))) {
-        return failure(new ValidationError('Invalid credentials', 'Password'))
+        throw new Error('Invalid credentials')
       }
 
-      const secret = process.env.JWT_SECRET
-      if (!secret) {
-        return failure(new Error('JWT secret is not defined'))
-      }
+      const accessToken = jwt.sign({ userId: user.id } as JwtPayload, process.env.JWT_SECRET!, { expiresIn: '30m' })
+      const refreshToken = jwt.sign({ userId: user.id } as JwtPayload, process.env.JWT_REFRESH_SECRET!, {
+        expiresIn: '7d',
+      })
 
-      const token = jwt.sign({ email: user.email }, secret, { expiresIn: '1h' })
-      return success(token)
-    } catch (error) {
-      console.error('Error verifying user:', error)
-      return failure(new DatabaseError('Database error during login'))
+      return success({ accessToken, refreshToken })
+    } catch {
+      return failure(new Error('Login failed'))
     }
   }
 

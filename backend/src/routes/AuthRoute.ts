@@ -1,0 +1,83 @@
+import express, { Request, Response } from 'express'
+import { body, validationResult } from 'express-validator'
+import jwt from 'jsonwebtoken'
+import { container } from '../inversify.config'
+import { IUserService } from '../interfaces/services/IUserService'
+import { Failure } from 'src/utils/Result'
+import { JwtPayload } from 'src/types/jwt'
+
+const router = express.Router()
+
+const userService = container.get<IUserService>('IUserService')
+
+router.post(
+  '/register',
+  [
+    body('email').isEmail().withMessage('Email is invalid'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('username').notEmpty().withMessage('Username is required'),
+  ],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() })
+      return
+    }
+
+    const { email, password, username } = req.body
+    const result = await userService.register(email, password, username)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ error: result.error.message })
+      return
+    }
+
+    res.status(201).json({ user: result.value })
+  }
+)
+
+router.post(
+  '/login',
+  [
+    body('username').notEmpty().withMessage('Username is required'),
+    body('password').notEmpty().withMessage('Password is required'),
+  ],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() })
+      return
+    }
+
+    const { username, password } = req.body
+    const result = await userService.login(username, password)
+
+    if (result instanceof Failure) {
+      res.status(401).json({ error: result.error.message })
+      return
+    }
+
+    res.json({ token: result.value })
+  }
+)
+
+router.post('/refresh-token', async (req: Request, res: Response) => {
+  const { refreshToken } = req.body
+  if (!refreshToken) {
+    res.status(401).json({ message: 'Refresh token required' })
+    return
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as JwtPayload
+    req.user = decoded
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ message: 'Token expired' })
+      return
+    }
+    res.status(400).json({ message: 'Invalid token' })
+  }
+})
+
+export default router
