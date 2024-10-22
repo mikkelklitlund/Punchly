@@ -1,5 +1,5 @@
 import { Department } from 'shared'
-import { Result } from 'src/utils/Result'
+import { Result } from '../../utils/Result'
 
 export interface IDepartmentService {
   createDepartment(companyId: number, name: string): Promise<Result<Department, Error>>

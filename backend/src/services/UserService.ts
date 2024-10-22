@@ -1,16 +1,14 @@
 import bcrypt from 'bcrypt'
-import { inject, injectable } from 'inversify'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { User, UserRefreshToken } from 'shared'
 import { IUserRepository } from 'src/interfaces/repositories/IUserRepository'
 import { IUserService } from 'src/interfaces/services/IUserService'
-import { Result, success, failure } from 'src/utils/Result'
-import { DatabaseError, EntityNotFoundError } from 'src/utils/Errors'
+import { Result, success, failure } from '../utils/Result'
+import { DatabaseError, EntityNotFoundError } from '../utils/Errors'
 import { addDays } from 'date-fns'
 
-@injectable()
 export class UserService implements IUserService {
-  constructor(@inject('IUserRepository') private readonly userRepository: IUserRepository) {}
+  constructor(private readonly userRepository: IUserRepository) {}
 
   async register(email: string, password: string, username: string): Promise<Result<User, Error>> {
     try {

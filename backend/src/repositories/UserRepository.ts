@@ -1,9 +1,7 @@
 import { PrismaClient, User } from '@prisma/client'
-import { injectable } from 'inversify'
 import { User as UserDTO, UserRefreshToken } from 'shared'
 import { IUserRepository } from 'src/interfaces/repositories/IUserRepository'
 
-@injectable()
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -67,7 +65,7 @@ export class UserRepository implements IUserRepository {
 
   async getRefreshToken(refreshToken: string): Promise<UserRefreshToken | null> {
     const token = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+      where: { token: refreshToken, revoked: false },
     })
 
     return token

@@ -1,9 +1,7 @@
 import { PrismaClient, EmployeeType } from '@prisma/client'
-import { injectable } from 'inversify'
 import { EmployeeType as EmployeeTypeDTO } from 'shared'
 import { IEmployeeTypeRepository } from 'src/interfaces/repositories/IEmployeeTypeRepository'
 
-@injectable()
 export class EmployeeTypeRepository implements IEmployeeTypeRepository {
   constructor(private readonly prisma: PrismaClient) {}
 

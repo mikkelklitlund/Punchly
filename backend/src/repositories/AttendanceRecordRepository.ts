@@ -1,9 +1,7 @@
 import { PrismaClient, AttendanceRecord } from '@prisma/client'
-import { injectable } from 'inversify'
 import { CreateAttendanceRecord, AttendanceRecord as DTOAttendanceRecord } from 'shared'
 import { IAttendanceRecordRepository } from 'src/interfaces/repositories/IAttendanceRecordRepository'
 
-@injectable()
 export class AttendanceRecordRepository implements IAttendanceRecordRepository {
   constructor(private readonly prisma: PrismaClient) {}
 

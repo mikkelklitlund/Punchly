@@ -1,6 +1,6 @@
 import { JwtPayload } from 'jsonwebtoken'
 import { User } from 'shared'
-import { Result } from 'src/utils/Result'
+import { Result } from '../../utils/Result'
 
 export interface IUserService {
   register(email: string, password: string, username: string): Promise<Result<User, Error>>

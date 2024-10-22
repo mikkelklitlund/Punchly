@@ -1,13 +1,11 @@
-import { injectable, inject } from 'inversify'
 import { Company } from 'shared'
 import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyRepository'
 import { ICompanyService } from 'src/interfaces/services/ICompanyService'
-import { DatabaseError } from 'src/utils/Errors'
-import { failure, Result, success } from 'src/utils/Result'
+import { DatabaseError } from '../utils/Errors'
+import { failure, Result, success } from '../utils/Result'
 
-@injectable()
 export class CompanyService implements ICompanyService {
-  constructor(@inject('ICompanyRepository') private readonly companyRepository: ICompanyRepository) {}
+  constructor(private readonly companyRepository: ICompanyRepository) {}
 
   async createCompany(name: string, address: string): Promise<Result<Company, Error>> {
     try {

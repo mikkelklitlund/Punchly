@@ -1,5 +1,5 @@
 import { CreateAbsenceRecord, AbsenceRecord } from 'shared'
-import { Result } from 'src/utils/Result'
+import { Result } from '../../utils/Result'
 
 export interface IAbsenceService {
   createAbsenceRecord(newAbsence: CreateAbsenceRecord): Promise<Result<AbsenceRecord, Error>>

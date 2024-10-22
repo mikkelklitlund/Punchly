@@ -1,13 +1,11 @@
-import { inject, injectable } from 'inversify'
 import { Department } from 'shared'
 import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
 import { IDepartmentService } from 'src/interfaces/services/IDepartmentService'
-import { DatabaseError } from 'src/utils/Errors'
-import { failure, Result, success } from 'src/utils/Result'
+import { DatabaseError } from '../utils/Errors'
+import { failure, Result, success } from '../utils/Result'
 
-@injectable()
 export class DepartmentService implements IDepartmentService {
-  constructor(@inject('IDepartmentRepository') private readonly departmentRepository: IDepartmentRepository) {}
+  constructor(private readonly departmentRepository: IDepartmentRepository) {}
 
   async createDepartment(companyId: number, name: string): Promise<Result<Department, Error>> {
     try {

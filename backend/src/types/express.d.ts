@@ -1,9 +1,9 @@
-import { JwtPayload } from 'jsonwebtoken'
+import { User } from 'shared'
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload
+      user?: User
     }
   }
 }

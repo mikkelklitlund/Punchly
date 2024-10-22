@@ -1,28 +1,24 @@
-import express, { Request, Response } from 'express'
-import { body, validationResult } from 'express-validator'
-import { container } from '../inversify.config'
+import { Request, Response, Router } from 'express'
 import { IUserService } from '../interfaces/services/IUserService'
-import { Failure } from 'src/utils/Result'
+import { Failure } from '../utils/Result'
 
-const router = express.Router()
-const userService = container.get<IUserService>('IUserService')
+export class AuthRoutes {
+  public router: Router
 
-router.post(
-  '/register',
-  [
-    body('email').isEmail().withMessage('Email is invalid'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('username').notEmpty().withMessage('Username is required'),
-  ],
-  async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() })
-      return
-    }
+  constructor(private readonly userService: IUserService) {
+    this.router = Router()
+    this.initializeRoutes()
+  }
 
+  private initializeRoutes() {
+    this.router.post('/register', this.register.bind(this))
+    this.router.post('/login', this.login.bind(this))
+    this.router.post('/refresh-token', this.refreshToken.bind(this))
+  }
+
+  private async register(req: Request, res: Response) {
     const { email, password, username } = req.body
-    const result = await userService.register(email, password, username)
+    const result = await this.userService.register(email, password, username)
 
     if (result instanceof Failure) {
       res.status(500).json({ error: result.error.message })
@@ -31,23 +27,10 @@ router.post(
 
     res.status(201).json({ user: result.value })
   }
-)
 
-router.post(
-  '/login',
-  [
-    body('username').notEmpty().withMessage('Username is required'),
-    body('password').notEmpty().withMessage('Password is required'),
-  ],
-  async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() })
-      return
-    }
-
+  private async login(req: Request, res: Response) {
     const { username, password } = req.body
-    const result = await userService.login(username, password)
+    const result = await this.userService.login(username, password)
 
     if (result instanceof Failure) {
       res.status(401).json({ error: result.error.message })
@@ -56,20 +39,10 @@ router.post(
 
     res.json({ accessToken: result.value.accessToken, refreshToken: result.value.refreshToken })
   }
-)
 
-router.post(
-  '/refresh-token',
-  [body('refreshToken').notEmpty().withMessage('Refresh token is required')],
-  async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() })
-      return
-    }
-
+  private async refreshToken(req: Request, res: Response) {
     const { refreshToken } = req.body
-    const result = await userService.refreshAccessToken(refreshToken)
+    const result = await this.userService.refreshAccessToken(refreshToken)
 
     if (result instanceof Failure) {
       res.status(403).json({ error: 'Invalid refresh token' })
@@ -78,6 +51,4 @@ router.post(
 
     res.json({ accessToken: result.value, refreshToken: refreshToken })
   }
-)
-
-export default router
+}

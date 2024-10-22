@@ -6,15 +6,13 @@ import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyReposito
 import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
 import { IEmployeeTypeRepository } from 'src/interfaces/repositories/IEmployeeTypeRepository'
 import { IEmployeeService } from 'src/interfaces/services/IEmployeeService'
-import { inject, injectable } from 'inversify'
 
-@injectable()
 export class EmployeeService implements IEmployeeService {
   constructor(
-    @inject('IEmployeeRepository') private readonly employeeRepository: IEmployeeRepository,
-    @inject('ICompanyRepository') private readonly companyRepository: ICompanyRepository,
-    @inject('IDepartmentRepository') private readonly departmentRepository: IDepartmentRepository,
-    @inject('IEmployeeTypeRepository') private readonly employeeTypeRepository: IEmployeeTypeRepository
+    private readonly employeeRepository: IEmployeeRepository,
+    private readonly companyRepository: ICompanyRepository,
+    private readonly departmentRepository: IDepartmentRepository,
+    private readonly employeeTypeRepository: IEmployeeTypeRepository
   ) {}
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
@@ -146,6 +144,24 @@ export class EmployeeService implements IEmployeeService {
     } catch (error) {
       console.error(`Error updating employee with ID ${id}:`, error)
       return failure(new DatabaseError('Database error occurred while updating the employee'))
+    }
+  }
+
+  async updateProfilePicture(id: number, filePath: string): Promise<Result<Employee, Error>> {
+    try {
+      const existingEmployee = await this.employeeRepository.getEmployeeById(id)
+      if (!existingEmployee) {
+        return failure(new EntityNotFoundError(`Employee with ID ${id} not found`))
+      }
+
+      const updatedEmployee = await this.employeeRepository.updateEmployee(id, {
+        ...existingEmployee,
+        profilePicturePath: filePath,
+      })
+      return success(updatedEmployee)
+    } catch (error) {
+      console.error(`Error updating profile picture for employee with ID ${id}:`, error)
+      return failure(new DatabaseError('Database error occurred while updating the profile picture'))
     }
   }
 

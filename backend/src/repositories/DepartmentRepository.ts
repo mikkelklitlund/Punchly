@@ -1,9 +1,7 @@
 import { PrismaClient, Department } from '@prisma/client'
-import { injectable } from 'inversify'
 import { Department as DepartmentDTO } from 'shared'
 import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
 
-@injectable()
 export class DepartmentRepository implements IDepartmentRepository {
   constructor(private readonly prisma: PrismaClient) {}
 

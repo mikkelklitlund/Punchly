@@ -4,14 +4,11 @@ import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
 import { IAttendanceRecordRepository } from 'src/interfaces/repositories/IAttendanceRecordRepository'
 import { IEmployeeRepository } from 'src/interfaces/repositories/IEmployeeRepositry'
 import { IAttendanceService } from 'src/interfaces/services/IAttendanceService'
-import { injectable } from 'inversify'
-import { inject } from 'inversify'
 
-@injectable()
 export class AttendanceService implements IAttendanceService {
   constructor(
-    @inject('IAttendanceRecordRepository') private readonly attendanceRecordRepository: IAttendanceRecordRepository,
-    @inject('IEmployeeRepository') private readonly employeeRepository: IEmployeeRepository
+    private readonly attendanceRecordRepository: IAttendanceRecordRepository,
+    private readonly employeeRepository: IEmployeeRepository
   ) {}
 
   async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {

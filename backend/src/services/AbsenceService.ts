@@ -1,14 +1,12 @@
 import { AbsenceRecord, CreateAbsenceRecord } from 'shared'
-import { DatabaseError, EntityNotFoundError, ValidationError } from 'src/utils/Errors'
-import { failure, Result, success } from 'src/utils/Result'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
+import { failure, Result, success } from '../utils/Result'
 import { isBefore } from 'date-fns'
 import { IAbsenceRecordRepository } from 'src/interfaces/repositories/IAbsenceRecordRepository'
 import { IAbsenceService } from 'src/interfaces/services/IAbsenceService'
-import { injectable, inject } from 'inversify'
 
-@injectable()
 export class AbsenceService implements IAbsenceService {
-  constructor(@inject('IAbsenceRecordRepository') private readonly absenceRecordRepository: IAbsenceRecordRepository) {}
+  constructor(private readonly absenceRecordRepository: IAbsenceRecordRepository) {}
 
   async createAbsenceRecord(newAbsence: CreateAbsenceRecord): Promise<Result<AbsenceRecord, Error>> {
     if (isBefore(newAbsence.endDate, newAbsence.startDate)) {
