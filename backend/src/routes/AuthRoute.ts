@@ -1,13 +1,10 @@
 import express, { Request, Response } from 'express'
 import { body, validationResult } from 'express-validator'
-import jwt from 'jsonwebtoken'
 import { container } from '../inversify.config'
 import { IUserService } from '../interfaces/services/IUserService'
 import { Failure } from 'src/utils/Result'
-import { JwtPayload } from 'src/types/jwt'
 
 const router = express.Router()
-
 const userService = container.get<IUserService>('IUserService')
 
 router.post(
@@ -57,27 +54,30 @@ router.post(
       return
     }
 
-    res.json({ token: result.value })
+    res.json({ accessToken: result.value.accessToken, refreshToken: result.value.refreshToken })
   }
 )
 
-router.post('/refresh-token', async (req: Request, res: Response) => {
-  const { refreshToken } = req.body
-  if (!refreshToken) {
-    res.status(401).json({ message: 'Refresh token required' })
-    return
-  }
-
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as JwtPayload
-    req.user = decoded
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({ message: 'Token expired' })
+router.post(
+  '/refresh-token',
+  [body('refreshToken').notEmpty().withMessage('Refresh token is required')],
+  async (req: Request, res: Response): Promise<void> => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() })
       return
     }
-    res.status(400).json({ message: 'Invalid token' })
+
+    const { refreshToken } = req.body
+    const result = await userService.refreshAccessToken(refreshToken)
+
+    if (result instanceof Failure) {
+      res.status(403).json({ error: 'Invalid refresh token' })
+      return
+    }
+
+    res.json({ accessToken: result.value, refreshToken: refreshToken })
   }
-})
+)
 
 export default router

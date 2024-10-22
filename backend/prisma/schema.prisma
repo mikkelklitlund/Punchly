@@ -9,7 +9,7 @@ datasource db {
 
 model Company {
   id            Int                 @id @default(autoincrement())
-  name          String              
+  name          String
   address       String
   employees     Employee[]
   departments   Department[]
@@ -20,13 +20,24 @@ model Company {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   password  String
-  username  String   @unique
+  username  String    @unique
   deletedAt DateTime?
 
-  companies UserCompanyAccess[]
+  companies    UserCompanyAccess[]
+  RefreshToken RefreshToken[]
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  expiryDate DateTime
+  createdAt  DateTime @default(now())
+  revoked    Boolean  @default(false)
 }
 
 model UserCompanyAccess {
@@ -67,7 +78,7 @@ model Employee {
   city               String
   absenceRecords     AbsenceRecord[]
   attendanceRecords  AttendanceRecord[]
-  deletedAt DateTime?
+  deletedAt          DateTime?
 
   @@index([companyId])
   @@index([departmentId])

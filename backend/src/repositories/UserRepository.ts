@@ -1,6 +1,6 @@
 import { PrismaClient, User } from '@prisma/client'
 import { injectable } from 'inversify'
-import { User as UserDTO } from 'shared'
+import { User as UserDTO, UserRefreshToken } from 'shared'
 import { IUserRepository } from 'src/interfaces/repositories/IUserRepository'
 
 @injectable()
@@ -63,6 +63,60 @@ export class UserRepository implements IUserRepository {
     })
 
     return this.translateToDTO(user)
+  }
+
+  async getRefreshToken(refreshToken: string): Promise<UserRefreshToken | null> {
+    const token = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    })
+
+    return token
+      ? {
+          id: token.id,
+          userId: token.userId,
+          token: token.token,
+          revoked: token.revoked,
+          createdAt: token.createdAt,
+          expiryDate: token.expiryDate,
+        }
+      : null
+  }
+
+  async createRefreshToken(userId: number, refreshToken: string, expiryDate: Date): Promise<UserRefreshToken> {
+    const token = await this.prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId,
+        expiryDate,
+      },
+    })
+
+    return {
+      id: token.id,
+      userId: token.userId,
+      token: token.token,
+      revoked: token.revoked,
+      createdAt: token.createdAt,
+      expiryDate: token.expiryDate,
+    }
+  }
+
+  async revokeRefreshToken(refreshToken: string): Promise<UserRefreshToken> {
+    const token = await this.prisma.refreshToken.update({
+      where: { token: refreshToken },
+      data: {
+        revoked: true,
+      },
+    })
+
+    return {
+      id: token.id,
+      userId: token.userId,
+      token: token.token,
+      revoked: token.revoked,
+      createdAt: token.createdAt,
+      expiryDate: token.expiryDate,
+    }
   }
 
   private translateToDTO(user: User): UserDTO {

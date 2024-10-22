@@ -1,4 +1,4 @@
-import { User } from 'shared'
+import { User, UserRefreshToken } from 'shared'
 
 export interface IUserRepository {
   createUser(email: string, password: string, username: string): Promise<User>
@@ -8,4 +8,7 @@ export interface IUserRepository {
   getAllActiveUsers(): Promise<User[]>
   updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<User>
   softDeleteUser(id: number): Promise<User>
+  getRefreshToken(refreshToken: string): Promise<UserRefreshToken | null>
+  createRefreshToken(userId: number, refreshToken: string, expiryDate: Date): Promise<UserRefreshToken>
+  revokeRefreshToken(refreshToken: string): Promise<UserRefreshToken>
 }

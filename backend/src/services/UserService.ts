@@ -1,12 +1,12 @@
 import bcrypt from 'bcrypt'
 import { inject, injectable } from 'inversify'
-import jwt from 'jsonwebtoken'
-import { User } from 'shared'
+import jwt, { JwtPayload } from 'jsonwebtoken'
+import { User, UserRefreshToken } from 'shared'
 import { IUserRepository } from 'src/interfaces/repositories/IUserRepository'
 import { IUserService } from 'src/interfaces/services/IUserService'
 import { Result, success, failure } from 'src/utils/Result'
 import { DatabaseError, EntityNotFoundError } from 'src/utils/Errors'
-import { JwtPayload } from 'src/types/jwt'
+import { addDays } from 'date-fns'
 
 @injectable()
 export class UserService implements IUserService {
@@ -26,19 +26,20 @@ export class UserService implements IUserService {
   async login(
     username: string,
     password: string
-  ): Promise<Result<{ accessToken: string; refreshToken: string }, Error>> {
+  ): Promise<Result<{ accessToken: string; refreshToken: string; user: User }, Error>> {
     try {
       const user = await this.userRepository.getUserByUsername(username)
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new Error('Invalid credentials')
       }
 
-      const accessToken = jwt.sign({ userId: user.id } as JwtPayload, process.env.JWT_SECRET!, { expiresIn: '30m' })
-      const refreshToken = jwt.sign({ userId: user.id } as JwtPayload, process.env.JWT_REFRESH_SECRET!, {
-        expiresIn: '7d',
-      })
+      const accessToken = this.generateAccessToken(user)
+      const refreshToken = this.generateRefreshToken(user)
 
-      return success({ accessToken, refreshToken })
+      const expiryDate = addDays(new Date(), 30)
+      await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
+
+      return success({ accessToken, refreshToken, user })
     } catch {
       return failure(new Error('Login failed'))
     }
@@ -74,6 +75,56 @@ export class UserService implements IUserService {
     } catch (error) {
       console.error('Error deleting user:', error)
       return failure(new DatabaseError('Database error during deleting user'))
+    }
+  }
+
+  async revokeRefreshToken(token: string): Promise<UserRefreshToken> {
+    return await this.userRepository.revokeRefreshToken(token)
+  }
+
+  private generateAccessToken(user: User): string {
+    return jwt.sign(
+      { userId: user.id }, // Include user role if needed
+      process.env.JWT_SECRET!,
+      { expiresIn: '15m' } // Short-lived access token (e.g., 15 minutes)
+    )
+  }
+
+  private generateRefreshToken(user: User): string {
+    return jwt.sign(
+      { userId: user.id }, // Minimal info in refresh token
+      process.env.REFRESH_TOKEN_SECRET!, // Use a different secret for refresh tokens
+      { expiresIn: '30d' } // Longer-lived refresh token (e.g., 30 days)
+    )
+  }
+
+  validateAccessToken(token: string): Result<JwtPayload, Error> {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
+      return success(decoded)
+    } catch {
+      return failure(new Error('Invalid or expired token'))
+    }
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<Result<string, Error>> {
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as JwtPayload
+
+      const user = await this.userRepository.getUserById(decoded.userId)
+      if (!user) {
+        return failure(new Error('User not found'))
+      }
+
+      const storedToken = await this.userRepository.getRefreshToken(refreshToken)
+      if (!storedToken || storedToken.revoked || storedToken.expiryDate < new Date()) {
+        return failure(new Error('Invalid or expired refresh token'))
+      }
+
+      const newAccessToken = this.generateAccessToken(user)
+      return success(newAccessToken)
+    } catch {
+      return failure(new Error('Invalid refresh token'))
     }
   }
 }

@@ -11,6 +11,15 @@ export interface User {
 	username: string
 }
 
+export interface UserRefreshToken {
+	id: number
+	token: string
+	userId: number
+	expiryDate: Date
+	revoked: boolean
+	createdAt: Date
+}
+
 export interface UserCompanyAccess {
 	userId: number
 	companyId: number
