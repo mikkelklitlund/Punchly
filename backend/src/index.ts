@@ -4,38 +4,12 @@ import { Server } from 'socket.io'
 import { Socket } from 'socket.io/dist/socket'
 import { errorHandler } from './middleware/ErrorHandler'
 import { PrismaClient } from '@prisma/client'
-import { IAbsenceRecordRepository } from './interfaces/repositories/IAbsenceRecordRepository'
-import { AbsenceRecordRepository } from './repositories/AbsenceRecordRepository'
-import { IAttendanceRecordRepository } from './interfaces/repositories/IAttendanceRecordRepository'
-import { AttendanceRecordRepository } from './repositories/AttendanceRecordRepository'
-import { ICompanyRepository } from './interfaces/repositories/ICompanyRepository'
-import { CompanyRepository } from './repositories/CompanyRepository'
-import { IDepartmentRepository } from './interfaces/repositories/IDepartmentRepository'
-import { DepartmentRepository } from './repositories/DepartmentRepository'
-import { IEmployeeRepository } from './interfaces/repositories/IEmployeeRepositry'
-import { EmployeeRepository } from './repositories/EmployeeRepository'
-import { IEmployeeTypeRepository } from './interfaces/repositories/IEmployeeTypeRepository'
-import { EmployeeTypeRepository } from './repositories/EmployeeTypeRepository'
-import { IUserRepository } from './interfaces/repositories/IUserRepository'
-import { UserRepository } from './repositories/UserRepository'
-import { IAbsenceService } from './interfaces/services/IAbsenceService'
-import { AbsenceService } from './services/AbsenceService'
-import { IAttendanceService } from './interfaces/services/IAttendanceService'
-import { AttendanceService } from './services/AttendanceService'
-import { ICompanyService } from './interfaces/services/ICompanyService'
-import { CompanyService } from './services/CompanyService'
-import { IDepartmentService } from './interfaces/services/IDepartmentService'
-import { DepartmentService } from './services/DepartmentService'
-import { IEmployeeTypeService } from './interfaces/services/IEmployeeTypeService'
-import { EmployeeTypeService } from './services/EmployeeTypeService'
-import { IEmployeeService } from './interfaces/services/IEmployeeService'
-import { EmployeeService } from './services/EmployeeService'
-import { IUserService } from './interfaces/services/IUserService'
-import { UserService } from './services/UserService'
 import { AuthRoutes } from './routes/AuthRoute'
 import { EmployeeRoutes } from './routes/EmployeeRoute'
 import { EmployeePictureRoutes } from './routes/ProfilePictureUpload'
 import { CompanyRoutes } from './routes/CompanyRoute'
+import { RepositoryContainer } from './repositories/RepositoryContainer.'
+import { ServiceContainer } from './services/ServiceContainer'
 
 const app = express()
 app.use(express.json())
@@ -51,39 +25,27 @@ const io = new Server(httpServer, {
 const prismaClient: PrismaClient = new PrismaClient()
 
 //Repos
-const absenceRepository: IAbsenceRecordRepository = new AbsenceRecordRepository(prismaClient)
-const attendaceRepository: IAttendanceRecordRepository = new AttendanceRecordRepository(prismaClient)
-const companyRepository: ICompanyRepository = new CompanyRepository(prismaClient)
-const departmentRepository: IDepartmentRepository = new DepartmentRepository(prismaClient)
-const employeeRepository: IEmployeeRepository = new EmployeeRepository(prismaClient)
-const employeeTypeRepository: IEmployeeTypeRepository = new EmployeeTypeRepository(prismaClient)
-const userRepository: IUserRepository = new UserRepository(prismaClient)
+const repositoryContainer: RepositoryContainer = new RepositoryContainer(prismaClient)
 
 //Services
-const absenceService: IAbsenceService = new AbsenceService(absenceRepository)
-const attendaceService: IAttendanceService = new AttendanceService(attendaceRepository, employeeRepository)
-const companyService: ICompanyService = new CompanyService(companyRepository)
-const departmentService: IDepartmentService = new DepartmentService(departmentRepository)
-const employeeTypeService: IEmployeeTypeService = new EmployeeTypeService(employeeTypeRepository)
-const employeeService: IEmployeeService = new EmployeeService(
-  employeeRepository,
-  companyRepository,
-  departmentRepository,
-  employeeTypeRepository
-)
-const userService: IUserService = new UserService(userRepository)
+const serviceContainer = new ServiceContainer(repositoryContainer)
 
 //Routes
-const authRoutes = new AuthRoutes(userService)
-const employeeRoutes = new EmployeeRoutes(userService, employeeService)
-const employeePictureRoutes = new EmployeePictureRoutes(employeeService)
-const companyRoutes = new CompanyRoutes(employeeService)
+const authRoutes = new AuthRoutes(serviceContainer.userService)
+const employeeRoutes = new EmployeeRoutes(serviceContainer.userService, serviceContainer.employeeService)
+const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService)
+const companyRoutes = new CompanyRoutes(
+  serviceContainer.companyService,
+  serviceContainer.employeeService,
+  serviceContainer.userService
+)
 
-app.use('/auth', authRoutes.router)
-app.use('/employees', employeeRoutes.router)
-app.use('/employees', employeePictureRoutes.router)
-app.use('/companies', companyRoutes.router)
+app.use('/api/auth', authRoutes.router)
+app.use('/api/employees', employeeRoutes.router)
+app.use('/api/employees', employeePictureRoutes.router)
+app.use('/api/companies', companyRoutes.router)
 
+//Socket
 io.on('connection', (socket: Socket) => {
   console.log('A client connected:', socket.id)
 

@@ -1,8 +1,8 @@
 import { Request, Response, Router } from 'express'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService'
-import { body, validationResult } from 'express-validator'
+import { body, query, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth'
-import { Failure } from '../utils/Result'
+import { Failure, Result } from '../utils/Result'
 import { CreateEmployee, Employee } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService'
 
@@ -30,6 +30,16 @@ export class EmployeeRoutes {
 
     this.router.get('/:id', authMiddleware(this.userService), this.getEmployeeById.bind(this))
 
+    this.router.get(
+      '/',
+      [
+        query('company').isNumeric().withMessage('Valid company ID is required'),
+        query('department').optional().isNumeric().withMessage('Valid department ID is required'),
+        query('type').optional().isNumeric().withMessage('Valid type ID is required'),
+      ],
+      this.getEmployeesByQueryParams.bind(this)
+    )
+
     this.router.put(
       '/:id',
       authMiddleware(this.userService),
@@ -47,7 +57,7 @@ export class EmployeeRoutes {
   private async createEmployee(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      res.status(400).json({ success: false, errors: errors.array() })
+      res.status(400).json({ message: errors.array() })
       return
     }
 
@@ -55,11 +65,41 @@ export class EmployeeRoutes {
     const result = await this.employeeService.createEmployee(newEmployee)
 
     if (result instanceof Failure) {
-      res.status(500).json({ success: false, message: result.error.message })
+      res.status(500).json({ message: result.error.message })
       return
     }
 
-    res.status(201).json({ success: true, employee: result.value })
+    res.status(201).json({ employee: result.value })
+  }
+
+  private async getEmployeesByQueryParams(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() })
+      return
+    }
+
+    const companyId = parseInt(req.query.company as string)
+    const departmentId = req.query.department ? parseInt(req.query.department as string) : null
+    const employeeType = req.query.type ? parseInt(req.query.type as string) : null
+
+    let result: Result<Employee[], Error>
+    if (departmentId) {
+      result = await this.employeeService.getAllEmployeesByDepartmentIdAndCompanyId(departmentId, companyId)
+    } else {
+      result = await this.employeeService.getAllEmployeesByCompanyId(companyId)
+    }
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    if (employeeType) {
+      result.value = result.value.filter((em) => em.employeeTypeId === employeeType)
+    }
+
+    res.status(200).json({ employees: result.value })
   }
 
   private async getEmployeeById(req: Request, res: Response) {
@@ -67,17 +107,17 @@ export class EmployeeRoutes {
     const result = await this.employeeService.getEmployeeById(employeeId)
 
     if (result instanceof Failure) {
-      res.status(404).json({ success: false, message: result.error.message })
+      res.status(404).json({ message: result.error.message })
       return
     }
 
-    res.status(200).json({ success: true, employee: result.value })
+    res.status(200).json({ employee: result.value })
   }
 
   private async updateEmployee(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      res.status(400).json({ success: false, errors: errors.array() })
+      res.status(400).json({ message: errors.array() })
       return
     }
 
@@ -86,11 +126,11 @@ export class EmployeeRoutes {
     const result = await this.employeeService.updateEmployee(employeeId, employee)
 
     if (result instanceof Failure) {
-      res.status(500).json({ success: false, message: result.error.message })
+      res.status(500).json({ message: result.error.message })
       return
     }
 
-    res.status(200).json({ success: true, employee: result.value })
+    res.status(200).json({ employee: result.value })
   }
 
   private async deleteEmployee(req: Request, res: Response) {
@@ -98,10 +138,10 @@ export class EmployeeRoutes {
     const result = await this.employeeService.deleteEmployee(employeeId)
 
     if (result instanceof Failure) {
-      res.status(500).json({ success: false, message: result.error.message })
+      res.status(500).json({ message: result.error.message })
       return
     }
 
-    res.status(204).send()
+    res.status(204).send({ employeeDeleted: result.value })
   }
 }
