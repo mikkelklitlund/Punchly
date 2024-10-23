@@ -1,6 +1,6 @@
 import { PrismaClient, AbsenceRecord, AbsenceType as PrismaAbsenceType } from '@prisma/client'
 import { CreateAbsenceRecord, AbsenceRecord as AbsenceRecordDTO, AbsenceType } from 'shared'
-import { IAbsenceRecordRepository } from 'src/interfaces/repositories/IAbsenceRecordRepository'
+import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository'
 
 export class AbsenceRecordRepository implements IAbsenceRecordRepository {
   constructor(private readonly prisma: PrismaClient) {}

@@ -1,8 +1,8 @@
 import { Company } from 'shared'
-import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyRepository'
-import { ICompanyService } from 'src/interfaces/services/ICompanyService'
 import { DatabaseError } from '../utils/Errors'
 import { failure, Result, success } from '../utils/Result'
+import { ICompanyService } from '../interfaces/services/ICompanyService'
+import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository'
 
 export class CompanyService implements ICompanyService {
   constructor(private readonly companyRepository: ICompanyRepository) {}

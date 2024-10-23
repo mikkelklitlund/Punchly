@@ -35,6 +35,7 @@ import { UserService } from './services/UserService'
 import { AuthRoutes } from './routes/AuthRoute'
 import { EmployeeRoutes } from './routes/EmployeeRoute'
 import { EmployeePictureRoutes } from './routes/ProfilePictureUpload'
+import { CompanyRoutes } from './routes/CompanyRoute'
 
 const app = express()
 app.use(express.json())
@@ -76,10 +77,12 @@ const userService: IUserService = new UserService(userRepository)
 const authRoutes = new AuthRoutes(userService)
 const employeeRoutes = new EmployeeRoutes(userService, employeeService)
 const employeePictureRoutes = new EmployeePictureRoutes(employeeService)
+const companyRoutes = new CompanyRoutes(employeeService)
 
 app.use('/auth', authRoutes.router)
 app.use('/employees', employeeRoutes.router)
 app.use('/employees', employeePictureRoutes.router)
+app.use('/companies', companyRoutes.router)
 
 io.on('connection', (socket: Socket) => {
   console.log('A client connected:', socket.id)

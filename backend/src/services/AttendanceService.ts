@@ -1,9 +1,9 @@
 import { Result, success, failure } from '../utils/Result'
 import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors'
 import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
-import { IAttendanceRecordRepository } from 'src/interfaces/repositories/IAttendanceRecordRepository'
-import { IEmployeeRepository } from 'src/interfaces/repositories/IEmployeeRepositry'
-import { IAttendanceService } from 'src/interfaces/services/IAttendanceService'
+import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
+import { IAttendanceService } from '../interfaces/services/IAttendanceService'
 
 export class AttendanceService implements IAttendanceService {
   constructor(

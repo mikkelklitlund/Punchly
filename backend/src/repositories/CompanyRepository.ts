@@ -1,6 +1,6 @@
 import { PrismaClient, Company } from '@prisma/client'
 import { Company as CompanyDTO } from 'shared'
-import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyRepository'
+import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository'
 
 export class CompanyRepository implements ICompanyRepository {
   constructor(private readonly prisma: PrismaClient) {}

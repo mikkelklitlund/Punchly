@@ -1,11 +1,11 @@
 import { Employee, CreateEmployee } from 'shared'
 import { Result, failure, success } from '../utils/Result'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
-import { IEmployeeRepository } from 'src/interfaces/repositories/IEmployeeRepositry'
-import { ICompanyRepository } from 'src/interfaces/repositories/ICompanyRepository'
-import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
-import { IEmployeeTypeRepository } from 'src/interfaces/repositories/IEmployeeTypeRepository'
-import { IEmployeeService } from 'src/interfaces/services/IEmployeeService'
+import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 
 export class EmployeeService implements IEmployeeService {
   constructor(
@@ -78,6 +78,16 @@ export class EmployeeService implements IEmployeeService {
   async getAllEmployees(): Promise<Result<Employee[], Error>> {
     try {
       const employees = await this.employeeRepository.getAllEmployees()
+      return success(employees)
+    } catch (error) {
+      console.error('Error fetching all employees:', error)
+      return failure(new DatabaseError('Database error occurred while fetching employees'))
+    }
+  }
+
+  async getAllEmployeesByCompanyId(companyId: number): Promise<Result<Employee[], Error>> {
+    try {
+      const employees = await this.employeeRepository.getActiveEmployeesByCompanyId(companyId)
       return success(employees)
     } catch (error) {
       console.error('Error fetching all employees:', error)

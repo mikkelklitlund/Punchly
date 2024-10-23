@@ -2,8 +2,8 @@ import { AbsenceRecord, CreateAbsenceRecord } from 'shared'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
 import { failure, Result, success } from '../utils/Result'
 import { isBefore } from 'date-fns'
-import { IAbsenceRecordRepository } from 'src/interfaces/repositories/IAbsenceRecordRepository'
-import { IAbsenceService } from 'src/interfaces/services/IAbsenceService'
+import { IAbsenceService } from '../interfaces/services/IAbsenceService'
+import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository'
 
 export class AbsenceService implements IAbsenceService {
   constructor(private readonly absenceRecordRepository: IAbsenceRecordRepository) {}

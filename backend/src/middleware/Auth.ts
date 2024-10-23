@@ -1,7 +1,7 @@
 import { Response, NextFunction, Request } from 'express'
-import { IUserService } from 'src/interfaces/services/IUserService'
 import { Failure } from '../utils/Result'
 import { User } from 'shared'
+import { IUserService } from '../interfaces/services/IUserService'
 
 const authMiddleware = (userService: IUserService) => (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization

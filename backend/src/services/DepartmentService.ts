@@ -1,8 +1,8 @@
 import { Department } from 'shared'
-import { IDepartmentRepository } from 'src/interfaces/repositories/IDepartmentRepository'
-import { IDepartmentService } from 'src/interfaces/services/IDepartmentService'
 import { DatabaseError } from '../utils/Errors'
 import { failure, Result, success } from '../utils/Result'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
+import { IDepartmentService } from '../interfaces/services/IDepartmentService'
 
 export class DepartmentService implements IDepartmentService {
   constructor(private readonly departmentRepository: IDepartmentRepository) {}

@@ -1,6 +1,6 @@
 import { PrismaClient, EmployeeType } from '@prisma/client'
 import { EmployeeType as EmployeeTypeDTO } from 'shared'
-import { IEmployeeTypeRepository } from 'src/interfaces/repositories/IEmployeeTypeRepository'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
 
 export class EmployeeTypeRepository implements IEmployeeTypeRepository {
   constructor(private readonly prisma: PrismaClient) {}

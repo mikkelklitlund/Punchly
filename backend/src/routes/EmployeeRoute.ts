@@ -4,7 +4,7 @@ import { body, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth'
 import { Failure } from '../utils/Result'
 import { CreateEmployee, Employee } from 'shared'
-import { IUserService } from 'src/interfaces/services/IUserService'
+import { IUserService } from '../interfaces/services/IUserService'
 
 export class EmployeeRoutes {
   public router: Router
