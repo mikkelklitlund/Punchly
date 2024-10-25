@@ -1,7 +1,5 @@
 import express from 'express'
 import { createServer } from 'http'
-import { Server } from 'socket.io'
-import { Socket } from 'socket.io/dist/socket'
 import { errorHandler } from './middleware/ErrorHandler'
 import { PrismaClient } from '@prisma/client'
 import { AuthRoutes } from './routes/AuthRoute'
@@ -14,12 +12,6 @@ import { ServiceContainer } from './services/ServiceContainer'
 const app = express()
 app.use(express.json())
 const httpServer = createServer(app)
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: '*',
-  },
-})
 
 //Prisma
 const prismaClient: PrismaClient = new PrismaClient()
@@ -44,20 +36,6 @@ app.use('/api/auth', authRoutes.router)
 app.use('/api/employees', employeeRoutes.router)
 app.use('/api/employees', employeePictureRoutes.router)
 app.use('/api/companies', companyRoutes.router)
-
-//Socket
-io.on('connection', (socket: Socket) => {
-  console.log('A client connected:', socket.id)
-
-  socket.on('message', (data: string) => {
-    console.log('Message received:', data)
-    io.emit('message', data)
-  })
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id)
-  })
-})
 
 app.use(errorHandler)
 
