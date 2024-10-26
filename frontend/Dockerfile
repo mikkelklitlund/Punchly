@@ -22,7 +22,7 @@ RUN cd ../app
 RUN npm run build
 
 # Expose the application port
-EXPOSE 3000
+EXPOSE 4173
 
 # Start the application
 CMD ["npm", "run", "preview"]
