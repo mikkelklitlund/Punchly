@@ -24,7 +24,11 @@ const serviceContainer = new ServiceContainer(repositoryContainer)
 
 //Routes
 const authRoutes = new AuthRoutes(serviceContainer.userService)
-const employeeRoutes = new EmployeeRoutes(serviceContainer.userService, serviceContainer.employeeService)
+const employeeRoutes = new EmployeeRoutes(
+  serviceContainer.userService,
+  serviceContainer.employeeService,
+  serviceContainer.attendanceService
+)
 const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService)
 const companyRoutes = new CompanyRoutes(
   serviceContainer.companyService,

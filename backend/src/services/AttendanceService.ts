@@ -28,7 +28,7 @@ export class AttendanceService implements IAttendanceService {
         employeeId,
         checkIn: new Date(),
       })
-      await this.employeeRepository.updateEmployee(employeeId, { checkedIn: false })
+      await this.employeeRepository.updateEmployee(employeeId, { checkedIn: true })
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error during employee check-in:', error)
@@ -47,6 +47,8 @@ export class AttendanceService implements IAttendanceService {
       const updatedRecord = await this.attendanceRecordRepository.updateAttendanceRecord(attendanceRecord.id, {
         checkOut: new Date(),
       })
+
+      await this.employeeRepository.updateEmployee(employeeId, { checkedIn: false })
 
       return success(updatedRecord)
     } catch (error) {

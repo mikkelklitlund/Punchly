@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express'
 import { IUserService } from '../interfaces/services/IUserService'
 import { Failure } from '../utils/Result'
+import { ValidationError } from '../utils/Errors'
 
 export class AuthRoutes {
   public router: Router
@@ -21,6 +22,10 @@ export class AuthRoutes {
     const result = await this.userService.register(email, password, username)
 
     if (result instanceof Failure) {
+      if (result instanceof ValidationError) {
+        res.status(409).json({ error: result.error.message })
+        return
+      }
       res.status(500).json({ error: result.error.message })
       return
     }

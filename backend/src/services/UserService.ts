@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { User, UserRefreshToken } from 'shared'
 import { Result, success, failure } from '../utils/Result'
-import { DatabaseError, EntityNotFoundError } from '../utils/Errors'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
 import { addDays } from 'date-fns'
 import { IUserService } from '../interfaces/services/IUserService'
 import { IUserRepository } from '../interfaces/repositories/IUserRepository'
@@ -12,6 +12,16 @@ export class UserService implements IUserService {
 
   async register(email: string, password: string, username: string): Promise<Result<User, Error>> {
     try {
+      const emailAlreadyExists = await this.userRepository.getUserByEmail(email)
+      if (emailAlreadyExists) {
+        return failure(new ValidationError('User with email already exists', 'email'))
+      }
+
+      const usernameAlreadyExists = await this.userRepository.getUserByUsername(username)
+      if (usernameAlreadyExists) {
+        return failure(new ValidationError('User with username already exists', 'username'))
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10)
       const user = await this.userRepository.createUser(email, hashedPassword, username)
       return success(user)
@@ -81,19 +91,11 @@ export class UserService implements IUserService {
   }
 
   private generateAccessToken(user: User): string {
-    return jwt.sign(
-      { userId: user.id }, // Include user role if needed
-      process.env.JWT_SECRET!,
-      { expiresIn: '15m' } // Short-lived access token (e.g., 15 minutes)
-    )
+    return jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '15m' })
   }
 
   private generateRefreshToken(user: User): string {
-    return jwt.sign(
-      { userId: user.id }, // Minimal info in refresh token
-      process.env.REFRESH_TOKEN_SECRET!, // Use a different secret for refresh tokens
-      { expiresIn: '30d' } // Longer-lived refresh token (e.g., 30 days)
-    )
+    return jwt.sign({ userId: user.id }, process.env.REFRESH_TOKEN_SECRET!, { expiresIn: '30d' })
   }
 
   validateAccessToken(token: string): Result<JwtPayload, Error> {
