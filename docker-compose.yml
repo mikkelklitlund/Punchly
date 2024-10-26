@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: kogs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpass123
+    ports:
+      - '6500:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgres://postgres:testpass123@postgres:5432/kogs
+    depends_on:
+      - postgres
+    ports:
+      - '4000:4000'
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - '3000:4173'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
