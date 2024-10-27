@@ -51,7 +51,7 @@ async function main() {
     where: { name: 'Part-Time', companyId: company.id },
   })
 
-  const employees = await prisma.employee.createMany({
+  await prisma.employee.createMany({
     data: [
       {
         name: 'Jens Sørensens',
