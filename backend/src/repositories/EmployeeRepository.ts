@@ -1,7 +1,8 @@
 import { PrismaClient, Employee } from '@prisma/client'
 import { Employee as DTOEmployee, CreateEmployee } from 'shared'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
 
-class EmployeeRepository {
+export class EmployeeRepository implements IEmployeeRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createEmployee(data: CreateEmployee): Promise<DTOEmployee> {
@@ -28,7 +29,7 @@ class EmployeeRepository {
   async getActiveEmployeesByCompanyId(companyId: number): Promise<DTOEmployee[]> {
     const employees = await this.prisma.employee.findMany({
       where: {
-        companyId,
+        companyId: companyId,
         deletedAt: null,
       },
     })
@@ -84,5 +85,3 @@ class EmployeeRepository {
     }
   }
 }
-
-export default EmployeeRepository

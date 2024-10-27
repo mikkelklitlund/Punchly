@@ -1,10 +1,11 @@
 import { Department } from 'shared'
-import DepartmentRepository from 'src/repositories/DepartmentRepository'
-import { DatabaseError } from 'src/utils/Errors'
-import { failure, Result, success } from 'src/utils/Result'
+import { DatabaseError } from '../utils/Errors'
+import { failure, Result, success } from '../utils/Result'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
+import { IDepartmentService } from '../interfaces/services/IDepartmentService'
 
-class DepartmentService {
-  constructor(private readonly departmentRepository: DepartmentRepository) {}
+export class DepartmentService implements IDepartmentService {
+  constructor(private readonly departmentRepository: IDepartmentRepository) {}
 
   async createDepartment(companyId: number, name: string): Promise<Result<Department, Error>> {
     try {
@@ -36,5 +37,3 @@ class DepartmentService {
     }
   }
 }
-
-export default DepartmentService

@@ -1,34 +1,45 @@
 import express from 'express'
 import { createServer } from 'http'
-import { Server } from 'socket.io'
-import { Socket } from 'socket.io/dist/socket'
-import { Request, Response } from 'express'
 import { errorHandler } from './middleware/ErrorHandler'
+import { PrismaClient } from '@prisma/client'
+import { AuthRoutes } from './routes/AuthRoute'
+import { EmployeeRoutes } from './routes/EmployeeRoute'
+import { EmployeePictureRoutes } from './routes/ProfilePictureUpload'
+import { CompanyRoutes } from './routes/CompanyRoute'
+import { RepositoryContainer } from './repositories/RepositoryContainer.'
+import { ServiceContainer } from './services/ServiceContainer'
 
 const app = express()
+app.use(express.json())
 const httpServer = createServer(app)
-const io = new Server(httpServer, {
-  cors: {
-    origin: '*',
-  },
-})
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Socket.IO with Express Backend')
-})
+//Prisma
+const prismaClient: PrismaClient = new PrismaClient()
 
-io.on('connection', (socket: Socket) => {
-  console.log('A client connected:', socket.id)
+//Repos
+const repositoryContainer: RepositoryContainer = new RepositoryContainer(prismaClient)
 
-  socket.on('message', (data: string) => {
-    console.log('Message received:', data)
-    io.emit('message', data)
-  })
+//Services
+const serviceContainer = new ServiceContainer(repositoryContainer)
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id)
-  })
-})
+//Routes
+const authRoutes = new AuthRoutes(serviceContainer.userService)
+const employeeRoutes = new EmployeeRoutes(
+  serviceContainer.userService,
+  serviceContainer.employeeService,
+  serviceContainer.attendanceService
+)
+const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService)
+const companyRoutes = new CompanyRoutes(
+  serviceContainer.companyService,
+  serviceContainer.employeeService,
+  serviceContainer.userService
+)
+
+app.use('/api/auth', authRoutes.router)
+app.use('/api/employees', employeeRoutes.router)
+app.use('/api/employees', employeePictureRoutes.router)
+app.use('/api/companies', companyRoutes.router)
 
 app.use(errorHandler)
 

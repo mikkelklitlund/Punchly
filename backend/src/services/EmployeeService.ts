@@ -1,17 +1,18 @@
 import { Employee, CreateEmployee } from 'shared'
 import { Result, failure, success } from '../utils/Result'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
-import EmployeeRepository from 'src/repositories/EmployeeRepository'
-import DepartmentRepository from 'src/repositories/DepartmentRepository'
-import CompanyRepository from 'src/repositories/CompanyRepository'
-import EmployeeTypeRepository from 'src/repositories/EmployeeTypeRepository'
+import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 
-class EmployeeService {
+export class EmployeeService implements IEmployeeService {
   constructor(
-    private readonly employeeRepository: EmployeeRepository,
-    private readonly companyRepository: CompanyRepository,
-    private readonly departmentRepository: DepartmentRepository,
-    private readonly employeeTypeRepository: EmployeeTypeRepository
+    private readonly employeeRepository: IEmployeeRepository,
+    private readonly companyRepository: ICompanyRepository,
+    private readonly departmentRepository: IDepartmentRepository,
+    private readonly employeeTypeRepository: IEmployeeTypeRepository
   ) {}
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
@@ -84,6 +85,16 @@ class EmployeeService {
     }
   }
 
+  async getAllEmployeesByCompanyId(companyId: number): Promise<Result<Employee[], Error>> {
+    try {
+      const employees = await this.employeeRepository.getActiveEmployeesByCompanyId(companyId)
+      return success(employees)
+    } catch (error) {
+      console.error('Error fetching all employees:', error)
+      return failure(new DatabaseError('Database error occurred while fetching employees'))
+    }
+  }
+
   async updateEmployee(id: number, data: Partial<Omit<Employee, 'id'>>): Promise<Result<Employee, Error>> {
     try {
       const existingEmployee = await this.employeeRepository.getEmployeeById(id)
@@ -146,6 +157,24 @@ class EmployeeService {
     }
   }
 
+  async updateProfilePicture(id: number, filePath: string): Promise<Result<Employee, Error>> {
+    try {
+      const existingEmployee = await this.employeeRepository.getEmployeeById(id)
+      if (!existingEmployee) {
+        return failure(new EntityNotFoundError(`Employee with ID ${id} not found`))
+      }
+
+      const updatedEmployee = await this.employeeRepository.updateEmployee(id, {
+        ...existingEmployee,
+        profilePicturePath: filePath,
+      })
+      return success(updatedEmployee)
+    } catch (error) {
+      console.error(`Error updating profile picture for employee with ID ${id}:`, error)
+      return failure(new DatabaseError('Database error occurred while updating the profile picture'))
+    }
+  }
+
   async deleteEmployee(id: number): Promise<Result<Employee, Error>> {
     try {
       const deletedEmployee = await this.employeeRepository.softDeleteEmployee(id)
@@ -169,5 +198,3 @@ class EmployeeService {
     }
   }
 }
-
-export default EmployeeService

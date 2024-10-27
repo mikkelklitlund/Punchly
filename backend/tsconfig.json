@@ -1,18 +1,19 @@
 {
-	"compilerOptions": {
-		"target": "ES6",
-		"module": "CommonJS",
-		"rootDir": "./src",
-		"outDir": "./dist",
-		"esModuleInterop": true,
-		"strict": true,
-		"skipLibCheck": true,
-		"moduleResolution": "node",
-		"baseUrl": "./",
-		"paths": {
-			"shared": ["../shared/dist"]
-		}
-	},
-	"include": ["src/**/*.ts"],
-	"exclude": ["node_modules"]
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "rootDir": "./",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "paths": {
+      "shared": ["../shared/dist"]
+    }
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts"],
+  "exclude": ["node_modules"]
 }

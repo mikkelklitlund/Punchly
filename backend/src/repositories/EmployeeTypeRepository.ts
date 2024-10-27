@@ -1,7 +1,8 @@
 import { PrismaClient, EmployeeType } from '@prisma/client'
 import { EmployeeType as EmployeeTypeDTO } from 'shared'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
 
-class EmployeeTypeRepository {
+export class EmployeeTypeRepository implements IEmployeeTypeRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createEmployeeType(name: string, companyId: number): Promise<EmployeeType> {
@@ -73,5 +74,3 @@ class EmployeeTypeRepository {
     }
   }
 }
-
-export default EmployeeTypeRepository

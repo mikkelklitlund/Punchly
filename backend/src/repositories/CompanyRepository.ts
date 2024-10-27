@@ -1,11 +1,12 @@
 import { PrismaClient, Company } from '@prisma/client'
 import { Company as CompanyDTO } from 'shared'
+import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository'
 
-class CompanyRepository {
+export class CompanyRepository implements ICompanyRepository {
   constructor(private readonly prisma: PrismaClient) {}
-  async createCompany(data: Omit<Company, 'id'>): Promise<CompanyDTO> {
+  async createCompany(name: string, address: string): Promise<CompanyDTO> {
     const company = await this.prisma.company.create({
-      data,
+      data: { name, address },
     })
 
     return this.translateToDTO(company)
@@ -57,5 +58,3 @@ class CompanyRepository {
     }
   }
 }
-
-export default CompanyRepository

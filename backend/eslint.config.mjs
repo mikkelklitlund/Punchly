@@ -19,6 +19,12 @@ export default [
       semi: [2, 'never'],
       'max-len': ['error', { code: 120 }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'prettier/prettier': [
+        'error',
+        {
+          endOfLine: 'lf',
+        },
+      ],
     },
   },
 ]

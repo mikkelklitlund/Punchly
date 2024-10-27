@@ -1,7 +1,8 @@
 import { PrismaClient, AttendanceRecord } from '@prisma/client'
 import { CreateAttendanceRecord, AttendanceRecord as DTOAttendanceRecord } from 'shared'
+import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository'
 
-class AttendanceRecordRepository {
+export class AttendanceRecordRepository implements IAttendanceRecordRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createAttendanceRecord(data: CreateAttendanceRecord): Promise<DTOAttendanceRecord> {
@@ -46,16 +47,21 @@ class AttendanceRecordRepository {
     return ars.map(this.translateToDto)
   }
 
-  async getOngoingAttendanceRecord(employeeId: number): Promise<AttendanceRecord | null> {
-    return await this.prisma.attendanceRecord.findFirst({
+  async getOngoingAttendanceRecord(employeeId: number): Promise<DTOAttendanceRecord | null> {
+    const ar = await this.prisma.attendanceRecord.findFirst({
       where: {
         employeeId,
         checkOut: null,
       },
     })
+
+    return ar ? this.translateToDto(ar) : null
   }
 
-  async updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, 'id'>>): Promise<DTOAttendanceRecord> {
+  async updateAttendanceRecord(
+    id: number,
+    data: Partial<Omit<DTOAttendanceRecord, 'id'>>
+  ): Promise<DTOAttendanceRecord> {
     const ar = await this.prisma.attendanceRecord.update({
       where: { id },
       data,
@@ -81,5 +87,3 @@ class AttendanceRecordRepository {
     }
   }
 }
-
-export default AttendanceRecordRepository

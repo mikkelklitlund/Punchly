@@ -1,7 +1,8 @@
 import { PrismaClient, Department } from '@prisma/client'
 import { Department as DepartmentDTO } from 'shared'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
 
-class DepartmentRepository {
+export class DepartmentRepository implements IDepartmentRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createDepartment(name: string, companyId: number): Promise<DepartmentDTO> {
@@ -68,5 +69,3 @@ class DepartmentRepository {
     }
   }
 }
-
-export default DepartmentRepository

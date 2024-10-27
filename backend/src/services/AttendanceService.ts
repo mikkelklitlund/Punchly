@@ -1,13 +1,14 @@
-import AttendanceRecordRepository from '../repositories/AttendanceRecordRepository'
 import { Result, success, failure } from '../utils/Result'
 import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors'
 import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
-import EmployeeRepository from 'src/repositories/EmployeeRepository'
+import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
+import { IAttendanceService } from '../interfaces/services/IAttendanceService'
 
-class AttendanceRecordService {
+export class AttendanceService implements IAttendanceService {
   constructor(
-    private readonly attendanceRecordRepository: AttendanceRecordRepository,
-    private readonly employeeRepository: EmployeeRepository
+    private readonly attendanceRecordRepository: IAttendanceRecordRepository,
+    private readonly employeeRepository: IEmployeeRepository
   ) {}
 
   async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {
@@ -27,7 +28,7 @@ class AttendanceRecordService {
         employeeId,
         checkIn: new Date(),
       })
-      await this.employeeRepository.updateEmployee(employeeId, { checkedIn: false })
+      await this.employeeRepository.updateEmployee(employeeId, { checkedIn: true })
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error during employee check-in:', error)
@@ -46,6 +47,8 @@ class AttendanceRecordService {
       const updatedRecord = await this.attendanceRecordRepository.updateAttendanceRecord(attendanceRecord.id, {
         checkOut: new Date(),
       })
+
+      await this.employeeRepository.updateEmployee(employeeId, { checkedIn: false })
 
       return success(updatedRecord)
     } catch (error) {
@@ -112,5 +115,3 @@ class AttendanceRecordService {
     }
   }
 }
-
-export default AttendanceRecordService

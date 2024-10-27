@@ -1,10 +1,11 @@
 import { EmployeeType } from 'shared'
-import EmployeeTypeRepository from 'src/repositories/EmployeeTypeRepository'
-import { DatabaseError, ValidationError } from 'src/utils/Errors'
-import { failure, Result, success } from 'src/utils/Result'
+import { DatabaseError, ValidationError } from '../utils/Errors'
+import { failure, Result, success } from '../utils/Result'
+import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
 
-class EmployeeTypeService {
-  constructor(private readonly employeeTypeRepository: EmployeeTypeRepository) {}
+export class EmployeeTypeService implements IEmployeeTypeService {
+  constructor(private readonly employeeTypeRepository: IEmployeeTypeRepository) {}
 
   async createEmployeeType(typeName: string, companyId: number): Promise<Result<EmployeeType, Error>> {
     if (!typeName || typeName.trim().length === 0) {
@@ -44,5 +45,3 @@ class EmployeeTypeService {
     }
   }
 }
-
-export default EmployeeTypeService
