@@ -86,8 +86,14 @@ export class UserService implements IUserService {
     }
   }
 
-  async revokeRefreshToken(token: string): Promise<UserRefreshToken> {
-    return await this.userRepository.revokeRefreshToken(token)
+  async revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>> {
+    try {
+      const revokedToken = await this.userRepository.revokeRefreshToken(token)
+      return success(revokedToken)
+    } catch (error) {
+      console.error('Error revoking refresh token:', error)
+      return failure(new DatabaseError('Failed to revoke refresh token'))
+    }
   }
 
   private generateAccessToken(user: User): string {

@@ -3,6 +3,7 @@ import { createServer } from 'http'
 import { errorHandler } from './middleware/ErrorHandler'
 import { PrismaClient } from '@prisma/client'
 import { AuthRoutes } from './routes/AuthRoute'
+import cors from 'cors'
 import { EmployeeRoutes } from './routes/EmployeeRoute'
 import { EmployeePictureRoutes } from './routes/ProfilePictureUpload'
 import { CompanyRoutes } from './routes/CompanyRoute'
@@ -10,6 +11,13 @@ import { RepositoryContainer } from './repositories/RepositoryContainer.'
 import { ServiceContainer } from './services/ServiceContainer'
 
 const app = express()
+const corsOptions = {
+  origin: 'http://localhost:4173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}
+app.use(cors(corsOptions))
 app.use(express.json())
 const httpServer = createServer(app)
 
