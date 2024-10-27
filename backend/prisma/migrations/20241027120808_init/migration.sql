@@ -25,6 +25,18 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
+CREATE TABLE "RefreshToken" (
+    "id" SERIAL NOT NULL,
+    "token" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "expiryDate" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "revoked" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "RefreshToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "UserCompanyAccess" (
     "userId" INTEGER NOT NULL,
     "companyId" INTEGER NOT NULL,
@@ -50,7 +62,7 @@ CREATE TABLE "Employee" (
     "companyId" INTEGER NOT NULL,
     "departmentId" INTEGER NOT NULL,
     "checkedIn" BOOLEAN NOT NULL DEFAULT false,
-    "birthday" TIMESTAMP(3) NOT NULL,
+    "birthdate" TIMESTAMP(3) NOT NULL,
     "employeeTypeId" INTEGER NOT NULL,
     "monthlySalary" DOUBLE PRECISION,
     "hourlySalary" DOUBLE PRECISION,
@@ -85,12 +97,14 @@ CREATE TABLE "AbsenceRecord" (
 CREATE TABLE "AttendanceRecord" (
     "id" SERIAL NOT NULL,
     "employeeId" INTEGER NOT NULL,
-    "date" TIMESTAMP(3) NOT NULL,
     "checkIn" TIMESTAMP(3) NOT NULL,
     "checkOut" TIMESTAMP(3),
 
     CONSTRAINT "AttendanceRecord_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Company_name_address_key" ON "Company"("name", "address");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
@@ -99,16 +113,28 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "RefreshToken_token_key" ON "RefreshToken"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Department_name_companyId_key" ON "Department"("name", "companyId");
+
+-- CreateIndex
 CREATE INDEX "Employee_companyId_idx" ON "Employee"("companyId");
 
 -- CreateIndex
 CREATE INDEX "Employee_departmentId_idx" ON "Employee"("departmentId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "EmployeeType_name_companyId_key" ON "EmployeeType"("name", "companyId");
+
+-- CreateIndex
 CREATE INDEX "AbsenceRecord_employeeId_idx" ON "AbsenceRecord"("employeeId");
 
 -- CreateIndex
 CREATE INDEX "AttendanceRecord_employeeId_idx" ON "AttendanceRecord"("employeeId");
+
+-- AddForeignKey
+ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "UserCompanyAccess" ADD CONSTRAINT "UserCompanyAccess_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
