@@ -65,7 +65,7 @@ export class UserRepository implements IUserRepository {
 
   async getRefreshToken(refreshToken: string): Promise<UserRefreshToken | null> {
     const token = await this.prisma.refreshToken.findUnique({
-      where: { token: refreshToken, revoked: false },
+      where: { token: refreshToken, revoked: false, expiryDate: { gt: new Date() } },
     })
 
     return token
@@ -97,6 +97,14 @@ export class UserRepository implements IUserRepository {
       createdAt: token.createdAt,
       expiryDate: token.expiryDate,
     }
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        OR: [{ expiryDate: { lt: new Date() } }, { revoked: true }],
+      },
+    })
   }
 
   async revokeRefreshToken(refreshToken: string): Promise<UserRefreshToken> {

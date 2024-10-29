@@ -1,37 +1,29 @@
-import { Response, NextFunction, Request } from 'express'
-import { Failure } from '../utils/Result'
-import { IUserService } from '../interfaces/services/IUserService'
-import { JwtPayload } from 'jsonwebtoken'
+import { Response, NextFunction } from 'express'
+import jwt, { JwtPayload } from 'jsonwebtoken'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
 
-const authMiddleware = (userService: IUserService) => async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization
-    if (!authHeader?.startsWith('Bearer ')) {
-      res.status(401).json({ message: 'Authorization header required' })
-      return
-    }
-
-    const token = authHeader.split(' ')[1]
-    const result = userService.validateAccessToken(token)
-
-    if (result instanceof Failure) {
-      res.status(401).json({ message: 'Invalid or expired token' })
-      return
-    }
-
-    const payload = result.value as JwtPayload
-    const userResult = await userService.getUserById(payload.userId)
-
-    if (userResult instanceof Failure) {
-      res.status(401).json({ message: 'User not found' })
-      return
-    }
-
-    req.user = userResult.value
-    next()
-  } catch {
-    res.status(500).json({ message: 'Authentication error' })
+const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization']
+  if (!authHeader) {
+    res.status(401).json({ message: 'Authorization header required' })
+    return
   }
+
+  const token = authHeader.split(' ')[1]
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err, decoded) => {
+    if (err) {
+      res.sendStatus(403)
+      return
+    } else if (decoded && typeof decoded !== 'string' && (decoded as JwtPayload).username) {
+      req.username = (decoded as JwtPayload).username
+      next()
+      return
+    } else {
+      res.status(403).json({ message: 'Invalid token payload' })
+      return
+    }
+  })
 }
 
 export default authMiddleware

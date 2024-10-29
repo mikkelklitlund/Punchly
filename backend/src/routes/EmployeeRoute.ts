@@ -23,7 +23,7 @@ export class EmployeeRoutes {
   private initializeRoutes() {
     this.router.post(
       '/',
-      authMiddleware(this.userService),
+      authMiddleware,
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('companyId').isNumeric().withMessage('Valid company ID is required'),
@@ -32,13 +32,14 @@ export class EmployeeRoutes {
       this.createEmployee.bind(this)
     )
 
-    this.router.post('/:employeeId/checkin', this.employeeCheckin.bind(this))
-    this.router.post('/:employeeId/checkout', this.employeeCheckout.bind(this))
+    this.router.post('/:employeeId/checkin', authMiddleware, this.employeeCheckin.bind(this))
+    this.router.post('/:employeeId/checkout', authMiddleware, this.employeeCheckout.bind(this))
 
-    this.router.get('/:id', authMiddleware(this.userService), this.getEmployeeById.bind(this))
+    this.router.get('/:id', authMiddleware, this.getEmployeeById.bind(this))
 
     this.router.get(
       '/',
+      authMiddleware,
       [
         query('company').isNumeric().withMessage('Valid company ID is required'),
         query('department').optional().isNumeric().withMessage('Valid department ID is required'),
@@ -49,7 +50,7 @@ export class EmployeeRoutes {
 
     this.router.put(
       '/:id',
-      authMiddleware(this.userService),
+      authMiddleware,
       [
         body('name').optional().notEmpty().withMessage('Name is required if provided'),
         body('companyId').optional().isNumeric().withMessage('Valid company ID is required if provided'),
@@ -58,10 +59,11 @@ export class EmployeeRoutes {
       this.updateEmployee.bind(this)
     )
 
-    this.router.delete('/:id', authMiddleware(this.userService), this.deleteEmployee.bind(this))
+    this.router.delete('/:id', authMiddleware, this.deleteEmployee.bind(this))
 
     this.router.get(
       '/subscribe',
+      authMiddleware,
       [
         query('company').isNumeric().withMessage('Valid company ID is required'),
         query('department').isNumeric().withMessage('Valid department ID is required'),

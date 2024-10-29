@@ -37,19 +37,39 @@ export class UserService implements IUserService {
   ): Promise<Result<{ accessToken: string; refreshToken: string; user: User }, Error>> {
     try {
       const user = await this.userRepository.getUserByUsername(username)
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        throw new Error('Invalid credentials')
+      if (!user) {
+        throw new Error('Invalid username')
       }
 
-      const accessToken = this.generateAccessToken(user)
-      const refreshToken = this.generateRefreshToken(user)
+      if (!(await bcrypt.compare(password, user.password))) {
+        throw new Error('Invalid password')
+      }
 
-      const expiryDate = addDays(new Date(), 30)
+      const accessToken = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: '15m' })
+      const refreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
+        expiresIn: '1d',
+      })
+
+      const expiryDate = addDays(new Date(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
       return success({ accessToken, refreshToken, user })
-    } catch {
-      return failure(new Error('Login failed'))
+    } catch (err) {
+      console.log(err)
+      return failure(new Error((err as Error).message))
+    }
+  }
+
+  async getUserByUsername(username: string): Promise<Result<User, Error>> {
+    try {
+      const user = await this.userRepository.getUserByUsername(username)
+      if (user) {
+        return success(user)
+      }
+      return failure(new EntityNotFoundError(`User with username: ${username} was not found`))
+    } catch (error) {
+      console.error('Error fetching user:', error)
+      return failure(new DatabaseError('Database error during fetching user by ID'))
     }
   }
 
@@ -96,28 +116,13 @@ export class UserService implements IUserService {
     }
   }
 
-  private generateAccessToken(user: User): string {
-    return jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '15m' })
-  }
-
-  private generateRefreshToken(user: User): string {
-    return jwt.sign({ userId: user.id }, process.env.REFRESH_TOKEN_SECRET!, { expiresIn: '30d' })
-  }
-
-  validateAccessToken(token: string): Result<JwtPayload, Error> {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
-      return success(decoded)
-    } catch {
-      return failure(new Error('Invalid or expired token'))
-    }
-  }
-
-  async refreshAccessToken(refreshToken: string): Promise<Result<string, Error>> {
+  async refreshAccessToken(
+    refreshToken: string
+  ): Promise<Result<{ accessToken: string; refreshToken: string }, Error>> {
     try {
       const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as JwtPayload
 
-      const user = await this.userRepository.getUserById(decoded.userId)
+      const user = await this.userRepository.getUserByUsername(decoded.username)
       if (!user) {
         return failure(new Error('User not found'))
       }
@@ -127,8 +132,22 @@ export class UserService implements IUserService {
         return failure(new Error('Invalid or expired refresh token'))
       }
 
-      const newAccessToken = this.generateAccessToken(user)
-      return success(newAccessToken)
+      const newAccessToken = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET!, {
+        expiresIn: '15m',
+      })
+
+      await this.revokeRefreshToken(refreshToken)
+
+      const newRefreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
+        expiresIn: '1d',
+      })
+      const expiryDate = addDays(new Date(), 1)
+      await this.userRepository.createRefreshToken(user.id, newRefreshToken, expiryDate)
+
+      return success({
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      })
     } catch {
       return failure(new Error('Invalid refresh token'))
     }

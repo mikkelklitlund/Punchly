@@ -35,6 +35,16 @@ async function main() {
     },
   })
 
+  await prisma.user.upsert({
+    where: { username: 'testperson' },
+    update: {},
+    create: {
+      email: 'test@test.com',
+      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', //admin
+      username: 'testperson',
+    },
+  })
+
   const departmentSnedkeri = await prisma.department.findFirst({
     where: { name: 'Snedkeri', companyId: company.id },
   })
