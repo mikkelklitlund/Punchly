@@ -1,5 +1,4 @@
-import { JwtPayload } from 'jsonwebtoken'
-import { User } from 'shared'
+import { User, UserRefreshToken } from 'shared'
 import { Result } from '../../utils/Result'
 
 export interface IUserService {
@@ -11,6 +10,7 @@ export interface IUserService {
   getUserById(id: number): Promise<Result<User, Error>>
   updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
   deleteUser(id: number): Promise<Result<User, Error>>
-  refreshAccessToken(refreshToken: string): Promise<Result<string, Error>>
-  validateAccessToken(token: string): Result<JwtPayload, Error>
+  refreshAccessToken(refreshToken: string): Promise<Result<{ accessToken: string; refreshToken: string }, Error>>
+  revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>
+  getUserByUsername(username: string): Promise<Result<User, Error>>
 }

@@ -4,27 +4,29 @@ import { Failure } from '../utils/Result'
 import { ICompanyService } from '../interfaces/services/ICompanyService'
 import { body, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth'
-import { IUserService } from '../interfaces/services/IUserService'
 
 export class CompanyRoutes {
   public router: Router
 
   constructor(
     private readonly companyService: ICompanyService,
-    private readonly employeeService: IEmployeeService,
-    private readonly userService: IUserService
+    private readonly employeeService: IEmployeeService
   ) {
     this.router = Router()
     this.initializeRoutes()
   }
 
   private initializeRoutes() {
-    this.router.get('/:companyId/employees', this.getAllEmployeesByCompany.bind(this))
-    this.router.get('/:companyId/:departmentId/employees', this.getAllEmployeesByCompanyAndDepartment.bind(this))
+    this.router.get('/:companyId/employees', authMiddleware, this.getAllEmployeesByCompany.bind(this))
+    this.router.get(
+      '/:companyId/:departmentId/employees',
+      authMiddleware,
+      this.getAllEmployeesByCompanyAndDepartment.bind(this)
+    )
     this.router.get('/all', this.getAllCompanies.bind(this))
     this.router.post(
       '/',
-      authMiddleware(this.userService),
+      authMiddleware,
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('address').notEmpty().withMessage('Address is required'),

@@ -11,4 +11,6 @@ export interface IUserRepository {
   getRefreshToken(refreshToken: string): Promise<UserRefreshToken | null>
   createRefreshToken(userId: number, refreshToken: string, expiryDate: Date): Promise<UserRefreshToken>
   revokeRefreshToken(refreshToken: string): Promise<UserRefreshToken>
+  cleanupExpiredTokens(): Promise<void>
+  revokeAllActiveUserTokens(userId: number): Promise<void>
 }

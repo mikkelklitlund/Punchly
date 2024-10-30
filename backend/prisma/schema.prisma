@@ -28,6 +28,10 @@ model User {
 
   companies    UserCompanyAccess[]
   RefreshToken RefreshToken[]
+
+  @@index([email])
+  @@index([username])
+  @@index([deletedAt])
 }
 
 model RefreshToken {
@@ -38,6 +42,10 @@ model RefreshToken {
   expiryDate DateTime
   createdAt  DateTime @default(now())
   revoked    Boolean  @default(false)
+
+  @@index([userId])
+  @@index([expiryDate])
+  @@index([revoked])
 }
 
 model UserCompanyAccess {

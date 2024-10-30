@@ -1,10 +1,20 @@
-import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Header from './components/Header'
+import { AuthProvider } from './contexts/AuthContext'
+import LoginForm from './components/Login'
+import Home from './pages/Home'
 
-const App: React.FC = () => {
+function App() {
   return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<LoginForm />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 
