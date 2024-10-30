@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../contexts/AuthContext'
 
 function Header() {
-  const { isAuthenticated, user, logout } = useAuth()
+  const { user, logout } = useAuth()
 
   const handleLogout = async () => {
     await logout()
@@ -12,9 +12,9 @@ function Header() {
   return (
     <header>
       <nav>
-        {isAuthenticated ? (
+        {user ? (
           <>
-            <span>Welcome, {user?.username}</span>
+            <span>Welcome, {user}</span>
             <button onClick={handleLogout}>Logout</button>
           </>
         ) : (
