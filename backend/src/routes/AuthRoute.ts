@@ -31,7 +31,7 @@ export class AuthRoutes {
     this.router.post('/login', [body('username').trim().notEmpty(), body('password').notEmpty()], this.login.bind(this))
 
     this.router.get('/profile', authMiddleware, this.getProfile.bind(this))
-    this.router.get('/refresh-token', this.refreshToken.bind(this))
+    this.router.get('/refresh', this.refreshToken.bind(this))
     this.router.post('/logout', authMiddleware, this.logout.bind(this))
   }
 
@@ -129,7 +129,6 @@ export class AuthRoutes {
       }
 
       const result = await this.userService.refreshAccessToken(cookie.jwt)
-
       if (result instanceof Failure) {
         res.status(403).json({ error: 'Invalid refresh token' })
         return
@@ -137,8 +136,8 @@ export class AuthRoutes {
 
       res.cookie('jwt', result.value.refreshToken, {
         httpOnly: true,
-        sameSite: 'none',
-        secure: true,
+        sameSite: 'lax',
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000,
       })
 
@@ -158,16 +157,16 @@ export class AuthRoutes {
 
       res.clearCookie('jwt', {
         httpOnly: true,
-        sameSite: 'none',
-        secure: true,
+        sameSite: 'lax',
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000,
       })
       res.status(204).json({ message: 'Logged out successfully' })
     } catch {
       res.clearCookie('jwt', {
         httpOnly: true,
-        sameSite: 'none',
-        secure: true,
+        sameSite: 'lax',
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000,
       })
       res.status(500).json({ error: 'Internal server error' })

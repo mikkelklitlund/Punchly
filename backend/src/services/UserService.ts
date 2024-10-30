@@ -45,9 +45,10 @@ export class UserService implements IUserService {
         throw new Error('Invalid password')
       }
 
+      await this.userRepository.revokeAllActiveUserTokens(user.id)
       const accessToken = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: '15m' })
       const refreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
-        expiresIn: '1d',
+        expiresIn: '30d',
       })
 
       const expiryDate = addDays(new Date(), 1)
@@ -136,17 +137,22 @@ export class UserService implements IUserService {
         expiresIn: '15m',
       })
 
-      await this.revokeRefreshToken(refreshToken)
+      let newRefreshToken: string | undefined = undefined
+      const timeUntilExpiry = storedToken.expiryDate.getTime() - Date.now()
 
-      const newRefreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
-        expiresIn: '1d',
-      })
-      const expiryDate = addDays(new Date(), 1)
-      await this.userRepository.createRefreshToken(user.id, newRefreshToken, expiryDate)
+      if (timeUntilExpiry < 5 * 60 * 1000) {
+        await this.revokeRefreshToken(refreshToken)
+
+        newRefreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
+          expiresIn: '30d',
+        })
+        const expiryDate = addDays(new Date(), 1)
+        await this.userRepository.createRefreshToken(user.id, newRefreshToken, expiryDate)
+      }
 
       return success({
         accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
+        refreshToken: newRefreshToken ? newRefreshToken : refreshToken,
       })
     } catch {
       return failure(new Error('Invalid refresh token'))

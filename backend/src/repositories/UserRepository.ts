@@ -80,6 +80,13 @@ export class UserRepository implements IUserRepository {
       : null
   }
 
+  async revokeAllActiveUserTokens(userId: number): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revoked: false },
+      data: { revoked: true },
+    })
+  }
+
   async createRefreshToken(userId: number, refreshToken: string, expiryDate: Date): Promise<UserRefreshToken> {
     const token = await this.prisma.refreshToken.create({
       data: {

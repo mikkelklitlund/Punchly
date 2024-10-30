@@ -1,16 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Company } from 'shared'
+import axios from '../api/axios'
 
 interface CompanySelectionProps {
   onSelect: (company: Company) => void
 }
 
 function CompanySelection({ onSelect }: CompanySelectionProps) {
-  const [companies, setCompanies] = useState<Company[] | []>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   useEffect(() => {
-    //const companies = await fetchAllCompanies()
-    //setCompanies(companies)
-  })
+    let isMounted = true
+    const constroller = new AbortController()
+
+    const getCompanies = async () => {
+      try {
+        const response = await axios.get('/companies/all', {
+          signal: constroller.signal,
+        })
+        console.log(response)
+        if (isMounted) setCompanies(response.data)
+      } catch (err) {
+        console.log(err)
+      }
+    }
+    getCompanies()
+    return () => {
+      isMounted = false
+      constroller.abort()
+    }
+  }, [])
 
   return (
     <div>
