@@ -1,27 +1,41 @@
-import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext' // Adjust the path as necessary
 
-function Header() {
+const Header = () => {
   const { user, logout } = useAuth()
-
-  const handleLogout = async () => {
-    await logout()
-    // Optionally redirect to login page
-  }
+  const location = useLocation()
 
   return (
-    <header>
-      <nav>
-        {user ? (
-          <>
-            <span>Welcome, {user}</span>
-            <button onClick={handleLogout}>Logout</button>
-          </>
-        ) : (
-          <Link to="/login">Login</Link>
-        )}
-      </nav>
-    </header>
+    <>
+      {location.pathname !== '/login' && (
+        <header className="bg-gray-300 p-4 text-cream fixed top-0 left-0 w-full shadow-md">
+          <div className="flex justify-between items-center">
+            <nav className="flex space-x-4">
+              <a href="/" className="hover:text-mustard text-zinc-700 font-bold">
+                Home
+              </a>
+              <a href="/about" className="hover:text-mustard text-zinc-700 font-bold">
+                About
+              </a>
+              <a href="/contact" className="hover:text-mustard text-zinc-700 font-bold">
+                Contact
+              </a>
+            </nav>
+            <div>
+              {user ? (
+                <button onClick={logout} className="bg-mustard hover:bg-burnt text-white py-1 px-4 rounded">
+                  Logout
+                </button>
+              ) : (
+                <button className="bg-mustard hover:bg-burnt text-white py-1 px-4 rounded">
+                  <a href="/login">Login</a>
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+      )}
+    </>
   )
 }
 

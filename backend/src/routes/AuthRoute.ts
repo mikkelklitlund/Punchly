@@ -124,7 +124,7 @@ export class AuthRoutes {
       const cookie = req.cookies
 
       if (!cookie?.jwt) {
-        res.status(401)
+        res.status(401).json({ error: 'No refresh token' })
         return
       }
 
@@ -159,7 +159,6 @@ export class AuthRoutes {
         httpOnly: true,
         sameSite: 'lax',
         secure: false,
-        maxAge: 24 * 60 * 60 * 1000,
       })
       res.status(204).json({ message: 'Logged out successfully' })
     } catch {
