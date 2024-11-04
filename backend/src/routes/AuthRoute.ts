@@ -28,7 +28,11 @@ export class AuthRoutes {
       this.register.bind(this)
     )
 
-    this.router.post('/login', [body('username').trim().notEmpty(), body('password').notEmpty()], this.login.bind(this))
+    this.router.post(
+      '/login',
+      [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().notEmpty()],
+      this.login.bind(this)
+    )
 
     this.router.get('/profile', authMiddleware, this.getProfile.bind(this))
     this.router.get('/refresh', this.refreshToken.bind(this))
@@ -73,8 +77,8 @@ export class AuthRoutes {
         return
       }
 
-      const { username, password } = req.body
-      const result = await this.userService.login(username, password)
+      const { username, password, companyId } = req.body
+      const result = await this.userService.login(username, password, companyId)
 
       if (result instanceof Failure) {
         res.status(401).json({ error: result.error.message })
@@ -90,7 +94,8 @@ export class AuthRoutes {
 
       res.json({
         accessToken: result.value.accessToken,
-        username: result.value.user.username,
+        username: result.value.username,
+        companyId: result.value.companyId,
       })
     } catch {
       res.status(500).json({ error: 'Internal server error' })
@@ -127,6 +132,8 @@ export class AuthRoutes {
         res.status(401).json({ error: 'No refresh token' })
         return
       }
+
+      //Check if user has access to companyId
 
       const result = await this.userService.refreshAccessToken(cookie.jwt)
       if (result instanceof Failure) {

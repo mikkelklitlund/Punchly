@@ -4,16 +4,18 @@ import { jwtDecode, JwtPayload } from 'jwt-decode'
 
 interface AuthResponse extends JwtPayload {
   username?: string
+  companyId?: string
 }
 
 export interface AuthContextType {
   user: string | null
   accessToken: string | null
-  login: (username: string, password: string) => Promise<void>
+  login: (username: string, password: string, companyId: number) => Promise<void>
   register: (email: string, password: string, username: string) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
   isLoading: boolean
+  companyId: number | undefined
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -22,13 +24,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<string | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [companyId, setCompanyId] = useState<number | undefined>(undefined)
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string, companyId: number) => {
     setIsLoading(true)
     try {
-      const response = await axios.post('/auth/login', { username, password }, { withCredentials: true })
+      const response = await axios.post('/auth/login', { username, password, companyId }, { withCredentials: true })
       setAccessToken(response.data.accessToken)
       setUser(response.data.username)
+      setCompanyId(response.data.companyId)
     } catch (error) {
       throw new Error((error as Error).message)
     } finally {
@@ -54,6 +58,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const decoded = jwtDecode(response.data.accessToken) as AuthResponse
       if (decoded.username) {
         setUser(decoded.username)
+      }
+      if (decoded.companyId) {
+        const parsed = parseInt(decoded.companyId)
+        if (!isNaN(parsed)) {
+          setCompanyId(parsed)
+        }
       }
       return response.data.accessToken
     } catch (error) {
@@ -129,7 +139,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, register, logout, refresh, isLoading }}>
+    <AuthContext.Provider value={{ user, accessToken, login, register, logout, refresh, isLoading, companyId }}>
       {children}
     </AuthContext.Provider>
   )
