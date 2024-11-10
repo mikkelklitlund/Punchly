@@ -1,12 +1,19 @@
+import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
 function Home() {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const navigate = useNavigate()
 
-  if (!user) {
-    navigate('/login')
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/login')
+    }
+  }, [isLoading, user, navigate])
+
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (

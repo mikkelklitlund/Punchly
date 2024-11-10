@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import axios from '../api/axios'
+import { Company } from 'shared'
 
 const Login: React.FC = () => {
   const { login, user, isLoading } = useAuth()
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
@@ -15,14 +19,29 @@ const Login: React.FC = () => {
     }
   }, [user, navigate])
 
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await axios.get('/companies/all')
+        setCompanies(response.data['companies'])
+      } catch (error) {
+        console.error('Failed to fetch companies:', error)
+      }
+    }
+    fetchCompanies()
+  }, [])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await login(username, password)
+      const parsedInt = parseInt(selectedCompanyId)
+      if (isNaN(parsedInt)) {
+        return
+      }
+      await login(username, password, parsedInt)
       navigate('/')
     } catch (error) {
       console.error('Login error', (error as Error).message)
-      // Handle error
     }
   }
 
@@ -31,6 +50,25 @@ const Login: React.FC = () => {
       <div className="bg-gray-300 shadow-md rounded-lg px-8 py-6 max-w-md">
         <h1 className="text-2xl text-zinc-700 font-bold text-center mb-4">KOGS</h1>
         <form onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label htmlFor="company" className="block text-sm font-medium text-zinc-700 mb-2">
+              Vælg Virksomhed
+            </label>
+            <select
+              id="company"
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              className="shadow-sm rounded-md w-full px-3 py-2 border border-gray-300"
+              required
+            >
+              <option value="">Vælg virksomhed...</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-zinc-700 mb-2">
               Brugernavn

@@ -33,8 +33,9 @@ export class UserService implements IUserService {
 
   async login(
     username: string,
-    password: string
-  ): Promise<Result<{ accessToken: string; refreshToken: string; user: User }, Error>> {
+    password: string,
+    companyId: number
+  ): Promise<Result<{ accessToken: string; refreshToken: string; username: string; companyId: number }, Error>> {
     try {
       const user = await this.userRepository.getUserByUsername(username)
       if (!user) {
@@ -45,16 +46,26 @@ export class UserService implements IUserService {
         throw new Error('Invalid password')
       }
 
+      // Check if user has access to companyId
+
       await this.userRepository.revokeAllActiveUserTokens(user.id)
-      const accessToken = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: '15m' })
-      const refreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
-        expiresIn: '30d',
-      })
+      const accessToken = jwt.sign(
+        { username: user.username, companyId: companyId },
+        process.env.ACCESS_TOKEN_SECRET!,
+        { expiresIn: '15m' }
+      )
+      const refreshToken = jwt.sign(
+        { username: user.username, companyId: companyId },
+        process.env.REFRESH_TOKEN_SECRET!,
+        {
+          expiresIn: '30d',
+        }
+      )
 
       const expiryDate = addDays(new Date(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
-      return success({ accessToken, refreshToken, user })
+      return success({ accessToken, refreshToken, username: user.username, companyId })
     } catch (err) {
       console.log(err)
       return failure(new Error((err as Error).message))
@@ -128,14 +139,20 @@ export class UserService implements IUserService {
         return failure(new Error('User not found'))
       }
 
+      //Check if user has access to decoded.companyId
+
       const storedToken = await this.userRepository.getRefreshToken(refreshToken)
       if (!storedToken || storedToken.revoked || storedToken.expiryDate < new Date()) {
         return failure(new Error('Invalid or expired refresh token'))
       }
 
-      const newAccessToken = jwt.sign({ username: user.username }, process.env.ACCESS_TOKEN_SECRET!, {
-        expiresIn: '15m',
-      })
+      const newAccessToken = jwt.sign(
+        { username: user.username, companyId: decoded.companyId },
+        process.env.ACCESS_TOKEN_SECRET!,
+        {
+          expiresIn: '15m',
+        }
+      )
 
       let newRefreshToken: string | undefined = undefined
       const timeUntilExpiry = storedToken.expiryDate.getTime() - Date.now()

@@ -16,7 +16,7 @@ dotenv.config()
 
 const app = express()
 const corsOptions = {
-  origin: 'http://localhost:4173',
+  origin: ['http://localhost:4173', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -43,7 +43,11 @@ const employeeRoutes = new EmployeeRoutes(
   serviceContainer.attendanceService
 )
 const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService)
-const companyRoutes = new CompanyRoutes(serviceContainer.companyService, serviceContainer.employeeService)
+const companyRoutes = new CompanyRoutes(
+  serviceContainer.companyService,
+  serviceContainer.employeeService,
+  serviceContainer.departmentService
+)
 
 app.use('/api/auth', authRoutes.router)
 app.use('/api/employees', employeeRoutes.router)
