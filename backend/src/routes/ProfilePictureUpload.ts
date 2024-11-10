@@ -20,20 +20,33 @@ export class EmployeePictureRoutes {
   }
 
   private async uploadProfilePicture(req: Request, res: Response) {
-    const employeeId = parseInt(req.params.id)
-    const filePath = req.file?.path
+    const employeeId = parseInt(req.params.id, 10)
+    if (isNaN(employeeId)) {
+      res.status(400).json({ message: 'Invalid employee ID' })
+      return
+    }
 
+    const filePath = req.file?.filename
     if (!filePath) {
       res.status(400).json({ message: 'Profile picture upload failed' })
       return
     }
 
-    const result = await this.employeeService.updateProfilePicture(employeeId, filePath)
-    if (result instanceof Failure) {
-      res.status(500).json({ message: result.error.message })
-      return
-    }
+    try {
+      const result = await this.employeeService.updateProfilePicture(employeeId, filePath)
+      if (result instanceof Failure) {
+        res.status(500).json({ message: result.error.message })
+        return
+      }
 
-    res.status(200).json({ message: 'Profile picture updated successfully', employee: result.value })
+      res.status(200).json({
+        message: 'Profile picture updated successfully',
+        employee: result.value,
+        profilePictureUrl: `http://localhost:4000/uploads/${filePath}`,
+      })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ message: 'An error occurred while updating the profile picture' })
+    }
   }
 }

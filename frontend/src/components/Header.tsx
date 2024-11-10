@@ -35,11 +35,11 @@ const Header = () => {
         <div>
           {user ? (
             <button onClick={logout} className="bg-mustard hover:bg-burnt text-white py-1 px-4 rounded">
-              Logout
+              Log ud
             </button>
           ) : (
             <button className="bg-mustard hover:bg-burnt text-white py-1 px-4 rounded">
-              <a href="/login">Login</a>
+              <a href="/login">Log ind</a>
             </button>
           )}
         </div>

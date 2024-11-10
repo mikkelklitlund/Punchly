@@ -103,7 +103,7 @@ const Login: React.FC = () => {
               className="text-xs text-zinc-700 hover:text-black 
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mustard"
             >
-              Forgot Password?
+              Glemt adgangskode?
             </a>
           </div>
           <button
