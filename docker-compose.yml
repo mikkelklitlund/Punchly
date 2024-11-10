@@ -9,6 +9,10 @@ services:
       - '6500:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      retries: 5
 
   backend:
     build:
@@ -17,7 +21,8 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:testpass123@postgres:5432/kogs
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - '4000:4000'
 
