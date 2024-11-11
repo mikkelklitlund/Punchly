@@ -9,7 +9,6 @@ interface AuthResponse extends JwtPayload {
 
 export interface AuthContextType {
   user: string | null
-  accessToken: string | null
   login: (username: string, password: string, companyId: number) => Promise<void>
   register: (email: string, password: string, username: string) => Promise<void>
   logout: () => Promise<void>
@@ -20,9 +19,10 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+export let accessTokenGlobal: string | null
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<string | null>(null)
-  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [companyId, setCompanyId] = useState<number | undefined>(undefined)
 
@@ -30,7 +30,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true)
     try {
       const response = await axios.post('/auth/login', { username, password, companyId }, { withCredentials: true })
-      setAccessToken(response.data.accessToken)
+      accessTokenGlobal = response.data.accessToken
+      sessionStorage.setItem('accessToken', response.data.accessToken)
       setUser(response.data.username)
       setCompanyId(response.data.companyId)
     } catch (error) {
@@ -54,7 +55,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refresh = useCallback(async () => {
     try {
       const response = await axios.get('/auth/refresh', { withCredentials: true })
-      setAccessToken(response.data.accessToken)
+      accessTokenGlobal = response.data.accessToken
+
       const decoded = jwtDecode(response.data.accessToken) as AuthResponse
       if (decoded.username) {
         setUser(decoded.username)
@@ -68,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return response.data.accessToken
     } catch (error) {
       setUser(null)
-      setAccessToken(null)
+      accessTokenGlobal = null
       throw error
     }
   }, [])
@@ -81,48 +83,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout failed:', error)
     } finally {
       setUser(null)
-      setAccessToken(null)
+      accessTokenGlobal = null
       setIsLoading(false)
     }
   }, [])
-
-  useEffect(() => {
-    let isRefreshing = false
-
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true
-
-          if (isRefreshing) {
-            return Promise.reject(error)
-          }
-
-          isRefreshing = true
-
-          try {
-            const newAccessToken = await refresh()
-            setAccessToken(newAccessToken)
-            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
-            isRefreshing = false
-            return axios(originalRequest)
-          } catch (refreshError) {
-            isRefreshing = false
-            setUser(null)
-            setAccessToken(null)
-            return Promise.reject(refreshError)
-          }
-        }
-
-        return Promise.reject(error)
-      }
-    )
-
-    return () => axios.interceptors.response.eject(interceptor)
-  }, [refresh])
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -139,7 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, register, logout, refresh, isLoading, companyId }}>
+    <AuthContext.Provider value={{ user, login, register, logout, refresh, isLoading, companyId }}>
       {children}
     </AuthContext.Provider>
   )

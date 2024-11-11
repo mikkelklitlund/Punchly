@@ -32,6 +32,15 @@ export interface Department {
 	companyId: number
 }
 
+export interface SimpleEmployee {
+	id: number
+	name: string
+	profilePicturePath: string
+	companyId: number
+	departmentId: number
+	checkedIn: boolean
+}
+
 export interface Employee {
 	id: number
 	name: string

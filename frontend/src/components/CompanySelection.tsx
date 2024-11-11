@@ -14,10 +14,7 @@ function CompanySelection({ onSelect }: CompanySelectionProps) {
 
     const getCompanies = async () => {
       try {
-        const response = await axios.get('/companies/all', {
-          signal: constroller.signal,
-        })
-        console.log(response)
+        const response = await axios.get('/companies/all')
         if (isMounted) setCompanies(response.data)
       } catch (err) {
         console.log(err)

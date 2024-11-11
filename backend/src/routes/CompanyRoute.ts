@@ -36,6 +36,32 @@ export class CompanyRoutes {
       ],
       this.createCompany.bind(this)
     )
+
+    this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
+  }
+
+  private async getSimpleEmployees(req: Request, res: Response) {
+    const companyId = parseInt(req.params.companyId)
+
+    const result = await this.employeeService.getAllEmployeesByCompanyId(companyId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({
+      employees: result.value.map((em) => ({
+        departmentId: em.departmentId,
+        companyId: em.companyId,
+        employeeId: em.id,
+        name: em.name,
+        checkedIn: em.checkedIn,
+        profilePictureUrl: em.profilePicturePath
+          ? `http://localhost:4000/uploads/${em.profilePicturePath}`
+          : 'http://localhost:4000/uploads/default-avatar.jpg',
+      })),
+    })
   }
 
   private async getAllEmployeesByCompanyAndDepartment(req: Request, res: Response) {

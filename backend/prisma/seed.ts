@@ -65,7 +65,7 @@ async function main() {
     data: [
       {
         name: 'Jens Sørensens',
-        profilePicturePath: 'default',
+        profilePicturePath: 'default-avatar.jpg',
         companyId: company.id,
         departmentId: departmentSnedkeri?.id || 1,
         employeeTypeId: fullTimeEmployeeType?.id || 1,
@@ -77,7 +77,7 @@ async function main() {
       },
       {
         name: 'Anna Hansen',
-        profilePicturePath: 'default',
+        profilePicturePath: 'default-avatar.jpg',
         companyId: company.id,
         departmentId: departmentKokken?.id || 1,
         employeeTypeId: partTimeEmployeeType?.id || 1,
@@ -89,7 +89,7 @@ async function main() {
       },
       {
         name: 'Peter Nielsen',
-        profilePicturePath: 'default',
+        profilePicturePath: 'default-avatar.jpg',
         companyId: company.id,
         departmentId: departmentSnedkeri?.id || 1,
         employeeTypeId: partTimeEmployeeType?.id || 1,
