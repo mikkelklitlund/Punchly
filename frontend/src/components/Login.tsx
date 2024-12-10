@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import axios from '../api/axios'
 import { Company } from 'shared'
 
-const Login: React.FC = () => {
+function Login() {
   const { login, user, isLoading } = useAuth()
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')

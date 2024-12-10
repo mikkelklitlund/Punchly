@@ -73,7 +73,7 @@ export class EmployeeRoutes {
   }
 
   private async employeeCheckin(req: Request, res: Response) {
-    const employeeId = parseInt(req.params.employeeId as string)
+    const employeeId = parseInt(req.params.employeeId)
     const checkInResult = await this.attendanceService.checkInEmployee(employeeId)
 
     if (checkInResult instanceof Failure) {
@@ -88,11 +88,11 @@ export class EmployeeRoutes {
     }
 
     await this.broadCastEvent(employeeResult.value)
-    res.status(200).json({ employee: employeeResult.value })
+    res.status(200).json({ success: true })
   }
 
   private async employeeCheckout(req: Request, res: Response) {
-    const employeeId = parseInt(req.params.employeeId as string)
+    const employeeId = parseInt(req.params.employeeId)
     const checkOutResult = await this.attendanceService.checkOutEmployee(employeeId)
 
     if (checkOutResult instanceof Failure) {
@@ -107,7 +107,7 @@ export class EmployeeRoutes {
     }
 
     await this.broadCastEvent(employeeResult.value)
-    res.status(200).json({ employee: employeeResult.value })
+    res.status(200).json({ success: true })
   }
 
   private sseHandler(req: Request, res: Response) {

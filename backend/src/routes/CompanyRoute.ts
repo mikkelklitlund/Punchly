@@ -25,6 +25,11 @@ export class CompanyRoutes {
       authMiddleware,
       this.getAllEmployeesByCompanyAndDepartment.bind(this)
     )
+    this.router.get(
+      '/:companyId/:departmentId/simple-employees',
+      authMiddleware,
+      this.getAllSimpleEmployeesByCompanyAndDepartment.bind(this)
+    )
     this.router.get('/:companyId/departments', authMiddleware, this.getDepartmentsByCompanyId.bind(this))
     this.router.get('/all', this.getAllCompanies.bind(this))
     this.router.post(
@@ -38,6 +43,31 @@ export class CompanyRoutes {
     )
 
     this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
+  }
+
+  private async getAllSimpleEmployeesByCompanyAndDepartment(req: Request, res: Response) {
+    const companyId = parseInt(req.params.companyId)
+    const departmentId = parseInt(req.params.departmentId)
+
+    const result = await this.employeeService.getAllEmployeesByDepartmentIdAndCompanyId(departmentId, companyId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({
+      employees: result.value.map((em) => ({
+        departmentId: em.departmentId,
+        companyId: em.companyId,
+        id: em.id,
+        name: em.name,
+        checkedIn: em.checkedIn,
+        profilePictureUrl: em.profilePicturePath
+          ? `http://localhost:4000/uploads/${em.profilePicturePath}`
+          : 'http://localhost:4000/uploads/default-avatar.jpg',
+      })),
+    })
   }
 
   private async getSimpleEmployees(req: Request, res: Response) {
@@ -54,7 +84,7 @@ export class CompanyRoutes {
       employees: result.value.map((em) => ({
         departmentId: em.departmentId,
         companyId: em.companyId,
-        employeeId: em.id,
+        id: em.id,
         name: em.name,
         checkedIn: em.checkedIn,
         profilePictureUrl: em.profilePicturePath

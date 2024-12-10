@@ -81,7 +81,7 @@ async function main() {
         companyId: company.id,
         departmentId: departmentKokken?.id || 1,
         employeeTypeId: partTimeEmployeeType?.id || 1,
-        checkedIn: true,
+        checkedIn: false,
         birthdate: new Date('1985-05-15'),
         hourlySalary: 45,
         address: 'Nørregade 45',

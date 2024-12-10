@@ -2,7 +2,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useAppContext } from '../contexts/AppContext'
 import { useEffect } from 'react'
 
-const Header = () => {
+function Header() {
   const { user, logout, companyId } = useAuth()
   const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useAppContext()
 
