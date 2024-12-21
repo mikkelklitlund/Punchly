@@ -10,6 +10,7 @@ function Login() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string>('') // State for error messages
 
   const navigate = useNavigate()
 
@@ -33,15 +34,17 @@ function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage('') // Clear error message before attempting login
     try {
       const parsedInt = parseInt(selectedCompanyId)
       if (isNaN(parsedInt)) {
+        setErrorMessage('Please select a valid company.')
         return
       }
       await login(username, password, parsedInt)
       navigate('/')
     } catch (error) {
-      console.error('Login error', (error as Error).message)
+      setErrorMessage((error as Error).message)
     }
   }
 
@@ -50,6 +53,9 @@ function Login() {
       <div className="bg-gray-300 shadow-md rounded-lg px-8 py-6 max-w-md">
         <h1 className="text-2xl text-zinc-700 font-bold text-center mb-4">KOGS</h1>
         <form onSubmit={handleLogin}>
+          {errorMessage && ( // Render error message if present
+            <div className="mb-4 text-red-600 text-sm text-center">{errorMessage}</div>
+          )}
           <div className="mb-4">
             <label htmlFor="company" className="block text-sm font-medium text-zinc-700 mb-2">
               Vælg Virksomhed

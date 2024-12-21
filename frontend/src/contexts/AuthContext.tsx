@@ -1,6 +1,7 @@
 import { useState, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
 import axios from '../api/axios'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
+import { AxiosError } from 'axios'
 
 interface AuthResponse extends JwtPayload {
   username?: string
@@ -35,7 +36,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(response.data.username)
       setCompanyId(response.data.companyId)
     } catch (error) {
-      throw new Error((error as Error).message)
+      const axiosError = error as AxiosError<{ message?: string }>
+
+      if (axiosError.response) {
+        const { status, data } = axiosError.response
+
+        if (status === 401) {
+          throw new Error('Forkert brugernavn eller password')
+        } else {
+          throw new Error(data?.message || 'Der skete en uventet fejl. Prøv igen.')
+        }
+      }
     } finally {
       setIsLoading(false)
     }
