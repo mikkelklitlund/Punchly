@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import axios from '../api/axios'
 import { Company } from 'shared'
 
 function Login() {
-  const { login, user, isLoading } = useAuth()
+  const { login, user, role, isLoading } = useAuth()
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [errorMessage, setErrorMessage] = useState<string>('') // State for error messages
+  const [errorMessage, setErrorMessage] = useState<string>('')
 
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const isAdminLogin = location.pathname.includes('/admin')
 
   useEffect(() => {
     if (user) {
@@ -34,7 +37,7 @@ function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorMessage('') // Clear error message before attempting login
+    setErrorMessage('')
     try {
       const parsedInt = parseInt(selectedCompanyId)
       if (isNaN(parsedInt)) {
@@ -53,9 +56,7 @@ function Login() {
       <div className="bg-gray-300 shadow-md rounded-lg px-8 py-6 max-w-md">
         <h1 className="text-2xl text-zinc-700 font-bold text-center mb-4">KOGS</h1>
         <form onSubmit={handleLogin}>
-          {errorMessage && ( // Render error message if present
-            <div className="mb-4 text-red-600 text-sm text-center">{errorMessage}</div>
-          )}
+          {errorMessage && <div className="mb-4 text-red-600 text-sm text-center">{errorMessage}</div>}
           <div className="mb-4">
             <label htmlFor="company" className="block text-sm font-medium text-zinc-700 mb-2">
               Vælg Virksomhed

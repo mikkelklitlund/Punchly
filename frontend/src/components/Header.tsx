@@ -31,6 +31,15 @@ function Header() {
               {department.name}
             </button>
           ))}
+          <button
+            className={`text-zinc-700 font-bold transition duration-150 
+                ${
+                  currentDepartment?.id === undefined ? 'underline underline-offset-2 scale-110' : 'hover:text-mustard'
+                }`}
+            onClick={() => setCurrentDepartment(undefined)}
+          >
+            Samlet
+          </button>
         </nav>
         <div>
           {user ? (

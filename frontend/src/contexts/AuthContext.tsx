@@ -6,10 +6,12 @@ import { AxiosError } from 'axios'
 interface AuthResponse extends JwtPayload {
   username?: string
   companyId?: string
+  role?: string
 }
 
 export interface AuthContextType {
   user: string | null
+  role: string | null
   login: (username: string, password: string, companyId: number) => Promise<void>
   register: (email: string, password: string, username: string) => Promise<void>
   logout: () => Promise<void>
@@ -20,21 +22,25 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export let accessTokenGlobal: string | null
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<string | null>(null)
+  const [role, setRole] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [companyId, setCompanyId] = useState<number | undefined>(undefined)
 
-  const login = useCallback(async (username: string, password: string, companyId: number) => {
+  const login = useCallback(async (username: string, password: string, companyId?: number) => {
     setIsLoading(true)
     try {
-      const response = await axios.post('/auth/login', { username, password, companyId }, { withCredentials: true })
-      accessTokenGlobal = response.data.accessToken
+      const payload = companyId ? { username, password, companyId } : { username, password }
+      const response = await axios.post('/auth/login', payload, { withCredentials: true })
+
       sessionStorage.setItem('accessToken', response.data.accessToken)
-      setUser(response.data.username)
-      setCompanyId(response.data.companyId)
+
+      const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
+
+      setUser(decoded.username || null)
+      setRole(decoded.role || null)
+      setCompanyId(decoded.companyId ? parseInt(decoded.companyId) : undefined)
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>
 
@@ -66,22 +72,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refresh = useCallback(async () => {
     try {
       const response = await axios.get('/auth/refresh', { withCredentials: true })
-      accessTokenGlobal = response.data.accessToken
 
-      const decoded = jwtDecode(response.data.accessToken) as AuthResponse
-      if (decoded.username) {
-        setUser(decoded.username)
-      }
-      if (decoded.companyId) {
-        const parsed = parseInt(decoded.companyId)
-        if (!isNaN(parsed)) {
-          setCompanyId(parsed)
-        }
-      }
+      const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
+      setUser(decoded.username || null)
+      setRole(decoded.role || null)
+      setCompanyId(decoded.companyId ? parseInt(decoded.companyId) : undefined)
+
       return response.data.accessToken
     } catch (error) {
       setUser(null)
-      accessTokenGlobal = null
+      setRole(null)
       throw error
     }
   }, [])
@@ -94,8 +94,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout failed:', error)
     } finally {
       setUser(null)
-      accessTokenGlobal = null
+      setRole(null)
       setIsLoading(false)
+      sessionStorage.removeItem('accessToken')
     }
   }, [])
 
@@ -114,7 +115,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, refresh, isLoading, companyId }}>
+    <AuthContext.Provider value={{ user, role, login, register, logout, refresh, isLoading, companyId }}>
       {children}
     </AuthContext.Provider>
   )

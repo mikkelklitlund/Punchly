@@ -137,6 +137,7 @@ export class UserRepository implements IUserRepository {
       id: user.id,
       username: user.username,
       email: user.email,
+      role: user.role,
       password: user.password,
     }
   }

@@ -30,7 +30,7 @@ export class AuthRoutes {
 
     this.router.post(
       '/login',
-      [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().notEmpty()],
+      [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().optional()],
       this.login.bind(this)
     )
 
@@ -95,6 +95,7 @@ export class AuthRoutes {
       res.json({
         accessToken: result.value.accessToken,
         username: result.value.username,
+        role: result.value.role,
         companyId: result.value.companyId,
       })
     } catch {

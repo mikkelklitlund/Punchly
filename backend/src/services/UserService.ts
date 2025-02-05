@@ -35,7 +35,9 @@ export class UserService implements IUserService {
     username: string,
     password: string,
     companyId: number
-  ): Promise<Result<{ accessToken: string; refreshToken: string; username: string; companyId: number }, Error>> {
+  ): Promise<
+    Result<{ accessToken: string; refreshToken: string; username: string; role: string; companyId: number }, Error>
+  > {
     try {
       const user = await this.userRepository.getUserByUsername(username)
       if (!user) {
@@ -49,13 +51,15 @@ export class UserService implements IUserService {
       // Check if user has access to companyId
 
       await this.userRepository.revokeAllActiveUserTokens(user.id)
+
       const accessToken = jwt.sign(
-        { username: user.username, companyId: companyId },
+        { username: user.username, companyId: companyId, role: user.role },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
+
       const refreshToken = jwt.sign(
-        { username: user.username, companyId: companyId },
+        { username: user.username, companyId: companyId, role: user.role },
         process.env.REFRESH_TOKEN_SECRET!,
         {
           expiresIn: '30d',
@@ -65,7 +69,7 @@ export class UserService implements IUserService {
       const expiryDate = addDays(new Date(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
-      return success({ accessToken, refreshToken, username: user.username, companyId })
+      return success({ accessToken, refreshToken, username: user.username, role: user.role, companyId })
     } catch (err) {
       console.log(err)
       return failure(new Error((err as Error).message))
@@ -147,7 +151,7 @@ export class UserService implements IUserService {
       }
 
       const newAccessToken = jwt.sign(
-        { username: user.username, companyId: decoded.companyId },
+        { username: user.username, companyId: decoded.companyId, role: user.role },
         process.env.ACCESS_TOKEN_SECRET!,
         {
           expiresIn: '15m',
@@ -160,7 +164,7 @@ export class UserService implements IUserService {
       if (timeUntilExpiry < 5 * 60 * 1000) {
         await this.revokeRefreshToken(refreshToken)
 
-        newRefreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
+        newRefreshToken = jwt.sign({ username: user.username, role: user.role }, process.env.REFRESH_TOKEN_SECRET!, {
           expiresIn: '30d',
         })
         const expiryDate = addDays(new Date(), 1)

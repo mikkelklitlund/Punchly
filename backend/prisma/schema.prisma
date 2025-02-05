@@ -24,6 +24,7 @@ model User {
   email     String    @unique
   password  String
   username  String    @unique
+  role      String    @default("company")
   deletedAt DateTime?
 
   companies    UserCompanyAccess[]

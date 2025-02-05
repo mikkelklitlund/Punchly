@@ -7,7 +7,9 @@ export interface IUserService {
     username: string,
     password: string,
     companyId: number
-  ): Promise<Result<{ accessToken: string; refreshToken: string; username: string; companyId: number }, Error>>
+  ): Promise<
+    Result<{ accessToken: string; refreshToken: string; username: string; role: string; companyId: number }, Error>
+  >
   getUserById(id: number): Promise<Result<User, Error>>
   updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
   deleteUser(id: number): Promise<Result<User, Error>>

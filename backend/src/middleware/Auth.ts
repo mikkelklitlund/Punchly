@@ -19,10 +19,12 @@ const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunc
       decoded &&
       typeof decoded !== 'string' &&
       (decoded as JwtPayload).username &&
-      (decoded as JwtPayload).companyId
+      (decoded as JwtPayload).companyId &&
+      (decoded as JwtPayload).role
     ) {
       req.username = (decoded as JwtPayload).username
       req.companyId = (decoded as JwtPayload).companyId
+      req.role = (decoded as JwtPayload).role
       next()
       return
     } else {

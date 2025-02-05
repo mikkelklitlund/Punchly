@@ -1,5 +1,4 @@
 import axios, { AxiosRequestConfig } from 'axios'
-import { accessTokenGlobal } from '../contexts/AuthContext'
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:4000/api',
@@ -71,12 +70,15 @@ axiosInstance.interceptors.response.use(
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    if (accessTokenGlobal) {
-      config.headers['Authorization'] = `Bearer ${accessTokenGlobal}`
+    const token = sessionStorage.getItem('accessToken')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
     }
     return config
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error)
+  }
 )
 
 export default axiosInstance
