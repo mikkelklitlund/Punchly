@@ -1,39 +1,17 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import axios from '../api/axios'
-import { Company } from 'shared'
+import { useCompanies } from '../hooks/useCompanies'
 
 function Login() {
-  const { login, user, role, isLoading } = useAuth()
-  const [companies, setCompanies] = useState<Company[]>([])
+  const { login, isLoading } = useAuth()
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const { companies, loading } = useCompanies()
 
   const navigate = useNavigate()
-  const location = useLocation()
-
-  const isAdminLogin = location.pathname.includes('/admin')
-
-  useEffect(() => {
-    if (user) {
-      navigate('/')
-    }
-  }, [user, navigate])
-
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await axios.get('/companies/all')
-        setCompanies(response.data['companies'])
-      } catch (error) {
-        console.error('Failed to fetch companies:', error)
-      }
-    }
-    fetchCompanies()
-  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,13 +45,20 @@ function Login() {
               onChange={(e) => setSelectedCompanyId(e.target.value)}
               className="shadow-sm rounded-md w-full px-3 py-2 border border-gray-300"
               required
+              disabled={loading}
             >
-              <option value="">Vælg virksomhed...</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
+              {loading ? (
+                <option>Loading companies...</option>
+              ) : (
+                <>
+                  <option value="">Vælg virksomhed...</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
           <div className="mb-4">

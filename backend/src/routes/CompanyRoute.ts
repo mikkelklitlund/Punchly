@@ -63,7 +63,7 @@ export class CompanyRoutes {
         id: em.id,
         name: em.name,
         checkedIn: em.checkedIn,
-        profilePictureUrl: em.profilePicturePath
+        profilePicturePath: em.profilePicturePath
           ? `http://localhost:4000/uploads/${em.profilePicturePath}`
           : 'http://localhost:4000/uploads/default-avatar.jpg',
       })),
@@ -87,7 +87,7 @@ export class CompanyRoutes {
         id: em.id,
         name: em.name,
         checkedIn: em.checkedIn,
-        profilePictureUrl: em.profilePicturePath
+        profilePicturePath: em.profilePicturePath
           ? `http://localhost:4000/uploads/${em.profilePicturePath}`
           : 'http://localhost:4000/uploads/default-avatar.jpg',
       })),

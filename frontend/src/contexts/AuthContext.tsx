@@ -1,5 +1,5 @@
 import { useState, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
-import axios from '../api/axios'
+import api from '../api/axios'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
 
@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true)
     try {
       const payload = companyId ? { username, password, companyId } : { username, password }
-      const response = await axios.post('/auth/login', payload, { withCredentials: true })
+      const response = await api.post('/auth/login', payload)
 
       sessionStorage.setItem('accessToken', response.data.accessToken)
 
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = useCallback(async (email: string, password: string, username: string) => {
     setIsLoading(true)
     try {
-      await axios.post('/auth/register', { email, password, username })
+      await api.post('/auth/register', { email, password, username })
     } catch (error) {
       throw new Error((error as Error).message)
     } finally {
@@ -71,17 +71,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const refresh = useCallback(async () => {
     try {
-      const response = await axios.get('/auth/refresh', { withCredentials: true })
+      const response = await api.get('/auth/refresh')
+
+      if (!response.data.accessToken) {
+        throw new Error('No access token returned')
+      }
 
       const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
       setUser(decoded.username || null)
       setRole(decoded.role || null)
       setCompanyId(decoded.companyId ? parseInt(decoded.companyId) : undefined)
 
+      sessionStorage.setItem('accessToken', response.data.accessToken)
+
       return response.data.accessToken
     } catch (error) {
       setUser(null)
       setRole(null)
+      setCompanyId(undefined)
+      sessionStorage.removeItem('accessToken')
       throw error
     }
   }, [])
@@ -89,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = useCallback(async () => {
     setIsLoading(true)
     try {
-      await axios.post('/auth/logout', {}, { withCredentials: true })
+      await api.post('/auth/logout')
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
@@ -105,8 +113,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(true)
       try {
         await refresh()
-      } catch {
-        /* Not logged in */
+      } catch (error) {
+        console.log(error)
       } finally {
         setIsLoading(false)
       }

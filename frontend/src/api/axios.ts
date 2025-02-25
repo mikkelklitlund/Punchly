@@ -5,10 +5,19 @@ const axiosInstance = axios.create({
   withCredentials: true,
 })
 
+const refreshTokenRequest = axios.create({
+  baseURL: 'http://localhost:4000/api',
+  withCredentials: true, // Ensure cookies are sent
+})
+
 interface FailedRequest {
   resolve: (value?: unknown) => void
   reject: (reason?: unknown) => void
   config: AxiosRequestConfig
+}
+
+interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+  _retry?: boolean
 }
 
 let isRefreshing = false
@@ -28,7 +37,7 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config
+    const originalRequest = error.config as CustomAxiosRequestConfig
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
@@ -38,6 +47,7 @@ axiosInstance.interceptors.response.use(
           failedQueue.push({ resolve, reject, config: originalRequest })
         })
           .then((token) => {
+            originalRequest.headers = originalRequest.headers || {}
             originalRequest.headers['Authorization'] = `Bearer ${token}`
             return axiosInstance(originalRequest)
           })
@@ -49,16 +59,21 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const response = await axios.get('/auth/refresh', { withCredentials: true })
+        const response = await refreshTokenRequest.get('/auth/refresh')
+
         const newAccessToken = response.data.accessToken
 
+        originalRequest.headers = originalRequest.headers || {}
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
+
+        sessionStorage.setItem('accessToken', newAccessToken)
 
         processQueue(null, newAccessToken)
         return axiosInstance(originalRequest)
       } catch (refreshError) {
-        processQueue(refreshError as Error, null)
-        return Promise.reject(refreshError)
+        const errorObj = refreshError as Error
+        processQueue(errorObj, null)
+        return Promise.reject(errorObj)
       } finally {
         isRefreshing = false
       }
@@ -70,9 +85,11 @@ axiosInstance.interceptors.response.use(
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('accessToken')
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
+    if (!config.url?.includes('/auth/')) {
+      const token = sessionStorage.getItem('accessToken')
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`
+      }
     }
     return config
   },
