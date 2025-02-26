@@ -1,5 +1,5 @@
-import EmployeeCard from './EmployeeCard'
 import { SimpleEmployee } from 'shared'
+import EmployeeCard from './EmployeeCard'
 
 interface EmployeeListProps {
   employees: SimpleEmployee[]

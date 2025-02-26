@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import axios from '../api/axios'
 import { Company } from 'shared'
+import { companyService } from '../services/companyService'
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([])
@@ -12,8 +12,8 @@ export function useCompanies() {
       setLoading(true)
       setError(null)
       try {
-        const response = await axios.get('/companies/all')
-        setCompanies(response.data['companies'])
+        const data = await companyService.getAllCompanies()
+        setCompanies(data['companies'])
       } catch (error) {
         console.error('Failed to fetch companies:', error)
         setError('Could not load companies.')

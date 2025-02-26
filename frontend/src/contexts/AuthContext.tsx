@@ -1,7 +1,7 @@
 import { useReducer, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
-import api from '../api/axios'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
+import { authService } from '../services/authService'
 
 // Types
 interface AuthResponse extends JwtPayload {
@@ -76,12 +76,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = useCallback(async (username: string, password: string, companyId?: number) => {
     dispatch({ type: 'AUTH_START' })
     try {
-      const payload = companyId ? { username, password, companyId } : { username, password }
-      const response = await api.post('/auth/login', payload)
+      const data = await authService.login(username, password, companyId)
 
-      sessionStorage.setItem('accessToken', response.data.accessToken)
+      sessionStorage.setItem('accessToken', data.accessToken)
 
-      const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
+      const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
       dispatch({
         type: 'AUTH_SUCCESS',
@@ -111,7 +110,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = useCallback(async (email: string, password: string, username: string) => {
     dispatch({ type: 'AUTH_START' })
     try {
-      await api.post('/auth/register', { email, password, username })
+      await authService.register(email, password, username)
     } catch (error) {
       const errorMessage = (error as Error).message || 'Registration failed'
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
@@ -122,13 +121,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refresh = useCallback(async () => {
     dispatch({ type: 'AUTH_START' })
     try {
-      const response = await api.get('/auth/refresh')
+      const data = await authService.refresh()
 
-      if (!response.data.accessToken) {
+      if (!data.accessToken) {
         throw new Error('No access token returned')
       }
 
-      const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
+      const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
       dispatch({
         type: 'AUTH_SUCCESS',
@@ -139,8 +138,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
       })
 
-      sessionStorage.setItem('accessToken', response.data.accessToken)
-      return response.data.accessToken
+      sessionStorage.setItem('accessToken', data.accessToken)
     } catch (error) {
       sessionStorage.removeItem('accessToken')
       dispatch({ type: 'AUTH_LOGOUT' })
@@ -151,7 +149,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = useCallback(async () => {
     dispatch({ type: 'AUTH_START' })
     try {
-      await api.post('/auth/logout')
+      await authService.logout()
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {

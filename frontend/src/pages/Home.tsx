@@ -1,12 +1,12 @@
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
 import { useEmployees } from '../hooks/useEmployees'
 import { useEmployeeModal } from '../hooks/useEmployeeModal'
-import EmployeeList from '../components/EmployeeList'
-import EmployeeCard from '../components/EmployeeCard'
-import Modal from '../components/Modal'
-import LoadingSpinner from '../components/LoadingSpinner'
+import EmployeeCard from '../components/employee/EmployeeCard'
+import Modal from '../components/common/Modal'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 import { employeeService } from '../services/employeeService'
 import { useToast } from '../contexts/ToastContext'
+import EmployeeList from '../components/employee/EmployeeList'
 
 function Home() {
   const { employees, isLoading, error, refresh } = useEmployees()

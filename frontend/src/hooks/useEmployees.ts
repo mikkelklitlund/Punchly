@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
-import axios from '../api/axios'
 import { SimpleEmployee } from 'shared'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppContext } from '../contexts/AppContext'
+import { employeeService } from '../services/employeeService'
 
 export function useEmployees() {
   const { companyId } = useAuth()
@@ -18,13 +18,9 @@ export function useEmployees() {
     setError(null)
 
     try {
-      const endpoint = currentDepartment
-        ? `/companies/${companyId}/${currentDepartment.id}/simple-employees`
-        : `/companies/${companyId}/simple-employees`
+      const data = await employeeService.getEmployees(companyId)
 
-      const result = await axios.get(endpoint)
-
-      setEmployees(result.data.employees)
+      setEmployees(data.employees)
     } catch (err) {
       console.error('Failed to fetch employees:', err)
       setError('Could not fetch employees. Please try again later.')
@@ -33,7 +29,6 @@ export function useEmployees() {
     }
   }
 
-  // Sort employees with useMemo to avoid unnecessary re-sorts
   const sortedEmployees = useMemo(() => {
     return [...employees].sort((a, b) => (a.checkedIn === b.checkedIn ? 0 : a.checkedIn ? -1 : 1))
   }, [employees])

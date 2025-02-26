@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { SimpleEmployee } from 'shared'
-import axios from '../api/axios'
+import { employeeService } from '../services/employeeService'
 
 export function useEmployeeModal(updateData: () => void) {
   const [selectedEmployee, setSelectedEmployee] = useState<SimpleEmployee | null>(null)
@@ -19,9 +19,11 @@ export function useEmployeeModal(updateData: () => void) {
   const checkAction = async (checkIn: boolean) => {
     if (!selectedEmployee) return
     try {
-      const result = await axios.post(`/employees/${selectedEmployee.id}/${checkIn ? 'checkin' : 'checkout'}`)
-      if (!result.data.success) {
-        alert(result.data.message)
+      let data
+      if (checkIn) data = await employeeService.checkIn(selectedEmployee.id)
+      else data = await employeeService.checkOut(selectedEmployee.id)
+      if (!data.success) {
+        alert(data.message)
       }
       await updateData()
     } catch (error) {

@@ -4,7 +4,7 @@ import Home from './pages/Home'
 import { AppContextProvider } from './contexts/AppContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
-import Layout from './components/Layout'
+import Layout from './components/common/Layout'
 import { ToastProvider } from './contexts/ToastContext'
 
 function App() {
