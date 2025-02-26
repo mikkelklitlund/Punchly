@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios'
+import { formatApiError } from '../utils/errorUtils'
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:4000/api',
@@ -7,7 +8,7 @@ const axiosInstance = axios.create({
 
 const refreshTokenRequest = axios.create({
   baseURL: 'http://localhost:4000/api',
-  withCredentials: true, // Ensure cookies are sent
+  withCredentials: true,
 })
 
 interface FailedRequest {
@@ -77,6 +78,18 @@ axiosInstance.interceptors.response.use(
       } finally {
         isRefreshing = false
       }
+    }
+
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      const formattedError = formatApiError(error)
+
+      // For example, showing a toast for server errors
+      if (formattedError.status >= 500) {
+        // Access toast service or dispatch to error store
+        console.error('Server error:', formattedError.message)
+      }
+
+      return Promise.reject(formattedError)
     }
 
     return Promise.reject(error)

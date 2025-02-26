@@ -10,7 +10,13 @@ interface IAppContext {
   fetchDepartments: (companyId: number) => Promise<void>
 }
 
-const AppContext = createContext<IAppContext | undefined>(undefined)
+const AppContext = createContext<IAppContext>({
+  departments: [],
+  setDepartments: () => {},
+  currentDepartment: undefined,
+  setCurrentDepartment: () => {},
+  fetchDepartments: async () => {},
+})
 
 export const useAppContext = () => {
   const context = useContext(AppContext)

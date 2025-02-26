@@ -1,35 +1,80 @@
-import { useState, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
+import { useReducer, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
 import api from '../api/axios'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
 
+// Types
 interface AuthResponse extends JwtPayload {
   username?: string
   companyId?: string
   role?: string
 }
 
-export interface AuthContextType {
+export interface AuthState {
   user: string | null
   role: string | null
+  isLoading: boolean
+  companyId: number | undefined
+  error: string | null
+}
+
+export interface AuthContextType extends AuthState {
   login: (username: string, password: string, companyId: number) => Promise<void>
   register: (email: string, password: string, username: string) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
-  isLoading: boolean
-  companyId: number | undefined
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+// Initial state
+const initialState: AuthState = {
+  user: null,
+  role: null,
+  isLoading: false,
+  companyId: undefined,
+  error: null,
+}
+
+type AuthAction =
+  | { type: 'AUTH_START' }
+  | { type: 'AUTH_SUCCESS'; payload: { user: string; role: string; companyId?: number } }
+  | { type: 'AUTH_FAILURE'; payload: string }
+  | { type: 'AUTH_LOGOUT' }
+
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+  switch (action.type) {
+    case 'AUTH_START':
+      return { ...state, isLoading: true, error: null }
+    case 'AUTH_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        user: action.payload.user,
+        role: action.payload.role,
+        companyId: action.payload.companyId,
+        error: null,
+      }
+    case 'AUTH_FAILURE':
+      return { ...state, isLoading: false, error: action.payload }
+    case 'AUTH_LOGOUT':
+      return { ...initialState, isLoading: false }
+    default:
+      return state
+  }
+}
+
+const AuthContext = createContext<AuthContextType>({
+  ...initialState,
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  refresh: async () => {},
+})
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<string | null>(null)
-  const [role, setRole] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [companyId, setCompanyId] = useState<number | undefined>(undefined)
+  const [state, dispatch] = useReducer(authReducer, initialState)
 
   const login = useCallback(async (username: string, password: string, companyId?: number) => {
-    setIsLoading(true)
+    dispatch({ type: 'AUTH_START' })
     try {
       const payload = companyId ? { username, password, companyId } : { username, password }
       const response = await api.post('/auth/login', payload)
@@ -38,38 +83,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
 
-      setUser(decoded.username || null)
-      setRole(decoded.role || null)
-      setCompanyId(decoded.companyId ? parseInt(decoded.companyId) : undefined)
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          user: decoded.username || '',
+          role: decoded.role || '',
+          companyId: decoded.companyId ? parseInt(decoded.companyId) : undefined,
+        },
+      })
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>
+      let errorMessage = 'An unexpected error occurred'
 
       if (axiosError.response) {
-        const { status, data } = axiosError.response
-
-        if (status === 401) {
-          throw new Error('Forkert brugernavn eller password')
-        } else {
-          throw new Error(data?.message || 'Der skete en uventet fejl. Prøv igen.')
+        if (axiosError.response.status === 401) {
+          errorMessage = 'Invalid username or password'
+        } else if (axiosError.response.data?.message) {
+          errorMessage = axiosError.response.data.message
         }
       }
-    } finally {
-      setIsLoading(false)
+
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
+      throw new Error(errorMessage)
     }
   }, [])
 
   const register = useCallback(async (email: string, password: string, username: string) => {
-    setIsLoading(true)
+    dispatch({ type: 'AUTH_START' })
     try {
       await api.post('/auth/register', { email, password, username })
     } catch (error) {
-      throw new Error((error as Error).message)
-    } finally {
-      setIsLoading(false)
+      const errorMessage = (error as Error).message || 'Registration failed'
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
+      throw new Error(errorMessage)
     }
   }, [])
 
   const refresh = useCallback(async () => {
+    dispatch({ type: 'AUTH_START' })
     try {
       const response = await api.get('/auth/refresh')
 
@@ -78,52 +129,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const decoded = jwtDecode<AuthResponse>(response.data.accessToken)
-      setUser(decoded.username || null)
-      setRole(decoded.role || null)
-      setCompanyId(decoded.companyId ? parseInt(decoded.companyId) : undefined)
+
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          user: decoded.username || '',
+          role: decoded.role || '',
+          companyId: decoded.companyId ? parseInt(decoded.companyId) : undefined,
+        },
+      })
 
       sessionStorage.setItem('accessToken', response.data.accessToken)
-
       return response.data.accessToken
     } catch (error) {
-      setUser(null)
-      setRole(null)
-      setCompanyId(undefined)
       sessionStorage.removeItem('accessToken')
+      dispatch({ type: 'AUTH_LOGOUT' })
       throw error
     }
   }, [])
 
   const logout = useCallback(async () => {
-    setIsLoading(true)
+    dispatch({ type: 'AUTH_START' })
     try {
       await api.post('/auth/logout')
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
-      setUser(null)
-      setRole(null)
-      setIsLoading(false)
       sessionStorage.removeItem('accessToken')
+      dispatch({ type: 'AUTH_LOGOUT' })
     }
   }, [])
 
   useEffect(() => {
     const initializeAuth = async () => {
-      setIsLoading(true)
       try {
         await refresh()
       } catch (error) {
-        console.log(error)
-      } finally {
-        setIsLoading(false)
+        console.log('Failed to refresh token:', error)
       }
     }
     initializeAuth()
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ user, role, login, register, logout, refresh, isLoading, companyId }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        register,
+        logout,
+        refresh,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
