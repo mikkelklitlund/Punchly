@@ -2,9 +2,9 @@ import { IUserService } from '../interfaces/services/IUserService'
 import { Failure } from '../utils/Result'
 import { ValidationError } from '../utils/Errors'
 import { body, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/Auth'
 import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
 import { Router, Response } from 'express'
+import authMiddleware from '../middleware/auth'
 
 export class AuthRoutes {
   public router: Router

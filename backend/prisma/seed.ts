@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Role } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -42,6 +42,7 @@ async function main() {
       email: 'test@test.com',
       password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', //admin
       username: 'testperson',
+      role: Role.COMPANY,
     },
   })
 

@@ -24,7 +24,7 @@ model User {
   email     String    @unique
   password  String
   username  String    @unique
-  role      String    @default("company")
+  role      Role    @default(COMPANY)
   deletedAt DateTime?
 
   companies    UserCompanyAccess[]
@@ -132,6 +132,7 @@ enum AbsenceType {
 }
 
 enum Role {
+  COMPANY
+  MANAGER
   ADMIN
-  USER
 }

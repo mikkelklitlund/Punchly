@@ -2,7 +2,7 @@
 CREATE TYPE "AbsenceType" AS ENUM ('VACATION', 'SICK', 'HOMEDAY', 'PUBLIC_HOLIDAY');
 
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER');
+CREATE TYPE "Role" AS ENUM ('COMPANY', 'MANAGER', 'ADMIN');
 
 -- CreateTable
 CREATE TABLE "Company" (
@@ -19,6 +19,7 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "username" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'COMPANY',
     "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -113,7 +114,25 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_username_idx" ON "User"("username");
+
+-- CreateIndex
+CREATE INDEX "User_deletedAt_idx" ON "User"("deletedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "RefreshToken_token_key" ON "RefreshToken"("token");
+
+-- CreateIndex
+CREATE INDEX "RefreshToken_userId_idx" ON "RefreshToken"("userId");
+
+-- CreateIndex
+CREATE INDEX "RefreshToken_expiryDate_idx" ON "RefreshToken"("expiryDate");
+
+-- CreateIndex
+CREATE INDEX "RefreshToken_revoked_idx" ON "RefreshToken"("revoked");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Department_name_companyId_key" ON "Department"("name", "companyId");

@@ -1,11 +1,13 @@
 import { Request, Response, Router } from 'express'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 import { body, query, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/Auth'
+import authMiddleware from '../middleware/auth'
 import { Failure, Result } from '../utils/Result'
 import { CreateEmployee, Employee } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService'
+import authorizeRoles from '../middleware/authorizeRole'
+import { Role } from '@prisma/client'
 
 export class EmployeeRoutes {
   public router: Router
@@ -32,8 +34,18 @@ export class EmployeeRoutes {
       this.createEmployee.bind(this)
     )
 
-    this.router.post('/:employeeId/checkin', authMiddleware, this.employeeCheckin.bind(this))
-    this.router.post('/:employeeId/checkout', authMiddleware, this.employeeCheckout.bind(this))
+    this.router.post(
+      '/:employeeId/checkin',
+      authMiddleware,
+      authorizeRoles(Role.ADMIN, Role.COMPANY, Role.MANAGER),
+      this.employeeCheckin.bind(this)
+    )
+    this.router.post(
+      '/:employeeId/checkout',
+      authMiddleware,
+      authorizeRoles(Role.ADMIN, Role.COMPANY, Role.MANAGER),
+      this.employeeCheckout.bind(this)
+    )
 
     this.router.get('/:id', authMiddleware, this.getEmployeeById.bind(this))
 

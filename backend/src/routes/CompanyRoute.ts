@@ -3,7 +3,7 @@ import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 import { Failure } from '../utils/Result'
 import { ICompanyService } from '../interfaces/services/ICompanyService'
 import { body, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/Auth'
+import authMiddleware from '../middleware/auth'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService'
 
 export class CompanyRoutes {
