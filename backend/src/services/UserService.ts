@@ -48,28 +48,31 @@ export class UserService implements IUserService {
         throw new Error('Invalid password')
       }
 
-      // Check if user has access to companyId
+      const accessRecord = await this.userRepository.getUserCompanyAccess(user.id, companyId)
+      if (!accessRecord) {
+        throw new Error('User does not have access to this company')
+      }
+
+      const userRole = accessRecord.role
 
       await this.userRepository.revokeAllActiveUserTokens(user.id)
 
       const accessToken = jwt.sign(
-        { username: user.username, companyId: companyId, role: user.role },
+        { username: user.username, companyId, role: userRole },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
 
       const refreshToken = jwt.sign(
-        { username: user.username, companyId: companyId, role: user.role },
+        { username: user.username, companyId, role: userRole },
         process.env.REFRESH_TOKEN_SECRET!,
-        {
-          expiresIn: '30d',
-        }
+        { expiresIn: '30d' }
       )
 
       const expiryDate = addDays(new Date(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
-      return success({ accessToken, refreshToken, username: user.username, role: user.role, companyId })
+      return success({ accessToken, refreshToken, username: user.username, role: userRole, companyId })
     } catch (err) {
       console.log(err)
       return failure(new Error((err as Error).message))
@@ -143,7 +146,12 @@ export class UserService implements IUserService {
         return failure(new Error('User not found'))
       }
 
-      //Check if user has access to decoded.companyId
+      const accessRecord = await this.userRepository.getUserCompanyAccess(user.id, decoded.companyId)
+      if (!accessRecord) {
+        throw new Error('User does not have access to this company')
+      }
+
+      const userRole = accessRecord.role
 
       const storedToken = await this.userRepository.getRefreshToken(refreshToken)
       if (!storedToken || storedToken.revoked || storedToken.expiryDate < new Date()) {
@@ -151,7 +159,7 @@ export class UserService implements IUserService {
       }
 
       const newAccessToken = jwt.sign(
-        { username: user.username, companyId: decoded.companyId, role: user.role },
+        { username: user.username, companyId: decoded.companyId, role: userRole },
         process.env.ACCESS_TOKEN_SECRET!,
         {
           expiresIn: '15m',
@@ -164,7 +172,7 @@ export class UserService implements IUserService {
       if (timeUntilExpiry < 5 * 60 * 1000) {
         await this.revokeRefreshToken(refreshToken)
 
-        newRefreshToken = jwt.sign({ username: user.username, role: user.role }, process.env.REFRESH_TOKEN_SECRET!, {
+        newRefreshToken = jwt.sign({ username: user.username, role: userRole }, process.env.REFRESH_TOKEN_SECRET!, {
           expiresIn: '30d',
         })
         const expiryDate = addDays(new Date(), 1)

@@ -2,6 +2,9 @@ import { Router, Request, Response } from 'express'
 import { upload } from '../middleware/Upload'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 import { Failure } from '../utils/Result'
+import authMiddleware from '../middleware/auth'
+import authorizeRoles from '../middleware/authorizeRole'
+import { Role } from '@prisma/client'
 
 export class EmployeePictureRoutes {
   public router: Router
@@ -14,6 +17,8 @@ export class EmployeePictureRoutes {
   private initializeRoutes() {
     this.router.post(
       '/upload-profile-picture/:id',
+      authMiddleware,
+      authorizeRoles(Role.ADMIN, Role.MANAGER),
       upload.single('profilePicture'),
       this.uploadProfilePicture.bind(this)
     )

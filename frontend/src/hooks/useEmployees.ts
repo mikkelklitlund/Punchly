@@ -29,13 +29,18 @@ export function useEmployees() {
     }
   }
 
+  const filteredEmployees = useMemo(() => {
+    if (!currentDepartment) return employees
+    return employees.filter((employee) => employee.departmentId === currentDepartment.id)
+  }, [employees, currentDepartment])
+
   const sortedEmployees = useMemo(() => {
-    return [...employees].sort((a, b) => (a.checkedIn === b.checkedIn ? 0 : a.checkedIn ? -1 : 1))
-  }, [employees])
+    return [...filteredEmployees].sort((a, b) => (a.checkedIn === b.checkedIn ? 0 : a.checkedIn ? -1 : 1))
+  }, [filteredEmployees])
 
   useEffect(() => {
     fetchEmployees()
-  }, [companyId, currentDepartment])
+  }, [companyId])
 
   return {
     employees: sortedEmployees,

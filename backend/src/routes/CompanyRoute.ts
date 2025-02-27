@@ -5,6 +5,8 @@ import { ICompanyService } from '../interfaces/services/ICompanyService'
 import { body, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/auth'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService'
+import authorizeRoles from '../middleware/authorizeRole'
+import { Role } from '@prisma/client'
 
 export class CompanyRoutes {
   public router: Router
@@ -35,6 +37,7 @@ export class CompanyRoutes {
     this.router.post(
       '/',
       authMiddleware,
+      authorizeRoles(Role.ADMIN),
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('address').notEmpty().withMessage('Address is required'),

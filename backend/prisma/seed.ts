@@ -12,36 +12,30 @@ async function main() {
       name: 'NBV',
       address: 'Poulsensvej 89',
       employeeTypes: {
-        create: [
-          {
-            name: 'Full-Time',
-          },
-          { name: 'Part-Time' },
-        ],
+        create: [{ name: 'Full-Time' }, { name: 'Part-Time' }],
       },
       departments: {
-        create: [
-          {
-            name: 'Snedkeri',
-          },
-          {
-            name: 'Køkken',
-          },
-          {
-            name: 'Service',
-          },
-        ],
+        create: [{ name: 'Snedkeri' }, { name: 'Køkken' }, { name: 'Service' }],
       },
     },
   })
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { username: 'testperson' },
     update: {},
     create: {
       email: 'test@test.com',
-      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', //admin
+      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', // Hashed password: "admin"
       username: 'testperson',
+    },
+  })
+
+  await prisma.userCompanyAccess.upsert({
+    where: { userId_companyId: { userId: user.id, companyId: company.id } },
+    update: {},
+    create: {
+      userId: user.id,
+      companyId: company.id,
       role: Role.COMPANY,
     },
   })
@@ -111,5 +105,5 @@ main()
   .catch(async (e) => {
     console.error(e)
     await prisma.$disconnect()
-    process.exit()
+    process.exit(1)
   })

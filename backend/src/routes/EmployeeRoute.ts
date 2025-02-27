@@ -26,6 +26,7 @@ export class EmployeeRoutes {
     this.router.post(
       '/',
       authMiddleware,
+      authorizeRoles(Role.ADMIN, Role.MANAGER),
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('companyId').isNumeric().withMessage('Valid company ID is required'),
@@ -63,6 +64,7 @@ export class EmployeeRoutes {
     this.router.put(
       '/:id',
       authMiddleware,
+      authorizeRoles(Role.ADMIN, Role.MANAGER),
       [
         body('name').optional().notEmpty().withMessage('Name is required if provided'),
         body('companyId').optional().isNumeric().withMessage('Valid company ID is required if provided'),
@@ -71,7 +73,7 @@ export class EmployeeRoutes {
       this.updateEmployee.bind(this)
     )
 
-    this.router.delete('/:id', authMiddleware, this.deleteEmployee.bind(this))
+    this.router.delete('/:id', authMiddleware, authorizeRoles(Role.ADMIN, Role.MANAGER), this.deleteEmployee.bind(this))
 
     this.router.get(
       '/subscribe',
