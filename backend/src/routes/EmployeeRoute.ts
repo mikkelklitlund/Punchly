@@ -3,11 +3,11 @@ import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 import { body, query, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/auth'
 import { Failure, Result } from '../utils/Result'
-import { CreateEmployee, Employee } from 'shared'
+import { CreateEmployee, Employee, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService'
 import authorizeRoles from '../middleware/authorizeRole'
-import { Role } from '@prisma/client'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
 
 export class EmployeeRoutes {
   public router: Router
@@ -74,19 +74,29 @@ export class EmployeeRoutes {
     )
 
     this.router.delete('/:id', authMiddleware, authorizeRoles(Role.ADMIN, Role.MANAGER), this.deleteEmployee.bind(this))
-
-    this.router.get(
-      '/subscribe',
-      authMiddleware,
-      [
-        query('company').isNumeric().withMessage('Valid company ID is required'),
-        query('department').isNumeric().withMessage('Valid department ID is required'),
-      ],
-      this.sseHandler.bind(this)
-    )
   }
 
-  private async employeeCheckin(req: Request, res: Response) {
+  private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
+    const { username, companyId, role } = req
+
+    if (!username || !companyId || role === undefined) {
+      res.status(401).json({ message: 'Invalid request: Missing user credentials' })
+      return false
+    }
+
+    const accessResult = await this.userService.userHasAccess(username, parseInt(companyId), allowedRoles)
+
+    if (accessResult instanceof Failure) {
+      res.status(403).json({ message: accessResult.error.message })
+      return false
+    }
+
+    return true
+  }
+
+  private async employeeCheckin(req: AuthenticatedRequest, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.COMPANY, Role.MANAGER]))) return
+
     const employeeId = parseInt(req.params.employeeId)
     const checkInResult = await this.attendanceService.checkInEmployee(employeeId)
 
@@ -101,11 +111,12 @@ export class EmployeeRoutes {
       return
     }
 
-    await this.broadCastEvent(employeeResult.value)
     res.status(200).json({ success: true })
   }
 
-  private async employeeCheckout(req: Request, res: Response) {
+  private async employeeCheckout(req: AuthenticatedRequest, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.COMPANY, Role.MANAGER]))) return
+
     const employeeId = parseInt(req.params.employeeId)
     const checkOutResult = await this.attendanceService.checkOutEmployee(employeeId)
 
@@ -120,43 +131,11 @@ export class EmployeeRoutes {
       return
     }
 
-    await this.broadCastEvent(employeeResult.value)
     res.status(200).json({ success: true })
   }
 
-  private sseHandler(req: Request, res: Response) {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      res.status(400).json({ message: errors.array() })
-      return
-    }
-
-    const companyId = parseInt(req.query.company as string)
-    const departmentId = parseInt(req.query.department as string)
-
-    res.setHeader('Content-Type', 'text/event-stream')
-    res.setHeader('Cache-Control', 'no-cache')
-    res.setHeader('Connection', 'keep-alive')
-
-    const clientId = this.clientId++
-    this.clients.push({ id: clientId, companyId, departmentId, res })
-
-    res.write('data: Connected\n\n')
-
-    req.on('close', () => {
-      this.clients = this.clients.filter((client) => client.id !== clientId)
-    })
-  }
-
-  private async broadCastEvent(employee: Employee) {
-    this.clients
-      .filter((client) => client.companyId === employee.companyId && client.departmentId === employee.departmentId)
-      .forEach((client) => {
-        client.res.write(`data: ${JSON.stringify(employee)}\n\n`)
-      })
-  }
-
   private async createEmployee(req: Request, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ message: errors.array() })
@@ -216,7 +195,8 @@ export class EmployeeRoutes {
     res.status(200).json({ employee: result.value })
   }
 
-  private async updateEmployee(req: Request, res: Response) {
+  private async updateEmployee(req: AuthenticatedRequest, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ message: errors.array() })
@@ -235,7 +215,8 @@ export class EmployeeRoutes {
     res.status(200).json({ employee: result.value })
   }
 
-  private async deleteEmployee(req: Request, res: Response) {
+  private async deleteEmployee(req: AuthenticatedRequest, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.COMPANY, Role.MANAGER]))) return
     const employeeId = parseInt(req.params.id)
     const result = await this.employeeService.deleteEmployee(employeeId)
 

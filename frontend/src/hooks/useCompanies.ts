@@ -12,8 +12,8 @@ export function useCompanies() {
       setLoading(true)
       setError(null)
       try {
-        const data = await companyService.getAllCompanies()
-        setCompanies(data['companies'])
+        const { companies } = await companyService.getAllCompanies()
+        setCompanies(companies)
       } catch (error) {
         console.error('Failed to fetch companies:', error)
         setError('Could not load companies.')

@@ -14,9 +14,8 @@ const EmployeeList = ({ employees, onEmployeeClick }: EmployeeListProps) => {
           <button
             key={employee.id}
             onClick={() => onEmployeeClick(employee)}
-            className={`transition-transform transform hover:scale-105 rounded-lg p-4 ${
-              employee.checkedIn ? 'bg-green-200 hover:bg-green-300' : 'bg-red-200 hover:bg-red-300'
-            }`}
+            className="transition-transform transform hover:scale-105 rounded-lg focus:outline-none 
+            focus:ring-2 focus:ring-blue-300"
           >
             <EmployeeCard employee={employee} />
           </button>

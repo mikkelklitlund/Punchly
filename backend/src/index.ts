@@ -43,11 +43,12 @@ const employeeRoutes = new EmployeeRoutes(
   serviceContainer.employeeService,
   serviceContainer.attendanceService
 )
-const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService)
+const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService, serviceContainer.userService)
 const companyRoutes = new CompanyRoutes(
   serviceContainer.companyService,
   serviceContainer.employeeService,
-  serviceContainer.departmentService
+  serviceContainer.departmentService,
+  serviceContainer.userService
 )
 
 app.use('/api/auth', authRoutes.router)

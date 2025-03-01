@@ -51,7 +51,7 @@ function Home() {
   }
 
   return (
-    <div className="flex flex-wrap gap-8 p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:p-8 justify-center lg:justify-start">
+    <div className="flex flex-wrap gap-8 sm:gap-10 lg:gap-12 justify-center lg:justify-start">
       {isLoading && employees.length > 0 && (
         <div className="fixed bottom-4 left-4 z-10">
           <LoadingSpinner size="small" message="Refreshing..." />

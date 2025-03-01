@@ -1,15 +1,20 @@
-import { Router, Request, Response } from 'express'
+import { Router, Response } from 'express'
 import { upload } from '../middleware/Upload'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 import { Failure } from '../utils/Result'
 import authMiddleware from '../middleware/auth'
 import authorizeRoles from '../middleware/authorizeRole'
-import { Role } from '@prisma/client'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import { IUserService } from '../interfaces/services/IUserService'
+import { Role } from 'shared'
 
 export class EmployeePictureRoutes {
   public router: Router
 
-  constructor(private readonly employeeService: IEmployeeService) {
+  constructor(
+    private readonly employeeService: IEmployeeService,
+    private readonly userService: IUserService
+  ) {
     this.router = Router()
     this.initializeRoutes()
   }
@@ -24,7 +29,27 @@ export class EmployeePictureRoutes {
     )
   }
 
-  private async uploadProfilePicture(req: Request, res: Response) {
+  private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
+    const { username, companyId, role } = req
+
+    if (!username || !companyId || role === undefined) {
+      res.status(401).json({ message: 'Invalid request: Missing user credentials' })
+      return false
+    }
+
+    const accessResult = await this.userService.userHasAccess(username, parseInt(companyId), allowedRoles)
+
+    if (accessResult instanceof Failure) {
+      res.status(403).json({ message: accessResult.error.message })
+      return false
+    }
+
+    return true
+  }
+
+  private async uploadProfilePicture(req: AuthenticatedRequest, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
+
     const employeeId = parseInt(req.params.id, 10)
     if (isNaN(employeeId)) {
       res.status(400).json({ message: 'Invalid employee ID' })
@@ -37,21 +62,16 @@ export class EmployeePictureRoutes {
       return
     }
 
-    try {
-      const result = await this.employeeService.updateProfilePicture(employeeId, filePath)
-      if (result instanceof Failure) {
-        res.status(500).json({ message: result.error.message })
-        return
-      }
-
-      res.status(200).json({
-        message: 'Profile picture updated successfully',
-        employee: result.value,
-        profilePictureUrl: `http://localhost:4000/uploads/${filePath}`,
-      })
-    } catch (error) {
-      console.error(error)
-      res.status(500).json({ message: 'An error occurred while updating the profile picture' })
+    const result = await this.employeeService.updateProfilePicture(employeeId, filePath)
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
     }
+
+    res.status(200).json({
+      message: 'Profile picture updated successfully',
+      employee: result.value,
+      profilePictureUrl: `http://localhost:4000/uploads/${filePath}`,
+    })
   }
 }

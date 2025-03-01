@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { User, UserRefreshToken } from 'shared'
-import { Result, success, failure } from '../utils/Result'
+import { Role, User, UserRefreshToken } from 'shared'
+import { Result, success, failure, Failure } from '../utils/Result'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
 import { addDays } from 'date-fns'
 import { IUserService } from '../interfaces/services/IUserService'
@@ -186,5 +186,25 @@ export class UserService implements IUserService {
     } catch {
       return failure(new Error('Invalid refresh token'))
     }
+  }
+
+  async userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>> {
+    const user = await this.getUserByUsername(username)
+
+    if (user instanceof Failure) {
+      return failure(new Error('User does not exist'))
+    }
+
+    const accessRecord = await this.userRepository.getUserCompanyAccess(user.value.id, companyId)
+
+    if (!accessRecord) {
+      return failure(new Error('User does not have access to this company'))
+    }
+
+    if (!allowedRoles.includes(accessRecord.role)) {
+      return failure(new Error('User does not have the correct role for this company'))
+    }
+
+    return success(true)
   }
 }

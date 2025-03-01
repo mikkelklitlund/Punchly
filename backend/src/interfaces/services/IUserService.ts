@@ -1,4 +1,4 @@
-import { User, UserRefreshToken } from 'shared'
+import { Role, User, UserRefreshToken } from 'shared'
 import { Result } from '../../utils/Result'
 
 export interface IUserService {
@@ -16,4 +16,5 @@ export interface IUserService {
   refreshAccessToken(refreshToken: string): Promise<Result<{ accessToken: string; refreshToken: string }, Error>>
   revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>
   getUserByUsername(username: string): Promise<Result<User, Error>>
+  userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>>
 }
