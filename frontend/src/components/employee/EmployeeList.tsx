@@ -8,20 +8,19 @@ interface EmployeeListProps {
 
 const EmployeeList = ({ employees, onEmployeeClick }: EmployeeListProps) => {
   return (
-    <div className="flex flex-wrap gap-8 p-4 sm:gap-10 sm:p-6 lg:gap-12 lg:p-8 justify-center lg:justify-start">
+    <div className="grid w-full auto-rows-fr grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 p-4 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] sm:p-6 lg:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] lg:p-8 xl:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
       {employees.length > 0 ? (
         employees.map((employee) => (
           <button
             key={employee.id}
             onClick={() => onEmployeeClick(employee)}
-            className="transition-transform transform hover:scale-105 rounded-lg focus:outline-none 
-            focus:ring-2 focus:ring-blue-300"
+            className="flex transform justify-center rounded-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
           >
             <EmployeeCard employee={employee} />
           </button>
         ))
       ) : (
-        <p className="text-center w-full">Ingen medarbejdere fundet</p>
+        <p className="col-span-full text-center">Ingen medarbejdere fundet</p>
       )}
     </div>
   )

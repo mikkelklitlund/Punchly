@@ -41,9 +41,9 @@ function Home() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8">
-        <p className="text-red-500 mb-4">{error}</p>
-        <button onClick={refresh} className="px-4 py-2 bg-mustard text-white rounded hover:bg-burnt">
+      <div className="flex h-full flex-col items-center justify-center p-8">
+        <p className="mb-4 text-red-500">{error}</p>
+        <button onClick={refresh} className="rounded bg-mustard px-4 py-2 text-white hover:bg-burnt">
           Prøv igen
         </button>
       </div>
@@ -51,7 +51,7 @@ function Home() {
   }
 
   return (
-    <div className="flex flex-wrap gap-8 sm:gap-10 lg:gap-12 justify-center lg:justify-start">
+    <div className="flex flex-wrap justify-center gap-8 sm:gap-10 lg:justify-start lg:gap-12">
       {isLoading && employees.length > 0 && (
         <div className="fixed bottom-4 left-4 z-10">
           <LoadingSpinner size="small" message="Refreshing..." />
@@ -63,9 +63,9 @@ function Home() {
       {showModal && selectedEmployee && (
         <Modal closeModal={closeModal} title={selectedEmployee.name}>
           <EmployeeCard employee={selectedEmployee} />
-          <div className="w-full flex justify-evenly mt-4">
+          <div className="mt-4 flex w-full justify-evenly">
             <button
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
               onClick={() => {
                 handleCheckAction(selectedEmployee.id, false)
                 closeModal()
@@ -74,7 +74,7 @@ function Home() {
               Tjek ud
             </button>
             <button
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              className="rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
               onClick={() => {
                 handleCheckAction(selectedEmployee.id, true)
                 closeModal()

@@ -7,18 +7,20 @@ interface EmployeeCardProps {
 
 const EmployeeCard = React.memo(({ employee }: EmployeeCardProps) => {
   return (
-    <div className="flex flex-col items-center p-4 w-full sm:w-72 bg-white border border-gray-200 rounded-lg shadow-md">
+    <div className="flex h-full w-full flex-col items-center rounded-lg border border-gray-200 bg-white p-4 shadow-md">
       <img
         src={employee.profilePicturePath}
-        className="rounded-lg shadow-lg object-cover h-48 w-48 sm:h-60 sm:w-60"
+        className="h-40 w-40 rounded-lg object-cover shadow-lg sm:h-48 sm:w-48 lg:h-52 lg:w-52"
         alt={`${employee.name}'s profile`}
         loading="lazy"
       />
 
-      <div className="flex items-center mt-4 space-x-2">
-        <p className="text-xl sm:text-2xl">{employee.name}</p>
+      <div className="mt-4 flex items-center space-x-2">
+        <p className="text-lg sm:text-xl">{employee.name}</p>
         <div className="flex items-center">
-          <div className={`w-4 h-4 rounded-full ${employee.checkedIn ? 'bg-green-500' : 'bg-red-500'} `}></div>
+          <div
+            className={`h-3 w-3 rounded-full sm:h-4 sm:w-4 ${employee.checkedIn ? 'bg-green-500' : 'bg-red-500'} `}
+          ></div>
           <span className={`ml-1 text-xs font-medium ${employee.checkedIn ? 'text-green-600' : 'text-red-600'}`}></span>
         </div>
       </div>

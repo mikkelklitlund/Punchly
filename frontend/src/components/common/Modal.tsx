@@ -24,16 +24,16 @@ function Modal({ children, closeModal, title }: PropsWithChildren<ModalProps>) {
   }, [closeModal])
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={closeModal}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90" onClick={closeModal}>
       <div
-        className="bg-white p-6 rounded-lg shadow-lg lg:w-1/3 w-1/2 relative flex flex-col items-center"
+        className="relative flex w-1/2 flex-col items-center rounded-lg bg-white p-6 shadow-lg lg:w-1/3"
         onClick={(e) => e.stopPropagation()}
       >
-        {title && <h2 className="text-xl font-bold mb-4">{title}</h2>}
+        {title && <h2 className="mb-4 text-xl font-bold">{title}</h2>}
         {children}
         <button
           onClick={closeModal}
-          className="absolute top-2 right-2 text-gray-500 hover:text-mustard text-2xl"
+          className="absolute right-2 top-2 text-2xl text-gray-500 hover:text-mustard"
           aria-label="Close modal"
         >
           &#10006;

@@ -14,17 +14,16 @@ function Header() {
   }, [companyId])
 
   return (
-    <header className="bg-gray-300 p-4 text-cream fixed top-0 left-0 w-full shadow-md h-16 z-10">
-      <div className="flex justify-between items-center h-full">
+    <header className="text-cream fixed left-0 top-0 z-10 h-16 w-full bg-gray-300 p-4 shadow-md">
+      <div className="flex h-full items-center justify-between">
         <nav className="flex space-x-4">
           {departments.map((department) => (
             <button
-              className={`text-zinc-700 font-bold transition duration-150 
-                ${
-                  currentDepartment?.id === department.id
-                    ? 'underline underline-offset-2 scale-110'
-                    : 'hover:text-mustard'
-                }`}
+              className={`font-bold text-zinc-700 transition duration-150 ${
+                currentDepartment?.id === department.id
+                  ? 'scale-110 underline underline-offset-2'
+                  : 'hover:text-mustard'
+              }`}
               key={department.id}
               onClick={() => setCurrentDepartment(department)}
             >
@@ -32,15 +31,14 @@ function Header() {
             </button>
           ))}
           <button
-            className={`text-zinc-700 font-bold transition duration-150 
-              ${currentDepartment?.id === undefined ? 'underline underline-offset-2 scale-110' : 'hover:text-mustard'}`}
+            className={`font-bold text-zinc-700 transition duration-150 ${currentDepartment?.id === undefined ? 'scale-110 underline underline-offset-2' : 'hover:text-mustard'}`}
             onClick={() => setCurrentDepartment(undefined)}
           >
             Samlet
           </button>
         </nav>
 
-        <button onClick={logout} className="bg-mustard hover:bg-burnt text-white py-1 px-4 rounded">
+        <button onClick={logout} className="rounded bg-mustard px-4 py-1 text-white hover:bg-burnt">
           Log ud
         </button>
       </div>

@@ -44,7 +44,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           {toasts.map((toast) => (
             <div
               key={toast.id}
-              className={`p-4 rounded-md shadow-md flex justify-between items-center transition-opacity duration-300 ${
+              className={`flex items-center justify-between rounded-md p-4 shadow-md transition-opacity duration-300 ${
                 toast.type === 'success'
                   ? 'bg-green-500 text-white'
                   : toast.type === 'error'
