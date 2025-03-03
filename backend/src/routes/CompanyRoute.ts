@@ -5,6 +5,10 @@ import { ICompanyService } from '../interfaces/services/ICompanyService'
 import { body, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService'
+import authorizeRoles from '../middleware/authorizeRole'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import { Employee, Role } from 'shared'
+import { IUserService } from '../interfaces/services/IUserService'
 
 export class CompanyRoutes {
   public router: Router
@@ -12,7 +16,8 @@ export class CompanyRoutes {
   constructor(
     private readonly companyService: ICompanyService,
     private readonly employeeService: IEmployeeService,
-    private readonly departmentServce: IDepartmentService
+    private readonly departmentService: IDepartmentService,
+    private readonly userService: IUserService
   ) {
     this.router = Router()
     this.initializeRoutes()
@@ -25,11 +30,20 @@ export class CompanyRoutes {
       authMiddleware,
       this.getAllEmployeesByCompanyAndDepartment.bind(this)
     )
+    this.router.get(
+      '/:companyId/:departmentId/simple-employees',
+      authMiddleware,
+      this.getAllSimpleEmployeesByCompanyAndDepartment.bind(this)
+    )
     this.router.get('/:companyId/departments', authMiddleware, this.getDepartmentsByCompanyId.bind(this))
+    this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
+
     this.router.get('/all', this.getAllCompanies.bind(this))
+
     this.router.post(
       '/',
       authMiddleware,
+      authorizeRoles(Role.ADMIN),
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('address').notEmpty().withMessage('Address is required'),
@@ -38,12 +52,58 @@ export class CompanyRoutes {
     )
   }
 
+  private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
+    const { username, companyId, role } = req
+
+    if (!username || !companyId || role === undefined) {
+      res.status(401).json({ message: 'Invalid request: Missing user credentials' })
+      return false
+    }
+
+    const accessResult = await this.userService.userHasAccess(username, parseInt(companyId), allowedRoles)
+
+    if (accessResult instanceof Failure) {
+      res.status(403).json({ message: accessResult.error.message })
+      return false
+    }
+
+    return true
+  }
+
+  private async getAllSimpleEmployeesByCompanyAndDepartment(req: Request, res: Response) {
+    const companyId = parseInt(req.params.companyId)
+    const departmentId = parseInt(req.params.departmentId)
+
+    const result = await this.employeeService.getAllEmployeesByDepartmentIdAndCompanyId(departmentId, companyId)
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({
+      employees: result.value.map(this.formatSimpleEmployee),
+    })
+  }
+
+  private async getSimpleEmployees(req: Request, res: Response) {
+    const companyId = parseInt(req.params.companyId)
+
+    const result = await this.employeeService.getAllEmployeesByCompanyId(companyId)
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({
+      employees: result.value.map(this.formatSimpleEmployee),
+    })
+  }
+
   private async getAllEmployeesByCompanyAndDepartment(req: Request, res: Response) {
     const companyId = parseInt(req.params.companyId)
     const departmentId = parseInt(req.params.departmentId)
 
     const result = await this.employeeService.getAllEmployeesByDepartmentIdAndCompanyId(departmentId, companyId)
-
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })
       return
@@ -55,8 +115,7 @@ export class CompanyRoutes {
   private async getDepartmentsByCompanyId(req: Request, res: Response) {
     const companyId = parseInt(req.params.companyId)
 
-    const result = await this.departmentServce.getDepartmentsByCompanyId(companyId)
-
+    const result = await this.departmentService.getDepartmentsByCompanyId(companyId)
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })
       return
@@ -80,7 +139,7 @@ export class CompanyRoutes {
       return
     }
 
-    res.status(200).json({ company: result.value })
+    res.status(201).json({ company: result.value })
   }
 
   private async getAllCompanies(req: Request, res: Response) {
@@ -101,5 +160,18 @@ export class CompanyRoutes {
       return
     }
     res.status(200).json({ employees: result.value })
+  }
+
+  private formatSimpleEmployee(em: Employee) {
+    return {
+      departmentId: em.departmentId,
+      companyId: em.companyId,
+      id: em.id,
+      name: em.name,
+      checkedIn: em.checkedIn,
+      profilePicturePath: em.profilePicturePath
+        ? `http://localhost:4000/uploads/${em.profilePicturePath}`
+        : 'http://localhost:4000/uploads/default-avatar.jpg',
+    }
   }
 }

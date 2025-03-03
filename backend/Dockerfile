@@ -1,47 +1,35 @@
-# backend/Dockerfile
+# Build shared package
+FROM node:20-alpine AS shared-builder
+WORKDIR /app
+COPY package*.json ./
+COPY shared/package*.json ./shared/
+RUN npm install --workspace=shared
+COPY shared ./shared
+RUN npm run build --workspace=shared
 
-# Stage 1: Build Stage
-FROM node:20-alpine AS build
+# Build backend
+FROM node:20-alpine AS backend-builder
+WORKDIR /app
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY shared/package*.json ./shared/
+COPY --from=shared-builder /app/shared/dist ./shared/dist
+RUN npm install --workspace=backend
+COPY backend ./backend
+RUN cd backend && npx prisma generate
+RUN npm run build --workspace=backend
 
-# Set working directory
-WORKDIR /usr/src/app
+# Production image
+FROM node:20-alpine AS production
+WORKDIR /app
+COPY --from=backend-builder /app/backend/dist ./backend/dist
+COPY --from=backend-builder /app/shared/dist ./shared/dist
+COPY --from=backend-builder /app/backend/prisma ./backend/prisma
+COPY package.json ./
+COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
+RUN npm install --omit=dev --workspaces
 
-# Copy package.json and install dependencies
-COPY backend/package.json ./
-COPY shared/package.json ../shared/
-
-# Install dependencies
-RUN npm install --legacy-peer-deps
-
-# Copy source files and build
-COPY backend ./
-COPY shared ../shared/
-
-# Build the shared module first, then generate Prisma files and build backend
-RUN cd ../shared && npm install && npm run build && cd ../app
-RUN npx prisma generate
-RUN npm run build
-
-# Stage 2: Production Stage
-FROM node:20-alpine
-
-# Set working directory
-WORKDIR /usr/src/app
-
-# Copy only the built backend and shared library from the build stage
-COPY --from=build /usr/src/app/dist ./dist
-COPY --from=build /usr/src/shared/dist ../shared
-COPY --from=build /usr/src/app/prisma ./prisma
-
-# Copy only necessary production files
-COPY backend/package.json ./
-
-# Install only production dependencies
-RUN npm install --omit=dev && npm cache clean --force
-RUN npx prisma generate
-
-# Expose the application port
+WORKDIR /app/backend
 EXPOSE 4000
-
-# Start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/index.js"]

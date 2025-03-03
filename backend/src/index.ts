@@ -11,6 +11,7 @@ import { RepositoryContainer } from './repositories/RepositoryContainer.'
 import { ServiceContainer } from './services/ServiceContainer'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import path from 'path'
 
 dotenv.config()
 
@@ -21,9 +22,9 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }
-app.use(cors(corsOptions))
-app.use(express.json())
 app.use(cookieParser())
+app.use(express.json())
+app.use(cors(corsOptions))
 const httpServer = createServer(app)
 
 //Prisma
@@ -42,14 +43,16 @@ const employeeRoutes = new EmployeeRoutes(
   serviceContainer.employeeService,
   serviceContainer.attendanceService
 )
-const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService)
+const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService, serviceContainer.userService)
 const companyRoutes = new CompanyRoutes(
   serviceContainer.companyService,
   serviceContainer.employeeService,
-  serviceContainer.departmentService
+  serviceContainer.departmentService,
+  serviceContainer.userService
 )
 
 app.use('/api/auth', authRoutes.router)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 app.use('/api/employees', employeeRoutes.router)
 app.use('/api/employees', employeePictureRoutes.router)
 app.use('/api/companies', companyRoutes.router)

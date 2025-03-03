@@ -168,7 +168,10 @@ export class EmployeeService implements IEmployeeService {
         ...existingEmployee,
         profilePicturePath: filePath,
       })
-      return success(updatedEmployee)
+
+      const fileUrl = `http://localhost:4000/uploads/${filePath}`
+
+      return success({ ...updatedEmployee, profilePictureUrl: fileUrl })
     } catch (error) {
       console.error(`Error updating profile picture for employee with ID ${id}:`, error)
       return failure(new DatabaseError('Database error occurred while updating the profile picture'))

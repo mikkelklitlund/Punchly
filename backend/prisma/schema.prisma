@@ -131,6 +131,7 @@ enum AbsenceType {
 }
 
 enum Role {
+  COMPANY
+  MANAGER
   ADMIN
-  USER
 }

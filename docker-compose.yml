@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres
     environment:
-      POSTGRES_DB: kogs
+      POSTGRES_DB: punchly
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: testpass123
     ports:
@@ -19,7 +19,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: postgres://postgres:testpass123@postgres:5432/kogs
+      DATABASE_URL: postgres://postgres:testpass123@postgres:5432/punchly
     depends_on:
       postgres:
         condition: service_healthy

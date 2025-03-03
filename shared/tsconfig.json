@@ -1,10 +1,16 @@
 {
 	"compilerOptions": {
 		"target": "ES6",
-		"module": "CommonJS",
-		"outDir": "dist",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"outDir": "dist/esm",
 		"declaration": true,
-		"strict": true
+		"strict": true,
+		"allowSyntheticDefaultImports": true,
+		"rootDir": "src",
+		"moduleDetection": "force",
+		"resolveJsonModule": true,
+		"declarationDir": "dist/types"
 	},
-	"include": ["src/**/*"]
+	"include": ["src/**/*", "scripts"]
 }

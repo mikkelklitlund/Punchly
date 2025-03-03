@@ -1,5 +1,5 @@
 import { PrismaClient, User } from '@prisma/client'
-import { User as UserDTO, UserRefreshToken } from 'shared'
+import { Role as RoleDTO, User as UserDTO, UserRefreshToken, UserCompanyAccess as UCADTO } from 'shared'
 import { IUserRepository } from '../interfaces/repositories/IUserRepository'
 
 export class UserRepository implements IUserRepository {
@@ -130,6 +130,26 @@ export class UserRepository implements IUserRepository {
       createdAt: token.createdAt,
       expiryDate: token.expiryDate,
     }
+  }
+
+  async getUserCompanyAccess(userId: number, companyId: number): Promise<UCADTO | null> {
+    const access = await this.prisma.userCompanyAccess.findUnique({
+      where: {
+        userId_companyId: {
+          userId,
+          companyId,
+        },
+      },
+    })
+
+    if (access) {
+      return {
+        userId: access.userId,
+        companyId: access.companyId,
+        role: access.role as RoleDTO,
+      }
+    }
+    return null
   }
 
   private translateToDTO(user: User): UserDTO {

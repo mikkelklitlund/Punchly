@@ -1,24 +1,90 @@
-import { useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useCallback } from 'react'
+import { useEmployees } from '../hooks/useEmployees'
+import { useEmployeeModal } from '../hooks/useEmployeeModal'
+import EmployeeCard from '../components/employee/EmployeeCard'
+import Modal from '../components/common/Modal'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import { employeeService } from '../services/employeeService'
+import { useToast } from '../contexts/ToastContext'
+import EmployeeList from '../components/employee/EmployeeList'
 
 function Home() {
-  const { user, isLoading } = useAuth()
-  const navigate = useNavigate()
+  const { employees, isLoading, error, refresh } = useEmployees()
+  const { showToast } = useToast()
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/login')
-    }
-  }, [isLoading, user, navigate])
+  const handleCheckAction = useCallback(
+    async (employeeId: number, checkIn: boolean) => {
+      try {
+        const service = checkIn ? employeeService.checkIn : employeeService.checkOut
+        const result = await service(employeeId)
 
-  if (isLoading) {
-    return <div>Loading...</div>
+        if (result.success) {
+          showToast(`Medarbejder ${checkIn ? 'er tjekket ind' : 'er tjekket ud'}`, 'success')
+          await refresh()
+        } else if (result.message) {
+          showToast(result.message, 'warning')
+        }
+      } catch (error) {
+        showToast(`Der skete en fejl under ${checkIn ? 'tjek ind' : 'tjek ud'}`, 'error')
+        console.error('Failed to update employee status:', error)
+      }
+    },
+    [refresh, showToast]
+  )
+
+  // eslint-disable-next-line max-len
+  const { selectedEmployee, showModal, openModal, closeModal } = useEmployeeModal(() => {}) // Empty callback since we handle refresh separately
+
+  if (isLoading && employees.length === 0) {
+    return <LoadingSpinner fullScreen message="Loading employees..." />
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-8">
+        <p className="mb-4 text-red-500">{error}</p>
+        <button onClick={refresh} className="rounded bg-mustard px-4 py-2 text-white hover:bg-burnt">
+          Prøv igen
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div>
-      <h1>Welcome {user}</h1>
+    <div className="flex flex-wrap justify-center gap-8 sm:gap-10 lg:justify-start lg:gap-12">
+      {isLoading && employees.length > 0 && (
+        <div className="fixed bottom-4 left-4 z-10">
+          <LoadingSpinner size="small" message="Refreshing..." />
+        </div>
+      )}
+
+      <EmployeeList employees={employees} onEmployeeClick={openModal} />
+
+      {showModal && selectedEmployee && (
+        <Modal closeModal={closeModal} title={selectedEmployee.name}>
+          <EmployeeCard employee={selectedEmployee} />
+          <div className="mt-4 flex w-full justify-evenly">
+            <button
+              className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+              onClick={() => {
+                handleCheckAction(selectedEmployee.id, false)
+                closeModal()
+              }}
+            >
+              Tjek ud
+            </button>
+            <button
+              className="rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+              onClick={() => {
+                handleCheckAction(selectedEmployee.id, true)
+                closeModal()
+              }}
+            >
+              Tjek ind
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

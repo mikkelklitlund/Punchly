@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import axios from '../api/axios'
-import { Company } from 'shared'
+import { useCompanies } from '../hooks/useCompanies'
 
-const Login: React.FC = () => {
-  const { login, user, isLoading } = useAuth()
-  const [companies, setCompanies] = useState<Company[]>([])
+function Login() {
+  const { login, isLoading, user } = useAuth()
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string>('')
+  const { companies, loading } = useCompanies()
 
   const navigate = useNavigate()
 
@@ -17,60 +17,58 @@ const Login: React.FC = () => {
     if (user) {
       navigate('/')
     }
-  }, [user, navigate])
-
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await axios.get('/companies/all')
-        setCompanies(response.data['companies'])
-      } catch (error) {
-        console.error('Failed to fetch companies:', error)
-      }
-    }
-    fetchCompanies()
-  }, [])
+  }, [user])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage('')
     try {
       const parsedInt = parseInt(selectedCompanyId)
       if (isNaN(parsedInt)) {
+        setErrorMessage('Please select a valid company.')
         return
       }
       await login(username, password, parsedInt)
       navigate('/')
     } catch (error) {
-      console.error('Login error', (error as Error).message)
+      setErrorMessage((error as Error).message)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center w-screen bg-slate-100">
-      <div className="bg-gray-300 shadow-md rounded-lg px-8 py-6 max-w-md">
-        <h1 className="text-2xl text-zinc-700 font-bold text-center mb-4">KOGS</h1>
+    <div className="flex min-h-screen w-screen items-center justify-center bg-slate-100">
+      <div className="max-w-md rounded-lg bg-gray-300 px-8 py-6 shadow-md">
+        <h1 className="mb-4 text-center text-2xl font-bold text-zinc-700">Punchly</h1>
         <form onSubmit={handleLogin}>
+          {errorMessage && <div className="mb-4 text-center text-sm text-red-600">{errorMessage}</div>}
           <div className="mb-4">
-            <label htmlFor="company" className="block text-sm font-medium text-zinc-700 mb-2">
+            <label htmlFor="company" className="mb-2 block text-sm font-medium text-zinc-700">
               Vælg Virksomhed
             </label>
             <select
               id="company"
               value={selectedCompanyId}
               onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="shadow-sm rounded-md w-full px-3 py-2 border border-gray-300"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
               required
+              disabled={loading}
             >
-              <option value="">Vælg virksomhed...</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
+              {loading ? (
+                <option>Loading companies...</option>
+              ) : (
+                <>
+                  <option value="">Vælg virksomhed...</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
           <div className="mb-4">
-            <label htmlFor="username" className="block text-sm font-medium text-zinc-700 mb-2">
+            <label htmlFor="username" className="mb-2 block text-sm font-medium text-zinc-700">
               Brugernavn
             </label>
             <input
@@ -78,14 +76,13 @@ const Login: React.FC = () => {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="shadow-sm rounded-md w-full px-3 py-2 border 
-              border-gray-300 focus:outline-none focus:ring-mustard focus:border-mustard"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-mustard focus:outline-none focus:ring-mustard"
               placeholder="d1abcde"
               required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-2">
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-700">
               Adgangskode
             </label>
             <input
@@ -93,25 +90,21 @@ const Login: React.FC = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="shadow-sm rounded-md w-full px-3 py-2 border 
-              border-gray-300 focus:outline-none focus:ring-mustard focus:border-mustard"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-mustard focus:outline-none focus:ring-mustard"
               placeholder="Adgangskode..."
               required
             />
             <a
               href="#"
-              className="text-xs text-zinc-700 hover:text-black 
-              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mustard"
+              className="text-xs text-zinc-700 hover:text-black focus:outline-none focus:ring-2 focus:ring-mustard focus:ring-offset-2"
             >
-              Forgot Password?
+              Glemt adgangskode?
             </a>
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent 
-            rounded-md shadow-sm text-sm font-medium text-white bg-mustard hover:bg-burnt 
-            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mustard"
+            className="flex w-full justify-center rounded-md border border-transparent bg-mustard px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-burnt focus:outline-none focus:ring-2 focus:ring-mustard focus:ring-offset-2"
           >
             {isLoading ? 'Verificerer...' : 'Log ind'}
           </button>

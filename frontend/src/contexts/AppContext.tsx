@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useState } from 'react'
 import { Department } from 'shared'
-import axios from '../api/axios'
+import { companyService } from '../services/companyService'
 
 interface IAppContext {
   departments: Department[]
@@ -10,7 +10,13 @@ interface IAppContext {
   fetchDepartments: (companyId: number) => Promise<void>
 }
 
-const AppContext = createContext<IAppContext | undefined>(undefined)
+const AppContext = createContext<IAppContext>({
+  departments: [],
+  setDepartments: () => {},
+  currentDepartment: undefined,
+  setCurrentDepartment: () => {},
+  fetchDepartments: async () => {},
+})
 
 export const useAppContext = () => {
   const context = useContext(AppContext)
@@ -26,8 +32,8 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const fetchDepartments = async (companyId: number) => {
     try {
-      const response = await axios.get(`/companies/${companyId}/departments`)
-      setDepartments(response.data.departments)
+      const data = await companyService.getDepartments(companyId)
+      setDepartments(data.departments)
     } catch (error) {
       console.error('Failed to fetch departments:', error)
     }

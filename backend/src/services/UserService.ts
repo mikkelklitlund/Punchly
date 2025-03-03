@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { User, UserRefreshToken } from 'shared'
-import { Result, success, failure } from '../utils/Result'
+import { Role, User, UserRefreshToken } from 'shared'
+import { Result, success, failure, Failure } from '../utils/Result'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
 import { addDays } from 'date-fns'
 import { IUserService } from '../interfaces/services/IUserService'
@@ -35,7 +35,9 @@ export class UserService implements IUserService {
     username: string,
     password: string,
     companyId: number
-  ): Promise<Result<{ accessToken: string; refreshToken: string; username: string; companyId: number }, Error>> {
+  ): Promise<
+    Result<{ accessToken: string; refreshToken: string; username: string; role: string; companyId: number }, Error>
+  > {
     try {
       const user = await this.userRepository.getUserByUsername(username)
       if (!user) {
@@ -46,26 +48,31 @@ export class UserService implements IUserService {
         throw new Error('Invalid password')
       }
 
-      // Check if user has access to companyId
+      const accessRecord = await this.userRepository.getUserCompanyAccess(user.id, companyId)
+      if (!accessRecord) {
+        throw new Error('User does not have access to this company')
+      }
+
+      const userRole = accessRecord.role
 
       await this.userRepository.revokeAllActiveUserTokens(user.id)
+
       const accessToken = jwt.sign(
-        { username: user.username, companyId: companyId },
+        { username: user.username, companyId, role: userRole },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
+
       const refreshToken = jwt.sign(
-        { username: user.username, companyId: companyId },
+        { username: user.username, companyId, role: userRole },
         process.env.REFRESH_TOKEN_SECRET!,
-        {
-          expiresIn: '30d',
-        }
+        { expiresIn: '30d' }
       )
 
       const expiryDate = addDays(new Date(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
-      return success({ accessToken, refreshToken, username: user.username, companyId })
+      return success({ accessToken, refreshToken, username: user.username, role: userRole, companyId })
     } catch (err) {
       console.log(err)
       return failure(new Error((err as Error).message))
@@ -139,7 +146,12 @@ export class UserService implements IUserService {
         return failure(new Error('User not found'))
       }
 
-      //Check if user has access to decoded.companyId
+      const accessRecord = await this.userRepository.getUserCompanyAccess(user.id, decoded.companyId)
+      if (!accessRecord) {
+        throw new Error('User does not have access to this company')
+      }
+
+      const userRole = accessRecord.role
 
       const storedToken = await this.userRepository.getRefreshToken(refreshToken)
       if (!storedToken || storedToken.revoked || storedToken.expiryDate < new Date()) {
@@ -147,7 +159,7 @@ export class UserService implements IUserService {
       }
 
       const newAccessToken = jwt.sign(
-        { username: user.username, companyId: decoded.companyId },
+        { username: user.username, companyId: decoded.companyId, role: userRole },
         process.env.ACCESS_TOKEN_SECRET!,
         {
           expiresIn: '15m',
@@ -160,7 +172,7 @@ export class UserService implements IUserService {
       if (timeUntilExpiry < 5 * 60 * 1000) {
         await this.revokeRefreshToken(refreshToken)
 
-        newRefreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET!, {
+        newRefreshToken = jwt.sign({ username: user.username, role: userRole }, process.env.REFRESH_TOKEN_SECRET!, {
           expiresIn: '30d',
         })
         const expiryDate = addDays(new Date(), 1)
@@ -174,5 +186,25 @@ export class UserService implements IUserService {
     } catch {
       return failure(new Error('Invalid refresh token'))
     }
+  }
+
+  async userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>> {
+    const user = await this.getUserByUsername(username)
+
+    if (user instanceof Failure) {
+      return failure(new Error('User does not exist'))
+    }
+
+    const accessRecord = await this.userRepository.getUserCompanyAccess(user.value.id, companyId)
+
+    if (!accessRecord) {
+      return failure(new Error('User does not have access to this company'))
+    }
+
+    if (!allowedRoles.includes(accessRecord.role)) {
+      return failure(new Error('User does not have the correct role for this company'))
+    }
+
+    return success(true)
   }
 }

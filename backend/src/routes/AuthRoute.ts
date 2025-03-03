@@ -2,9 +2,9 @@ import { IUserService } from '../interfaces/services/IUserService'
 import { Failure } from '../utils/Result'
 import { ValidationError } from '../utils/Errors'
 import { body, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/Auth'
 import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
 import { Router, Response } from 'express'
+import authMiddleware from '../middleware/Auth'
 
 export class AuthRoutes {
   public router: Router
@@ -30,7 +30,7 @@ export class AuthRoutes {
 
     this.router.post(
       '/login',
-      [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().notEmpty()],
+      [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().optional()],
       this.login.bind(this)
     )
 
@@ -39,143 +39,124 @@ export class AuthRoutes {
     this.router.post('/logout', authMiddleware, this.logout.bind(this))
   }
 
-  private async register(req: AuthenticatedRequest, res: Response) {
-    try {
-      const errors = validationResult(req)
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array() })
-        return
-      }
-
-      const { email, password, username } = req.body
-      const result = await this.userService.register(email, password, username)
-
-      if (result instanceof Failure) {
-        const status = result.error instanceof ValidationError ? 409 : 500
-        res.status(status).json({ error: result.error.message })
-        return
-      }
-
-      res.status(201).json({
-        message: 'Registration successful',
-        user: {
-          id: result.value.id,
-          email: result.value.email,
-          username: result.value.username,
-        },
-      })
-    } catch {
-      res.status(500).json({ error: 'Internal server error' })
+  private validateRequest(req: AuthenticatedRequest, res: Response): boolean {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ errors: errors.array() })
+      return false
     }
+    return true
+  }
+
+  private async register(req: AuthenticatedRequest, res: Response) {
+    if (!this.validateRequest(req, res)) return
+
+    const { email, password, username } = req.body
+    const result = await this.userService.register(email, password, username)
+
+    if (result instanceof Failure) {
+      const status = result.error instanceof ValidationError ? 409 : 500
+      res.status(status).json({ error: result.error.message })
+      return
+    }
+
+    res.status(201).json({
+      message: 'Registration successful',
+      user: {
+        id: result.value.id,
+        email: result.value.email,
+        username: result.value.username,
+      },
+    })
   }
 
   private async login(req: AuthenticatedRequest, res: Response) {
-    try {
-      const errors = validationResult(req)
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array() })
-        return
-      }
+    if (!this.validateRequest(req, res)) return
 
-      const { username, password, companyId } = req.body
-      const result = await this.userService.login(username, password, companyId)
+    const { username, password, companyId } = req.body
+    const result = await this.userService.login(username, password, companyId)
 
-      if (result instanceof Failure) {
-        res.status(401).json({ error: result.error.message })
-        return
-      }
-
-      res.cookie('jwt', result.value.refreshToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 24 * 60 * 60 * 1000,
-      })
-
-      res.json({
-        accessToken: result.value.accessToken,
-        username: result.value.username,
-        companyId: result.value.companyId,
-      })
-    } catch {
-      res.status(500).json({ error: 'Internal server error' })
+    if (result instanceof Failure) {
+      res.status(401).json({ error: result.error.message })
+      return
     }
+
+    this.setAuthCookies(res, result.value.refreshToken)
+
+    res.json({
+      accessToken: result.value.accessToken,
+      username: result.value.username,
+      role: result.value.role,
+      companyId: result.value.companyId,
+    })
   }
 
   private async getProfile(req: AuthenticatedRequest, res: Response) {
-    try {
-      if (!req.username) {
-        res.status(401).json({ error: 'Authentication required' })
-        return
-      }
-
-      const result = await this.userService.getUserByUsername(req.username)
-
-      if (result instanceof Failure) {
-        res.status(404).json({ error: 'User not found' })
-        return
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...userWithoutPassword } = result.value
-      res.json(userWithoutPassword)
-    } catch {
-      res.status(500).json({ error: 'Internal server error' })
+    if (!req.username) {
+      res.status(401).json({ error: 'Authentication required' })
+      return
     }
+
+    const result = await this.userService.getUserByUsername(req.username)
+
+    if (result instanceof Failure) {
+      res.status(404).json({ error: 'User not found' })
+      return
+    }
+
+    // Exclude password from the response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = result.value
+    res.json(userWithoutPassword)
   }
 
   private async refreshToken(req: AuthenticatedRequest, res: Response) {
-    try {
-      const cookie = req.cookies
-
-      if (!cookie?.jwt) {
-        res.status(401).json({ error: 'No refresh token' })
-        return
-      }
-
-      //Check if user has access to companyId
-
-      const result = await this.userService.refreshAccessToken(cookie.jwt)
-      if (result instanceof Failure) {
-        res.status(403).json({ error: 'Invalid refresh token' })
-        return
-      }
-
-      res.cookie('jwt', result.value.refreshToken, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: false,
-        maxAge: 24 * 60 * 60 * 1000,
-      })
-
-      res.json({ accessToken: result.value.accessToken })
-    } catch {
-      res.status(500).json({ error: 'Internal server error' })
+    const refreshToken = req.cookies?.jwt
+    if (!refreshToken) {
+      res.status(401).json({ error: 'No refresh token' })
+      return
     }
+
+    const result = await this.userService.refreshAccessToken(refreshToken)
+    if (result instanceof Failure) {
+      res.status(403).json({ error: 'Invalid refresh token' })
+      return
+    }
+
+    this.setAuthCookies(res, result.value.refreshToken)
+
+    res.json({ accessToken: result.value.accessToken })
   }
 
   private async logout(req: AuthenticatedRequest, res: Response) {
     try {
       const refreshToken = req.cookies.jwt
-
       if (refreshToken) {
         await this.userService.revokeRefreshToken(refreshToken)
       }
 
-      res.clearCookie('jwt', {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: false,
-      })
+      this.clearAuthCookies(res)
       res.status(204).json({ message: 'Logged out successfully' })
     } catch {
-      res.clearCookie('jwt', {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: false,
-        maxAge: 24 * 60 * 60 * 1000,
-      })
+      this.clearAuthCookies(res)
       res.status(500).json({ error: 'Internal server error' })
     }
+  }
+
+  private setAuthCookies(res: Response, refreshToken: string) {
+    res.cookie('jwt', refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    })
+  }
+
+  private clearAuthCookies(res: Response) {
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    })
   }
 }

@@ -1,145 +1,185 @@
-import { useState, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
-import axios from '../api/axios'
+import { useReducer, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
+import { AxiosError } from 'axios'
+import { authService } from '../services/authService'
+import { Role } from 'shared'
 
+// Types
 interface AuthResponse extends JwtPayload {
   username?: string
-  companyId?: string
+  companyId?: number
+  role?: Role
 }
 
-export interface AuthContextType {
+export interface AuthState {
   user: string | null
-  accessToken: string | null
+  role: Role | null
+  isLoading: boolean
+  companyId: number | undefined
+  error: string | null
+}
+
+export interface AuthContextType extends AuthState {
   login: (username: string, password: string, companyId: number) => Promise<void>
   register: (email: string, password: string, username: string) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
-  isLoading: boolean
-  companyId: number | undefined
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+// Initial state
+const initialState: AuthState = {
+  user: null,
+  role: null,
+  isLoading: false,
+  companyId: undefined,
+  error: null,
+}
+
+type AuthAction =
+  | { type: 'AUTH_START' }
+  | { type: 'AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
+  | { type: 'AUTH_FAILURE'; payload: string }
+  | { type: 'AUTH_LOGOUT' }
+
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+  switch (action.type) {
+    case 'AUTH_START':
+      return { ...state, isLoading: true, error: null }
+    case 'AUTH_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        user: action.payload.user,
+        role: action.payload.role,
+        companyId: action.payload.companyId,
+        error: null,
+      }
+    case 'AUTH_FAILURE':
+      return { ...state, isLoading: false, error: action.payload }
+    case 'AUTH_LOGOUT':
+      return { ...initialState, isLoading: false }
+    default:
+      return state
+  }
+}
+
+const AuthContext = createContext<AuthContextType>({
+  ...initialState,
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  refresh: async () => {},
+})
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<string | null>(null)
-  const [accessToken, setAccessToken] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [companyId, setCompanyId] = useState<number | undefined>(undefined)
+  const [state, dispatch] = useReducer(authReducer, initialState)
 
-  const login = useCallback(async (username: string, password: string, companyId: number) => {
-    setIsLoading(true)
+  const login = useCallback(async (username: string, password: string, companyId?: number) => {
+    dispatch({ type: 'AUTH_START' })
     try {
-      const response = await axios.post('/auth/login', { username, password, companyId }, { withCredentials: true })
-      setAccessToken(response.data.accessToken)
-      setUser(response.data.username)
-      setCompanyId(response.data.companyId)
+      const data = await authService.login(username, password, companyId)
+
+      sessionStorage.setItem('accessToken', data.accessToken)
+
+      const decoded = jwtDecode<AuthResponse>(data.accessToken)
+
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          user: decoded.username || '',
+          role: decoded.role || Role.COMPANY,
+          companyId: decoded.companyId,
+        },
+      })
     } catch (error) {
-      throw new Error((error as Error).message)
-    } finally {
-      setIsLoading(false)
+      const axiosError = error as AxiosError<{ message?: string }>
+      let errorMessage = 'An unexpected error occurred'
+
+      if (axiosError.response) {
+        if (axiosError.response.status === 401) {
+          errorMessage = 'Invalid username or password'
+        } else if (axiosError.response.data?.message) {
+          errorMessage = axiosError.response.data.message
+        }
+      }
+
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
+      throw new Error(errorMessage)
     }
   }, [])
 
   const register = useCallback(async (email: string, password: string, username: string) => {
-    setIsLoading(true)
+    dispatch({ type: 'AUTH_START' })
     try {
-      await axios.post('/auth/register', { email, password, username })
+      await authService.register(email, password, username)
     } catch (error) {
-      throw new Error((error as Error).message)
-    } finally {
-      setIsLoading(false)
+      const errorMessage = (error as Error).message || 'Registration failed'
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
+      throw new Error(errorMessage)
     }
   }, [])
 
   const refresh = useCallback(async () => {
+    dispatch({ type: 'AUTH_START' })
     try {
-      const response = await axios.get('/auth/refresh', { withCredentials: true })
-      setAccessToken(response.data.accessToken)
-      const decoded = jwtDecode(response.data.accessToken) as AuthResponse
-      if (decoded.username) {
-        setUser(decoded.username)
+      const data = await authService.refresh()
+
+      if (!data.accessToken) {
+        throw new Error('No access token returned')
       }
-      if (decoded.companyId) {
-        const parsed = parseInt(decoded.companyId)
-        if (!isNaN(parsed)) {
-          setCompanyId(parsed)
-        }
-      }
-      return response.data.accessToken
+
+      const decoded = jwtDecode<AuthResponse>(data.accessToken)
+
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          user: decoded.username || '',
+          role: decoded.role || Role.COMPANY,
+          companyId: decoded.companyId,
+        },
+      })
+
+      sessionStorage.setItem('accessToken', data.accessToken)
     } catch (error) {
-      setUser(null)
-      setAccessToken(null)
+      sessionStorage.removeItem('accessToken')
+      dispatch({ type: 'AUTH_LOGOUT' })
       throw error
     }
   }, [])
 
   const logout = useCallback(async () => {
-    setIsLoading(true)
+    dispatch({ type: 'AUTH_START' })
     try {
-      await axios.post('/auth/logout', {}, { withCredentials: true })
+      await authService.logout()
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
-      setUser(null)
-      setAccessToken(null)
-      setIsLoading(false)
+      sessionStorage.removeItem('accessToken')
+      dispatch({ type: 'AUTH_LOGOUT' })
     }
   }, [])
 
   useEffect(() => {
-    let isRefreshing = false
-
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true
-
-          if (isRefreshing) {
-            return Promise.reject(error)
-          }
-
-          isRefreshing = true
-
-          try {
-            const newAccessToken = await refresh()
-            setAccessToken(newAccessToken)
-            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
-            isRefreshing = false
-            return axios(originalRequest)
-          } catch (refreshError) {
-            isRefreshing = false
-            setUser(null)
-            setAccessToken(null)
-            return Promise.reject(refreshError)
-          }
-        }
-
-        return Promise.reject(error)
-      }
-    )
-
-    return () => axios.interceptors.response.eject(interceptor)
-  }, [refresh])
-
-  useEffect(() => {
     const initializeAuth = async () => {
-      setIsLoading(true)
       try {
         await refresh()
-      } catch {
-        /* Not logged in */
-      } finally {
-        setIsLoading(false)
+      } catch (error) {
+        console.log('Failed to refresh token:', error)
       }
     }
     initializeAuth()
   }, [refresh])
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, register, logout, refresh, isLoading, companyId }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        register,
+        logout,
+        refresh,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
