@@ -4,7 +4,7 @@ import { ValidationError } from '../utils/Errors'
 import { body, validationResult } from 'express-validator'
 import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
 import { Router, Response } from 'express'
-import authMiddleware from '../middleware/auth'
+import authMiddleware from '../middleware/Auth'
 
 export class AuthRoutes {
   public router: Router
@@ -105,6 +105,7 @@ export class AuthRoutes {
     }
 
     // Exclude password from the response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = result.value
     res.json(userWithoutPassword)
   }

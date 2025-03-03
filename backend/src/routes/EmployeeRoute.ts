@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService'
 import { body, query, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/auth'
+import authMiddleware from '../middleware/Auth'
 import { Failure, Result } from '../utils/Result'
 import { CreateEmployee, Employee, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService'
