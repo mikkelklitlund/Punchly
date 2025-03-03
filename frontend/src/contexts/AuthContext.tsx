@@ -2,17 +2,18 @@ import { useReducer, useCallback, createContext, useContext, ReactNode, useEffec
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
 import { authService } from '../services/authService'
+import { Role } from 'shared'
 
 // Types
 interface AuthResponse extends JwtPayload {
   username?: string
-  companyId?: string
-  role?: string
+  companyId?: number
+  role?: Role
 }
 
 export interface AuthState {
   user: string | null
-  role: string | null
+  role: Role | null
   isLoading: boolean
   companyId: number | undefined
   error: string | null
@@ -36,7 +37,7 @@ const initialState: AuthState = {
 
 type AuthAction =
   | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: { user: string; role: string; companyId?: number } }
+  | { type: 'AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'AUTH_LOGOUT' }
 
@@ -86,8 +87,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         type: 'AUTH_SUCCESS',
         payload: {
           user: decoded.username || '',
-          role: decoded.role || '',
-          companyId: decoded.companyId ? parseInt(decoded.companyId) : undefined,
+          role: decoded.role || Role.COMPANY,
+          companyId: decoded.companyId,
         },
       })
     } catch (error) {
@@ -133,8 +134,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         type: 'AUTH_SUCCESS',
         payload: {
           user: decoded.username || '',
-          role: decoded.role || '',
-          companyId: decoded.companyId ? parseInt(decoded.companyId) : undefined,
+          role: decoded.role || Role.COMPANY,
+          companyId: decoded.companyId,
         },
       })
 
