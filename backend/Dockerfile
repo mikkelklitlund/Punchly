@@ -1,47 +1,43 @@
-# backend/Dockerfile
-
-# Stage 1: Build Stage
+# Stage 1: Build
 FROM node:20-alpine AS build
 
-# Set working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and install dependencies
-COPY backend/package.json ./
-COPY shared/package.json ../shared/
+# Copy entire monorepo (root level)
+COPY package.json package-lock.json ./
+COPY backend/package.json backend/
+COPY shared/package.json shared/
 
-# Install dependencies
-RUN npm install --legacy-peer-deps
+# Install dependencies using workspaces
+RUN npm install --workspaces
 
-# Copy source files and build
-COPY backend ./
-COPY shared ../shared/
+# Copy source code and build shared first
+COPY backend ./backend
+COPY shared ./shared
+RUN npm run build --workspace=shared
 
-# Build the shared module first, then generate Prisma files and build backend
-RUN cd ../shared && npm install && npm run build && cd ../app
-RUN npx prisma generate
-RUN npm run build
+# Build the backend
+RUN npx prisma generate && npm run build --workspace=backend
 
-# Stage 2: Production Stage
+# Stage 2: Production
 FROM node:20-alpine
 
-# Set working directory
 WORKDIR /usr/src/app
 
-# Copy only the built backend and shared library from the build stage
-COPY --from=build /usr/src/app/dist ./dist
-COPY --from=build /usr/src/shared/dist ../shared
-COPY --from=build /usr/src/app/prisma ./prisma
+# Copy root package.json which contains workspace configuration
+COPY package.json ./
+COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
 
-# Copy only necessary production files
-COPY backend/package.json ./
+# Copy built output
+COPY --from=build /usr/src/app/backend/dist ./backend/dist
+COPY --from=build /usr/src/app/shared/dist ./shared/dist
+COPY --from=build /usr/src/app/backend/prisma ./backend/prisma
 
-# Install only production dependencies
-RUN npm install --omit=dev && npm cache clean --force
-RUN npx prisma generate
+# Install production dependencies preserving workspace structure
+RUN npm install --omit=dev --workspaces && npm cache clean --force
+RUN cd backend && npx prisma generate
 
-# Expose the application port
 EXPOSE 4000
 
-# Start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+CMD ["sh", "-c", "cd backend && npx prisma migrate deploy && npm run start"]

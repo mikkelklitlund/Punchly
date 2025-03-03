@@ -1,4 +1,4 @@
-# Kogs
+# Punchly
 
 ---
 
@@ -6,7 +6,7 @@ The Employee Management System is a full-stack application designed to manage em
 
 ## Table of Contents
 
-- [Kogs](#kogs)
+- [Punchly](#punchly)
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
     - [Installation](#installation)
@@ -28,8 +28,8 @@ The Employee Management System is a full-stack application designed to manage em
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/mikkelklitlund/kogs.git
-   cd kogs
+   git clone https://github.com/mikkelklitlund/Punchly.git
+   cd Punchly
    ```
 2. Install dependencies for both frontend, backend and shared
    ```bash

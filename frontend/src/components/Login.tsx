@@ -38,7 +38,7 @@ function Login() {
   return (
     <div className="flex min-h-screen w-screen items-center justify-center bg-slate-100">
       <div className="max-w-md rounded-lg bg-gray-300 px-8 py-6 shadow-md">
-        <h1 className="mb-4 text-center text-2xl font-bold text-zinc-700">KOGS</h1>
+        <h1 className="mb-4 text-center text-2xl font-bold text-zinc-700">Punchly</h1>
         <form onSubmit={handleLogin}>
           {errorMessage && <div className="mb-4 text-center text-sm text-red-600">{errorMessage}</div>}
           <div className="mb-4">
