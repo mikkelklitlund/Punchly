@@ -1,11 +1,11 @@
 import { Router, Response } from 'express'
-import { upload } from '../middleware/Upload'
-import { IEmployeeService } from '../interfaces/services/IEmployeeService'
-import { Failure } from '../utils/Result'
-import authMiddleware from '../middleware/Auth'
-import authorizeRoles from '../middleware/authorizeRole'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
-import { IUserService } from '../interfaces/services/IUserService'
+import { upload } from '../middleware/Upload.js'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
+import { Failure } from '../utils/Result.js'
+import authMiddleware from '../middleware/Auth.js'
+import authorizeRoles from '../middleware/authorizeRole.js'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
+import { IUserService } from '../interfaces/services/IUserService.js'
 import { Role } from 'shared'
 
 export class EmployeePictureRoutes {

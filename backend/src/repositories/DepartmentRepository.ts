@@ -1,6 +1,6 @@
 import { PrismaClient, Department } from '@prisma/client'
 import { Department as DepartmentDTO } from 'shared'
-import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository.js'
 
 export class DepartmentRepository implements IDepartmentRepository {
   constructor(private readonly prisma: PrismaClient) {}

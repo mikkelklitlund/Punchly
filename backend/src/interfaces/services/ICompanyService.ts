@@ -1,5 +1,5 @@
 import { Company } from 'shared'
-import { Result } from '../../utils/Result'
+import { Result } from '../../utils/Result.js'
 
 export interface ICompanyService {
   createCompany(name: string, address: string): Promise<Result<Company, Error>>

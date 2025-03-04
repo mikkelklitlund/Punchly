@@ -1,6 +1,6 @@
 import { PrismaClient, User } from '@prisma/client'
 import { Role as RoleDTO, User as UserDTO, UserRefreshToken, UserCompanyAccess as UCADTO } from 'shared'
-import { IUserRepository } from '../interfaces/repositories/IUserRepository'
+import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
 
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}

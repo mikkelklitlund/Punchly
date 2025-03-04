@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Role } from '@prisma/client'
 
 interface AuthJwtPayload extends JwtPayload {
