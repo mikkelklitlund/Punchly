@@ -93,6 +93,8 @@ jobs:
           npm run build --workspace=backend
         working-directory: .
   release:
+    # Only run if PR is merged to main
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       contents: write
