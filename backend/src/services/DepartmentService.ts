@@ -1,8 +1,8 @@
 import { Department } from 'shared'
-import { DatabaseError } from '../utils/Errors'
-import { failure, Result, success } from '../utils/Result'
-import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
-import { IDepartmentService } from '../interfaces/services/IDepartmentService'
+import { DatabaseError } from '../utils/Errors.js'
+import { failure, Result, success } from '../utils/Result.js'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository.js'
+import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
 
 export class DepartmentService implements IDepartmentService {
   constructor(private readonly departmentRepository: IDepartmentRepository) {}

@@ -1,11 +1,11 @@
 import bcrypt from 'bcrypt'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { Role, User, UserRefreshToken } from 'shared'
-import { Result, success, failure, Failure } from '../utils/Result'
-import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
+import { Result, success, failure, Failure } from '../utils/Result.js'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { addDays } from 'date-fns'
-import { IUserService } from '../interfaces/services/IUserService'
-import { IUserRepository } from '../interfaces/repositories/IUserRepository'
+import { IUserService } from '../interfaces/services/IUserService.js'
+import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
 
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}

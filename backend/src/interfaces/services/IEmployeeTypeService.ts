@@ -1,5 +1,5 @@
 import { EmployeeType } from 'shared'
-import { Result } from '../../utils/Result'
+import { Result } from '../../utils/Result.js'
 
 export interface IEmployeeTypeService {
   createEmployeeType(typeName: string, companyId: number): Promise<Result<EmployeeType, Error>>

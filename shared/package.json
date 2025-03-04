@@ -2,18 +2,14 @@
   "name": "shared",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/cjs/index.cjs",
-  "module": "dist/esm/index.js",
+  "main": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "exports": {
     "import": "./dist/esm/index.js",
-    "require": "./dist/cjs/index.cjs",
     "types": "./dist/types/index.d.ts"
   },
   "scripts": {
-    "build:esm": "tsc",
-    "build:cjs": "tsc --project tsconfig.cjs.json && node scripts/rename-cjs.js",
-    "build": "npm run build:esm && npm run build:cjs"
+    "build": "tsc"
   },
   "files": [
     "dist"

@@ -1,5 +1,5 @@
 import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
-import { Result } from '../../utils/Result'
+import { Result } from '../../utils/Result.js'
 
 export interface IAttendanceService {
   createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>>

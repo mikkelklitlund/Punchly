@@ -1,9 +1,9 @@
-import { Result, success, failure } from '../utils/Result'
-import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors'
+import { Result, success, failure } from '../utils/Result.js'
+import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors.js'
 import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
-import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository'
-import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
-import { IAttendanceService } from '../interfaces/services/IAttendanceService'
+import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository.js'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
+import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 
 export class AttendanceService implements IAttendanceService {
   constructor(

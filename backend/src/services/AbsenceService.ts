@@ -1,9 +1,9 @@
 import { AbsenceRecord, CreateAbsenceRecord } from 'shared'
-import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
-import { failure, Result, success } from '../utils/Result'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
+import { failure, Result, success } from '../utils/Result.js'
 import { isBefore } from 'date-fns'
-import { IAbsenceService } from '../interfaces/services/IAbsenceService'
-import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository'
+import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
+import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
 
 export class AbsenceService implements IAbsenceService {
   constructor(private readonly absenceRecordRepository: IAbsenceRecordRepository) {}

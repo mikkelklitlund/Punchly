@@ -1,17 +1,18 @@
 import express from 'express'
 import { createServer } from 'http'
-import { errorHandler } from './middleware/ErrorHandler'
+import { errorHandler } from './middleware/ErrorHandler.js'
 import { PrismaClient } from '@prisma/client'
-import { AuthRoutes } from './routes/AuthRoute'
+import { AuthRoutes } from './routes/AuthRoute.js'
 import cors from 'cors'
-import { EmployeeRoutes } from './routes/EmployeeRoute'
-import { EmployeePictureRoutes } from './routes/ProfilePictureUpload'
-import { CompanyRoutes } from './routes/CompanyRoute'
-import { RepositoryContainer } from './repositories/RepositoryContainer.'
-import { ServiceContainer } from './services/ServiceContainer'
+import { EmployeeRoutes } from './routes/EmployeeRoute.js'
+import { EmployeePictureRoutes } from './routes/ProfilePictureUpload.js'
+import { CompanyRoutes } from './routes/CompanyRoute.js'
+import { RepositoryContainer } from './repositories/RepositoryContainer.js'
+import { ServiceContainer } from './services/ServiceContainer.js'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
 dotenv.config()
 
@@ -50,6 +51,9 @@ const companyRoutes = new CompanyRoutes(
   serviceContainer.departmentService,
   serviceContainer.userService
 )
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 app.use('/api/auth', authRoutes.router)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))

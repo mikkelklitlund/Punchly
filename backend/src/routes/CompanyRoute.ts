@@ -1,14 +1,14 @@
 import { Request, Response, Router } from 'express'
-import { IEmployeeService } from '../interfaces/services/IEmployeeService'
-import { Failure } from '../utils/Result'
-import { ICompanyService } from '../interfaces/services/ICompanyService'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
+import { Failure } from '../utils/Result.js'
+import { ICompanyService } from '../interfaces/services/ICompanyService.js'
 import { body, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/Auth'
-import { IDepartmentService } from '../interfaces/services/IDepartmentService'
-import authorizeRoles from '../middleware/authorizeRole'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import authMiddleware from '../middleware/Auth.js'
+import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
+import authorizeRoles from '../middleware/authorizeRole.js'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Employee, Role } from 'shared'
-import { IUserService } from '../interfaces/services/IUserService'
+import { IUserService } from '../interfaces/services/IUserService.js'
 
 export class CompanyRoutes {
   public router: Router

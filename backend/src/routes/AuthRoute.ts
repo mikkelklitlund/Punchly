@@ -1,10 +1,10 @@
-import { IUserService } from '../interfaces/services/IUserService'
-import { Failure } from '../utils/Result'
-import { ValidationError } from '../utils/Errors'
+import { IUserService } from '../interfaces/services/IUserService.js'
+import { Failure } from '../utils/Result.js'
+import { ValidationError } from '../utils/Errors.js'
 import { body, validationResult } from 'express-validator'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Router, Response } from 'express'
-import authMiddleware from '../middleware/Auth'
+import authMiddleware from '../middleware/Auth.js'
 
 export class AuthRoutes {
   public router: Router

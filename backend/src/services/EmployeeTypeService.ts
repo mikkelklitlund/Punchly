@@ -1,8 +1,8 @@
 import { EmployeeType } from 'shared'
-import { DatabaseError, ValidationError } from '../utils/Errors'
-import { failure, Result, success } from '../utils/Result'
-import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService'
-import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
+import { DatabaseError, ValidationError } from '../utils/Errors.js'
+import { failure, Result, success } from '../utils/Result.js'
+import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository.js'
 
 export class EmployeeTypeService implements IEmployeeTypeService {
   constructor(private readonly employeeTypeRepository: IEmployeeTypeRepository) {}
