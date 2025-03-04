@@ -21,19 +21,15 @@
 ## Example Commit Messages
 
 ```
-feat(auth): implement OAuth login
-
-Adds support for Google and Facebook authentication.
-Integrates with existing user management system.
-
-Closes #123
+fix: resolve login authentication error
+feat: add user profile picture upload
+docs: update README with new installation instructions
+refactor: simplify user authentication logic
 ```
 
 ```
-fix(payment): resolve stripe webhook parsing
+feat: redesign user authentication system
 
-Correctly handle edge cases in webhook events.
-Improves error logging and tracking.
-
-BREAKING CHANGE: Requires updated webhook endpoint configuration
+BREAKING CHANGE: Completely restructured auth flow,
+requires updating client-side login method
 ```
