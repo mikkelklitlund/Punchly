@@ -10,7 +10,6 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   const { user, role } = useAuth()
-  console.log(role)
   const showSidebar = (user && role === Role.ADMIN) || role === Role.MANAGER
 
   return (
