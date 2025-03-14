@@ -32,8 +32,7 @@ function Home() {
     [refresh, showToast]
   )
 
-  // eslint-disable-next-line max-len
-  const { selectedEmployee, showModal, openModal, closeModal } = useEmployeeModal(() => {}) // Empty callback since we handle refresh separately
+  const { selectedEmployee, showModal, openModal, closeModal } = useEmployeeModal(() => {})
 
   if (isLoading && employees.length === 0) {
     return <LoadingSpinner fullScreen message="Loading employees..." />
