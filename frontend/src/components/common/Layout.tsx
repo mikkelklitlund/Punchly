@@ -13,11 +13,11 @@ function Layout({ children }: LayoutProps) {
   const showSidebar = (user && role === Role.ADMIN) || role === Role.MANAGER
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex">
       {showSidebar && <Sidebar />}
-      <div className="flex flex-grow flex-col">
+      <div className="w-full">
         {user && <Header />}
-        <main className={`flex-grow ${user ? 'pt-16' : ''}`}>{children}</main>
+        {children}
       </div>
     </div>
   )

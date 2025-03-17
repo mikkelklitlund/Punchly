@@ -14,7 +14,7 @@ function Header() {
   }, [companyId])
 
   return (
-    <header className="text-cream fixed left-0 top-0 z-10 h-16 w-full bg-gray-300 p-4 shadow-md">
+    <header className="text-cream h-16 w-full bg-gray-300 p-4 shadow-md">
       <div className="flex h-full items-center justify-between">
         <nav className="flex space-x-4">
           {departments.map((department) => (
