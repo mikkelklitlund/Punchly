@@ -1,36 +1,105 @@
-import { Role } from 'shared'
+import { Department, Role } from 'shared'
 import { useAuth } from '../../contexts/AuthContext'
-import { House, Users, Settings } from 'lucide-react'
+import { House, Users, Settings, ChevronDown, ChevronUp } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useAppContext } from '../../contexts/AppContext'
 
 function Sidebar() {
-  const { role } = useAuth()
+  const { role, companyId, logout } = useAuth()
+  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useAppContext()
+  const [showSubMenu, setShowSubMenu] = useState(false)
+  const location = useLocation()
+  const isSelected = (dep: Department | undefined) => location.pathname === '/' && currentDepartment === dep
+
+  useEffect(() => {
+    const getDepartments = async () => {
+      if (companyId) await fetchDepartments(companyId)
+    }
+    getDepartments()
+  }, [companyId])
 
   if (!role || role === Role.COMPANY) return null
 
   const menuItems = [
-    { label: 'Oversigt', href: '/', icon: House, roles: [Role.ADMIN, Role.MANAGER] },
     { label: 'Medarbejdere', href: '/employees', icon: Users, roles: [Role.ADMIN, Role.MANAGER] },
-    { label: 'Managere', href: '/manage-managers', icon: Users, roles: [Role.ADMIN] },
+    { label: 'Managere', href: '/managers', icon: Users, roles: [Role.ADMIN] },
     { label: 'Indstillinger', href: '/settings', icon: Settings, roles: [Role.ADMIN, Role.MANAGER] },
   ]
 
   return (
-    <aside className="min-h-screen w-[12rem] max-w-56 bg-burnt p-4 text-white">
-      <nav>
-        <ul className="space-y-4">
+    <aside className="flex min-h-screen w-[12rem] max-w-56 flex-col bg-burnt p-4 text-white">
+      <nav className="flex h-full flex-col justify-between">
+        <ul className="flex-grow space-y-4">
           <li className="border-b-2 border-mustard">
             <p className="text-3xl font-bold">Punchly</p>
+          </li>
+          <li>
+            <button
+              className="flex w-full flex-col rounded-md p-2 hover:bg-mustard"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowSubMenu((prev) => !prev)
+              }}
+              aria-expanded={showSubMenu}
+            >
+              <div className="flex w-full items-center gap-2">
+                <House />
+                <span>Oversigt</span>
+                {showSubMenu ? <ChevronUp /> : <ChevronDown />}
+              </div>
+
+              <div
+                className={`flex flex-col items-start overflow-hidden pl-6 transition-all duration-300 ${
+                  showSubMenu ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                {departments.map((department) => (
+                  <Link
+                    key={department.id}
+                    to={'/'}
+                    className={`text-neutral-200 transition duration-150 ${
+                      isSelected(department) ? 'text-neutral-800 underline underline-offset-2' : 'hover:text-black'
+                    }`}
+                    onClick={() => setCurrentDepartment(department)}
+                  >
+                    {department.name}
+                  </Link>
+                ))}
+                <Link
+                  to={'/'}
+                  className={`text-neutral-200 transition duration-150 ${
+                    isSelected(undefined) ? 'text-neutral-800 underline underline-offset-2' : 'hover:text-black'
+                  }`}
+                  onClick={() => setCurrentDepartment(undefined)}
+                >
+                  Samlet
+                </Link>
+              </div>
+            </button>
           </li>
           {menuItems
             .filter((item) => item.roles.includes(role))
             .map((item) => (
               <li key={item.href}>
-                <a href={item.href} className="flex gap-2 rounded-md p-2 hover:bg-mustard">
+                <Link
+                  to={item.href}
+                  className="flex gap-2 rounded-md p-2 hover:bg-mustard"
+                  onClick={() => setShowSubMenu(false)}
+                >
                   <item.icon />
                   {item.label}
-                </a>
+                </Link>
               </li>
             ))}
+        </ul>
+
+        <ul>
+          <li>
+            <button onClick={logout} className="w-full rounded bg-mustard px-4 py-1 text-white hover:bg-burnt">
+              Log ud
+            </button>
+          </li>
         </ul>
       </nav>
     </aside>

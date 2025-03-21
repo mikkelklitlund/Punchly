@@ -6,6 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import Layout from './components/common/Layout'
 import { ToastProvider } from './contexts/ToastContext'
+import ManagerList from './components/manager/ManagerList'
+import AdminRoute from './components/AdminRoute'
 
 function App() {
   return (
@@ -18,6 +20,9 @@ function App() {
                 <Route path="/login" element={<LoginForm />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<Home />} />
+                  <Route element={<AdminRoute />}>
+                    <Route path="/managers" element={<ManagerList />} />
+                  </Route>
                 </Route>
               </Routes>
             </Layout>

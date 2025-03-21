@@ -31,11 +31,7 @@ function Modal({ children, closeModal, title }: PropsWithChildren<ModalProps>) {
       >
         {title && <h2 className="mb-4 text-xl font-bold">{title}</h2>}
         {children}
-        <button
-          onClick={closeModal}
-          className="absolute right-2 top-2 text-2xl text-gray-500 hover:text-mustard"
-          aria-label="Close modal"
-        >
+        <button onClick={closeModal} className="absolute right-2 top-2 text-2xl text-gray-500 hover:text-mustard">
           &#10006;
         </button>
       </div>

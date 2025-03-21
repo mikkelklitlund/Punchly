@@ -11,12 +11,13 @@ interface LayoutProps {
 function Layout({ children }: LayoutProps) {
   const { user, role } = useAuth()
   const showSidebar = (user && role === Role.ADMIN) || role === Role.MANAGER
+  const showHeader = user && role == Role.COMPANY
 
   return (
     <div className="flex">
       {showSidebar && <Sidebar />}
       <div className="w-full">
-        {user && <Header />}
+        {showHeader && <Header />}
         {children}
       </div>
     </div>
