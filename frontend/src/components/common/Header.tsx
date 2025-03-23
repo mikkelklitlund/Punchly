@@ -1,10 +1,10 @@
-import { useAppContext } from '../../contexts/AppContext'
 import { useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useDepartments } from '../../hooks/useDepartments'
 
 function Header() {
   const { logout, companyId } = useAuth()
-  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useAppContext()
+  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useDepartments()
 
   useEffect(() => {
     const getDepartments = async () => {
@@ -38,7 +38,7 @@ function Header() {
           </button>
         </nav>
 
-        <button onClick={logout} className="rounded-sm bg-mustard px-4 py-1 text-white hover:bg-burnt">
+        <button onClick={logout} className="bg-mustard hover:bg-burnt rounded-sm px-4 py-1 text-white">
           Log ud
         </button>
       </div>

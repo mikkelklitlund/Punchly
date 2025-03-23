@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from 'react'
 import { SimpleEmployee } from 'shared'
 import { useAuth } from '../contexts/AuthContext'
-import { useAppContext } from '../contexts/AppContext'
 import { employeeService } from '../services/employeeService'
+import { useDepartments } from './useDepartments'
 
 export function useEmployees() {
   const { companyId } = useAuth()
-  const { currentDepartment } = useAppContext()
+  const { currentDepartment } = useDepartments()
   const [employees, setEmployees] = useState<SimpleEmployee[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

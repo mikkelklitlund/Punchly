@@ -3,11 +3,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import { House, Users, Settings, ChevronDown, ChevronUp } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { useAppContext } from '../../contexts/AppContext'
+import { useDepartments } from '../../hooks/useDepartments'
 
 function Sidebar() {
   const { role, companyId, logout } = useAuth()
-  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useAppContext()
+  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useDepartments()
   const [showSubMenu, setShowSubMenu] = useState(false)
   const location = useLocation()
   const isSelected = (dep: Department | undefined) => location.pathname === '/' && currentDepartment === dep
@@ -28,15 +28,15 @@ function Sidebar() {
   ]
 
   return (
-    <aside className="flex min-h-screen w-[12rem] max-w-56 flex-col bg-burnt p-4 text-white">
+    <aside className="bg-burnt flex min-h-screen w-[12rem] max-w-56 flex-col p-4 text-white">
       <nav className="flex h-full flex-col justify-between">
         <ul className="grow space-y-4">
-          <li className="border-b-2 border-mustard">
+          <li className="border-mustard border-b-2">
             <p className="text-3xl font-bold">Punchly</p>
           </li>
           <li>
             <button
-              className="flex w-full flex-col rounded-md p-2 hover:bg-mustard"
+              className="hover:bg-mustard flex w-full flex-col rounded-md p-2"
               onClick={(e) => {
                 e.stopPropagation()
                 setShowSubMenu((prev) => !prev)
@@ -84,7 +84,7 @@ function Sidebar() {
               <li key={item.href}>
                 <Link
                   to={item.href}
-                  className="flex gap-2 rounded-md p-2 hover:bg-mustard"
+                  className="hover:bg-mustard flex gap-2 rounded-md p-2"
                   onClick={() => setShowSubMenu(false)}
                 >
                   <item.icon />
@@ -96,7 +96,7 @@ function Sidebar() {
 
         <ul>
           <li>
-            <button onClick={logout} className="w-full rounded-sm bg-mustard px-4 py-1 text-white hover:bg-burnt">
+            <button onClick={logout} className="bg-mustard hover:bg-burnt w-full rounded-sm px-4 py-1 text-white">
               Log ud
             </button>
           </li>
