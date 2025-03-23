@@ -30,7 +30,7 @@ function Sidebar() {
   return (
     <aside className="flex min-h-screen w-[12rem] max-w-56 flex-col bg-burnt p-4 text-white">
       <nav className="flex h-full flex-col justify-between">
-        <ul className="flex-grow space-y-4">
+        <ul className="grow space-y-4">
           <li className="border-b-2 border-mustard">
             <p className="text-3xl font-bold">Punchly</p>
           </li>
@@ -96,7 +96,7 @@ function Sidebar() {
 
         <ul>
           <li>
-            <button onClick={logout} className="w-full rounded bg-mustard px-4 py-1 text-white hover:bg-burnt">
+            <button onClick={logout} className="w-full rounded-sm bg-mustard px-4 py-1 text-white hover:bg-burnt">
               Log ud
             </button>
           </li>

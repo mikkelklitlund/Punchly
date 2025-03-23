@@ -49,7 +49,7 @@ function Login() {
               id="company"
               value={selectedCompanyId}
               onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-xs"
               required
               disabled={loading}
             >
@@ -76,7 +76,7 @@ function Login() {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-mustard focus:outline-none focus:ring-mustard"
+              className="focus:border-mustard focus:ring-mustard w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-xs focus:outline-hidden"
               placeholder="d1abcde"
               required
             />
@@ -90,13 +90,13 @@ function Login() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-mustard focus:outline-none focus:ring-mustard"
+              className="focus:border-mustard focus:ring-mustard w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-xs focus:outline-hidden"
               placeholder="Adgangskode..."
               required
             />
             <a
               href="#"
-              className="text-xs text-zinc-700 hover:text-black focus:outline-none focus:ring-2 focus:ring-mustard focus:ring-offset-2"
+              className="focus:ring-mustard text-xs text-zinc-700 hover:text-black focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
             >
               Glemt adgangskode?
             </a>
@@ -104,7 +104,7 @@ function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="flex w-full justify-center rounded-md border border-transparent bg-mustard px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-burnt focus:outline-none focus:ring-2 focus:ring-mustard focus:ring-offset-2"
+            className="bg-mustard hover:bg-burnt focus:ring-mustard flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-xs focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
           >
             {isLoading ? 'Verificerer...' : 'Log ind'}
           </button>

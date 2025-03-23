@@ -38,7 +38,7 @@ function Header() {
           </button>
         </nav>
 
-        <button onClick={logout} className="rounded bg-mustard px-4 py-1 text-white hover:bg-burnt">
+        <button onClick={logout} className="rounded-sm bg-mustard px-4 py-1 text-white hover:bg-burnt">
           Log ud
         </button>
       </div>

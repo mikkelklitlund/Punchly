@@ -42,7 +42,7 @@ function Home() {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
         <p className="mb-4 text-red-500">{error}</p>
-        <button onClick={refresh} className="rounded bg-mustard px-4 py-2 text-white hover:bg-burnt">
+        <button onClick={refresh} className="rounded-sm bg-mustard px-4 py-2 text-white hover:bg-burnt">
           Prøv igen
         </button>
       </div>

@@ -14,7 +14,7 @@ const EmployeeList = ({ employees, onEmployeeClick }: EmployeeListProps) => {
           <button
             key={employee.id}
             onClick={() => onEmployeeClick(employee)}
-            className="w-full max-w-sm transform rounded-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="w-full max-w-sm transform rounded-lg transition-transform hover:scale-105 focus:outline-hidden focus:ring-2 focus:ring-blue-300"
           >
             <EmployeeCard employee={employee} />
           </button>
