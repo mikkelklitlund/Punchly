@@ -5,6 +5,8 @@ layer(base);
 @theme {
   --color-mustard: #dda15e;
   --color-burnt: #bc6c25;
+  --color-cream: #fefae0;
+  --color-rust: #884a39;
 
   --font-sans: Open Sans, ui-sans-serif, system-ui, sans-serif;
 }

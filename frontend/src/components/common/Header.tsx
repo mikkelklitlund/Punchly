@@ -1,17 +1,9 @@
-import { useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useDepartments } from '../../hooks/useDepartments'
+import { useCompany } from '../../contexts/CompanyContext'
 
 function Header() {
-  const { logout, companyId } = useAuth()
-  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useDepartments()
-
-  useEffect(() => {
-    const getDepartments = async () => {
-      if (companyId) await fetchDepartments(companyId)
-    }
-    getDepartments()
-  }, [companyId])
+  const { logout } = useAuth()
+  const { departments, setCurrentDepartment, currentDepartment } = useCompany()
 
   return (
     <header className="text-cream h-16 w-full bg-gray-300 p-4 shadow-md">
