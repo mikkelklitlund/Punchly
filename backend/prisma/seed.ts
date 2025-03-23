@@ -51,7 +51,8 @@ async function main() {
     update: {},
     create: {
       email: 'test@test.com',
-      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', // "admin"
+      //'admin' password
+      password: '$argon2id$v=19$m=65536,t=3,p=4$PS8AfAvW2oQqD+NS9WiasA$CskdQm00Fd8iPokG/kUVnMJyinLXrV4xMOQA2COhen8',
       username: 'testperson',
     },
   })
@@ -61,7 +62,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@system.com',
-      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', // "admin"
+      password: '$argon2id$v=19$m=65536,t=3,p=4$PS8AfAvW2oQqD+NS9WiasA$CskdQm00Fd8iPokG/kUVnMJyinLXrV4xMOQA2COhen8',
       username: 'admin',
     },
   })
@@ -71,7 +72,7 @@ async function main() {
     update: {},
     create: {
       email: 'manager@nbv.com',
-      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', // "admin"
+      password: '$argon2id$v=19$m=65536,t=3,p=4$PS8AfAvW2oQqD+NS9WiasA$CskdQm00Fd8iPokG/kUVnMJyinLXrV4xMOQA2COhen8',
       username: 'manager',
     },
   })
@@ -81,7 +82,7 @@ async function main() {
     update: {},
     create: {
       email: 'company@ark.com',
-      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', // "admin"
+      password: '$argon2id$v=19$m=65536,t=3,p=4$PS8AfAvW2oQqD+NS9WiasA$CskdQm00Fd8iPokG/kUVnMJyinLXrV4xMOQA2COhen8',
       username: 'company',
     },
   })
@@ -91,7 +92,7 @@ async function main() {
     update: {},
     create: {
       email: 'deleted@test.com',
-      password: '$2b$10$smAf8M/uuWsuULjdzlNDfuGwllA0UXZBdBvFL4d0BFv1s9gz48nYW', // "admin"
+      password: '$argon2id$v=19$m=65536,t=3,p=4$PS8AfAvW2oQqD+NS9WiasA$CskdQm00Fd8iPokG/kUVnMJyinLXrV4xMOQA2COhen8',
       username: 'deleted',
       deletedAt: new Date(),
     },

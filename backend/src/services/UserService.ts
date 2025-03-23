@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt'
+import argon2 from 'argon2'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { Role, User, UserRefreshToken } from 'shared'
 import { Result, success, failure, Failure } from '../utils/Result.js'
@@ -22,7 +22,7 @@ export class UserService implements IUserService {
         return failure(new ValidationError('User with username already exists', 'username'))
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10)
+      const hashedPassword = await argon2.hash(password)
       const user = await this.userRepository.createUser(email, hashedPassword, username)
       return success(user)
     } catch (error) {
@@ -44,7 +44,8 @@ export class UserService implements IUserService {
         throw new Error('Invalid username')
       }
 
-      if (!(await bcrypt.compare(password, user.password))) {
+      const match = await argon2.verify(user.password, password)
+      if (!match) {
         throw new Error('Invalid password')
       }
 
