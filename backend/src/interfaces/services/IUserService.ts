@@ -17,4 +17,5 @@ export interface IUserService {
   revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>
   getUserByUsername(username: string): Promise<Result<User, Error>>
   userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>>
+  getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>>
 }

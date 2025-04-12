@@ -1,5 +1,5 @@
 import axiosInstance from '../api/axios'
-import { Company, Department } from 'shared'
+import { Company, Department, User } from 'shared'
 
 export const companyService = {
   getAllCompanies: async (): Promise<{ companies: Company[] }> => {
@@ -9,6 +9,11 @@ export const companyService = {
 
   getDepartments: async (companyId: number): Promise<{ departments: Department[] }> => {
     const response = await axiosInstance.get(`/companies/${companyId}/departments`)
+    return response.data
+  },
+
+  getManagers: async (companyId: number): Promise<{ managers: User[] }> => {
+    const response = await axiosInstance.get(`/companies/${companyId}/managers`)
     return response.data
   },
 }

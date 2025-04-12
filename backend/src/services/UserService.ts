@@ -189,6 +189,16 @@ export class UserService implements IUserService {
     }
   }
 
+  async getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
+    try {
+      const users = await this.userRepository.getUsersByCompanyAndRole(companyId, Role.MANAGER)
+
+      return success(users)
+    } catch {
+      return failure(new Error('Error in database connection'))
+    }
+  }
+
   async userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>> {
     const user = await this.getUserByUsername(username)
 

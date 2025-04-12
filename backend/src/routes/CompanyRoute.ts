@@ -35,6 +35,9 @@ export class CompanyRoutes {
       authMiddleware,
       this.getAllSimpleEmployeesByCompanyAndDepartment.bind(this)
     )
+
+    this.router.get('/:companyId/managers', authMiddleware, authorizeRoles(Role.ADMIN), this.getAllManagers.bind(this))
+
     this.router.get('/:companyId/departments', authMiddleware, this.getDepartmentsByCompanyId.bind(this))
     this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
 
@@ -68,6 +71,21 @@ export class CompanyRoutes {
     }
 
     return true
+  }
+
+  private async getAllManagers(req: Request, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN]))) return
+    const companyId = parseInt(req.params.companyId)
+
+    const result = await this.userService.getAllManagersByCompanyId(companyId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+    res.status(200).json({
+      managers: result.value,
+    })
   }
 
   private async getAllSimpleEmployeesByCompanyAndDepartment(req: Request, res: Response) {
