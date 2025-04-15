@@ -1,90 +1,78 @@
 # Punchly
 
+![React](https://img.shields.io/badge/frontend-React-61DAFB.svg)
+![Express](https://img.shields.io/badge/backend-Express.js-000000.svg)
+![Prisma](https://img.shields.io/badge/ORM-Prisma-3982CE.svg)
+![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL-336791.svg)
+![Made With TypeScript](https://img.shields.io/badge/Made%20with-TypeScript-007acc.svg)
+![Dockerized](https://img.shields.io/badge/docker-ready-blue)
+![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+**Punchly** is a Danish, open-source employee time tracking and management system. It allows companies to self-host the platform, giving them full control over employee data.
+
+## 🛠 Tech Stack
+
+### Backend
+
+- **Node.js** with **Express**, written in **TypeScript**
+- Uses **Prisma** ORM
+- Follows a **three-layered architecture** (Routes, Services, Repositories)
+- **Dependency Injection** for modularity and testability
+
+### Frontend
+
+- **React**, written in **TypeScript**
+- Shared types in the `shared` folder
+- Clean component structure using hooks and modern practices
+
 ---
 
-The Employee Management System is a full-stack application designed to manage employee information, departments, and company data. This project is structured with separate directories for the frontend, backend, and shared models.
+### 🔐 Access Control
 
-## Table of Contents
+Punchly features **Role-Based Access Control (RBAC)** with three predefined roles:
 
-- [Punchly](#punchly)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-  - [Frontend](#frontend)
-    - [Running the Frontend](#running-the-frontend)
-  - [Backend](#backend)
-    - [Running the Backend](#running-the-backend)
-  - [Shared](#shared)
-    - [Compile types](#compile-types)
-  - [Useful Commands](#useful-commands)
+- **Company**
+- **Manager**
+- **Admin**
 
-## Prerequisites
+Managers and admins have elevated privileges, enabling access to additional functionalities and data.
 
-- **Node.js** (14 or later)
-- **npm** (comes with node)
-- **A supported database**
+---
 
-### Installation
+## 🚀 Getting Started
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/mikkelklitlund/Punchly.git
-   cd Punchly
-   ```
-2. Install dependencies for both frontend, backend and shared
-   ```bash
-   npm install
-   ```
+### Prerequisites
 
-## Frontend
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
 
-### Running the Frontend
+### Running Punchly Locally
 
-1. Running the frontend
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
-## Backend
-
-1. Navigate to backend
-   ```bash
-   cd backend
-   ```
-2. Set up env variables in backend
-
-   - Create a `.env` file in `/backend` based on the `.env.example`
-
-3. Run the Prisma migration to set up your database schema
-   ```bash
-   npx prisma migrate dev --name init
-   ```
-4. Generate Prisma models
-   ```bash
-   npx prisma generate
-   ```
-
-### Running the Backend
-
-1.  Running the backend
+Clone the repository:
 
 ```bash
-cd backend
-npm run dev
+git clone https://github.com/mikkelklitlund/punchly.git
+cd punchly
 ```
 
-## Shared
-
-The shared directory contains data models and interfaces that are used across both the frontend and backend.
-
-### Compile types
-
-To be able to use the types in `frontend` and `backend` run
+Then start everything with Docker Compose:
 
 ```bash
-cd shared
-npm run build
+docker-compose up --build
 ```
 
-## Useful Commands
+This will:
+
+- Start a PostgreSQL database
+- Build and run the backend server on `http://localhost:4000`
+- Build and run the frontend on `http://localhost:3000`
+
+---
+
+## ⚠️ Disclaimer
+
+**Punchly** was built as a personal project for **educational purposes**.
+
+- While it uses modern libraries and follows good architectural practices, it is **not production-ready**.
+- **Authentication and authorization are custom-built** and have not been formally tested for security vulnerabilities.
+- Do not use this system to handle sensitive or real employee data in its current state.
