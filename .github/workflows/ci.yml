@@ -97,6 +97,8 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    # Only run this job for pushes to main or tags, not pull requests
+    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
@@ -129,8 +131,6 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             # Use git tag as Docker tag
             type=ref,event=tag
-            # Use PR number as Docker tag
-            type=ref,event=pr
             # Include short SHA for all builds for traceability
             type=sha,format=short
             # For main branch, add "main" tag
