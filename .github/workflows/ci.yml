@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*.*.*' # This will trigger the workflow on version tags
   pull_request:
     branches:
       - main
@@ -123,8 +125,16 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}-${{ matrix.project }}
           tags: |
-            type=raw,value=latest
-            type=semver,pattern={{version}}
+            # Always tag as latest when on main branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Use git tag as Docker tag
+            type=ref,event=tag
+            # Use PR number as Docker tag
+            type=ref,event=pr
+            # Include short SHA for all builds for traceability
+            type=sha,format=short
+            # For main branch, add "main" tag
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
