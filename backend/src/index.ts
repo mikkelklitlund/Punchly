@@ -1,6 +1,8 @@
 import express from 'express'
 import { createServer } from 'http'
 import { errorHandler } from './middleware/ErrorHandler.js'
+import swaggerUi from 'swagger-ui-express'
+import { swaggerSpec } from './swagger.js'
 import { PrismaClient } from '@prisma/client'
 import { AuthRoutes } from './routes/AuthRoute.js'
 import cors from 'cors'
@@ -63,7 +65,12 @@ app.use('/api/companies', companyRoutes.router)
 
 app.use(errorHandler)
 
+console.log(JSON.stringify(swaggerSpec, null, 2))
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
 const PORT = 4000
+
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })

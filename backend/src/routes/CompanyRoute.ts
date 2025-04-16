@@ -24,25 +24,186 @@ export class CompanyRoutes {
   }
 
   private initializeRoutes() {
+    /**
+     * @swagger
+     * /companies/{companyId}/employees:
+     *   get:
+     *     summary: Get all employees by company ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of employees
+     */
     this.router.get('/:companyId/employees', authMiddleware, this.getAllEmployeesByCompany.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/{departmentId}/employees:
+     *   get:
+     *     summary: Get all employees by company and department ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *       - in: path
+     *         name: departmentId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of employees
+     */
     this.router.get(
       '/:companyId/:departmentId/employees',
       authMiddleware,
       this.getAllEmployeesByCompanyAndDepartment.bind(this)
     )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/{departmentId}/simple-employees:
+     *   get:
+     *     summary: Get simplified employee list for a company and department
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *       - in: path
+     *         name: departmentId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of simplified employees
+     */
     this.router.get(
       '/:companyId/:departmentId/simple-employees',
       authMiddleware,
       this.getAllSimpleEmployeesByCompanyAndDepartment.bind(this)
     )
 
+    /**
+     * @swagger
+     * /companies/{companyId}/managers:
+     *   get:
+     *     summary: Get all managers for a company (Admin only)
+     *     tags:
+     *       - Companies
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of managers
+     *       403:
+     *         description: Unauthorized
+     */
     this.router.get('/:companyId/managers', authMiddleware, authorizeRoles(Role.ADMIN), this.getAllManagers.bind(this))
 
+    /**
+     * @swagger
+     * /companies/{companyId}/departments:
+     *   get:
+     *     summary: Get departments by company ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of departments
+     */
     this.router.get('/:companyId/departments', authMiddleware, this.getDepartmentsByCompanyId.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/simple-employees:
+     *   get:
+     *     summary: Get simplified employee list for a company
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of simplified employees
+     */
     this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
 
+    /**
+     * @swagger
+     * /companies/all:
+     *   get:
+     *     summary: Get all companies
+     *     tags:
+     *       - Companies
+     *     responses:
+     *       200:
+     *         description: A list of companies
+     */
     this.router.get('/all', this.getAllCompanies.bind(this))
 
+    /**
+     * @swagger
+     * /companies:
+     *   post:
+     *     summary: Create a new company
+     *     tags:
+     *       - Companies
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *               - address
+     *             properties:
+     *               name:
+     *                 type: string
+     *               address:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Company created successfully
+     *       400:
+     *         description: Validation error
+     *       500:
+     *         description: Server error
+     */
     this.router.post(
       '/',
       authMiddleware,

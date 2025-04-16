@@ -6,6 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL-336791.svg)
 ![Made With TypeScript](https://img.shields.io/badge/Made%20with-TypeScript-007acc.svg)
 ![Dockerized](https://img.shields.io/badge/docker-ready-blue)
+![API Documentation](https://img.shields.io/badge/API%20Documentation-Swagger-85ea2d.svg)
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 **Punchly** is a Danish, open-source employee time tracking and management system. It allows companies to self-host the platform, giving them full control over employee data.
@@ -18,6 +19,7 @@
 - Uses **Prisma** ORM
 - Follows a **three-layered architecture** (Routes, Services, Repositories)
 - **Dependency Injection** for modularity and testability
+- Swagger docs can be found at `http://localhost:4000/api/docs`
 
 ### Frontend
 

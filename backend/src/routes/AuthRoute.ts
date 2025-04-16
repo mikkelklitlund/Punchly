@@ -15,6 +15,40 @@ export class AuthRoutes {
   }
 
   private initializeRoutes() {
+    /**
+     * @swagger
+     * /auth/register:
+     *   post:
+     *     summary: Register a new user
+     *     tags:
+     *       - Authentication
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - email
+     *               - password
+     *               - username
+     *             properties:
+     *               email:
+     *                 type: string
+     *                 format: email
+     *               password:
+     *                 type: string
+     *                 description: Must be at least 8 characters and include both letters and numbers
+     *               username:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: User registered successfully
+     *       400:
+     *         description: Validation failed
+     *       409:
+     *         description: User already exists
+     */
     this.router.post(
       '/register',
       [
@@ -28,14 +62,93 @@ export class AuthRoutes {
       this.register.bind(this)
     )
 
+    /**
+     * @swagger
+     * /auth/login:
+     *   post:
+     *     summary: Log in a user
+     *     tags:
+     *       - Authentication
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - username
+     *               - password
+     *             properties:
+     *               username:
+     *                 type: string
+     *               password:
+     *                 type: string
+     *               companyId:
+     *                 type: integer
+     *                 nullable: true
+     *     responses:
+     *       200:
+     *         description: Login successful, returns access token and user info
+     *       401:
+     *         description: Invalid credentials
+     */
     this.router.post(
       '/login',
       [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().optional()],
       this.login.bind(this)
     )
 
+    /**
+     * @swagger
+     * /auth/profile:
+     *   get:
+     *     summary: Get the profile of the logged-in user
+     *     tags:
+     *       - Authentication
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: User profile data
+     *       401:
+     *         description: Unauthorized
+     *       404:
+     *         description: User not found
+     */
     this.router.get('/profile', authMiddleware, this.getProfile.bind(this))
+
+    /**
+     * @swagger
+     * /auth/refresh:
+     *   get:
+     *     summary: Refresh access token using a valid refresh token
+     *     tags:
+     *       - Authentication
+     *     responses:
+     *       200:
+     *         description: New access token issued
+     *       401:
+     *         description: No refresh token provided
+     *       403:
+     *         description: Invalid refresh token
+     */
     this.router.get('/refresh', this.refreshToken.bind(this))
+
+    /**
+     * @swagger
+     * /auth/logout:
+     *   post:
+     *     summary: Log out the user and revoke refresh token
+     *     tags:
+     *       - Authentication
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       204:
+     *         description: Logout successful
+     *       500:
+     *         description: Server error during logout
+     */
     this.router.post('/logout', authMiddleware, this.logout.bind(this))
   }
 

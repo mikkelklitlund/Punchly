@@ -23,6 +23,40 @@ export class EmployeeRoutes {
   }
 
   private initializeRoutes() {
+    /**
+     * @swagger
+     * /employees:
+     *   post:
+     *     summary: Create a new employee
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *               - companyId
+     *               - departmentId
+     *             properties:
+     *               name:
+     *                 type: string
+     *               companyId:
+     *                 type: integer
+     *               departmentId:
+     *                 type: integer
+     *     responses:
+     *       201:
+     *         description: Employee created successfully
+     *       400:
+     *         description: Validation failed
+     *       500:
+     *         description: Server error
+     */
     this.router.post(
       '/',
       authMiddleware,
@@ -35,12 +69,59 @@ export class EmployeeRoutes {
       this.createEmployee.bind(this)
     )
 
+    /**
+     * @swagger
+     * /employees/{employeeId}/checkin:
+     *   post:
+     *     summary: Employee check-in
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: employeeId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Check-in successful
+     *       401:
+     *         description: Unauthorized
+     *       500:
+     *         description: Server error
+     */
     this.router.post(
       '/:employeeId/checkin',
       authMiddleware,
       authorizeRoles(Role.ADMIN, Role.COMPANY, Role.MANAGER),
       this.employeeCheckin.bind(this)
     )
+
+    /**
+     * @swagger
+     * /employees/{employeeId}/checkout:
+     *   post:
+     *     summary: Employee check-out
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: employeeId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Check-out successful
+     *       401:
+     *         description: Unauthorized
+     *       500:
+     *         description: Server error
+     */
     this.router.post(
       '/:employeeId/checkout',
       authMiddleware,
@@ -48,8 +129,60 @@ export class EmployeeRoutes {
       this.employeeCheckout.bind(this)
     )
 
+    /**
+     * @swagger
+     * /employees/{id}:
+     *   get:
+     *     summary: Get an employee by ID
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Employee retrieved successfully
+     *       404:
+     *         description: Employee not found
+     */
     this.router.get('/:id', authMiddleware, this.getEmployeeById.bind(this))
 
+    /**
+     * @swagger
+     * /employees:
+     *   get:
+     *     summary: Get employees by company and optional department/type
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: company
+     *         required: true
+     *         schema:
+     *           type: integer
+     *       - in: query
+     *         name: department
+     *         schema:
+     *           type: integer
+     *       - in: query
+     *         name: type
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Employees retrieved successfully
+     *       400:
+     *         description: Invalid query parameters
+     *       500:
+     *         description: Server error
+     */
     this.router.get(
       '/',
       authMiddleware,
@@ -61,6 +194,42 @@ export class EmployeeRoutes {
       this.getEmployeesByQueryParams.bind(this)
     )
 
+    /**
+     * @swagger
+     * /employees/{id}:
+     *   put:
+     *     summary: Update an existing employee
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               name:
+     *                 type: string
+     *               companyId:
+     *                 type: integer
+     *               departmentId:
+     *                 type: integer
+     *     responses:
+     *       200:
+     *         description: Employee updated successfully
+     *       400:
+     *         description: Validation error
+     *       500:
+     *         description: Server error
+     */
     this.router.put(
       '/:id',
       authMiddleware,
@@ -73,6 +242,27 @@ export class EmployeeRoutes {
       this.updateEmployee.bind(this)
     )
 
+    /**
+     * @swagger
+     * /employees/{id}:
+     *   delete:
+     *     summary: Delete an employee
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       204:
+     *         description: Employee deleted successfully
+     *       500:
+     *         description: Server error
+     */
     this.router.delete('/:id', authMiddleware, authorizeRoles(Role.ADMIN, Role.MANAGER), this.deleteEmployee.bind(this))
   }
 
