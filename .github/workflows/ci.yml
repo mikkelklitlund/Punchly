@@ -124,7 +124,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}-${{ matrix.project }}
           tags: |
             type=raw,latest
-            type=semver,${{ github.ref_name }}  # This will use the Git tag as the version (e.g., v0.1.0)
+            type=semver,v${{ github.ref_name }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
