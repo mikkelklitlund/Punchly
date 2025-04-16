@@ -1,5 +1,5 @@
 import { Role, User, UserRefreshToken } from 'shared'
-import { Result } from '../../utils/Result'
+import { Result } from '../../utils/Result.js'
 
 export interface IUserService {
   register(email: string, password: string, username: string): Promise<Result<User, Error>>
@@ -17,4 +17,5 @@ export interface IUserService {
   revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>
   getUserByUsername(username: string): Promise<Result<User, Error>>
   userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>>
+  getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>>
 }

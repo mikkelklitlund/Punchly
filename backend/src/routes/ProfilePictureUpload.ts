@@ -1,11 +1,11 @@
 import { Router, Response } from 'express'
-import { upload } from '../middleware/Upload'
-import { IEmployeeService } from '../interfaces/services/IEmployeeService'
-import { Failure } from '../utils/Result'
-import authMiddleware from '../middleware/Auth'
-import authorizeRoles from '../middleware/authorizeRole'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
-import { IUserService } from '../interfaces/services/IUserService'
+import { upload } from '../middleware/Upload.js'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
+import { Failure } from '../utils/Result.js'
+import authMiddleware from '../middleware/Auth.js'
+import authorizeRoles from '../middleware/authorizeRole.js'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
+import { IUserService } from '../interfaces/services/IUserService.js'
 import { Role } from 'shared'
 
 export class EmployeePictureRoutes {
@@ -20,6 +20,51 @@ export class EmployeePictureRoutes {
   }
 
   private initializeRoutes() {
+    /**
+     * @swagger
+     * /employees/upload-profile-picture/{id}:
+     *   post:
+     *     summary: Upload or update an employee's profile picture
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     consumes:
+     *       - multipart/form-data
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *       - in: formData
+     *         name: profilePicture
+     *         type: file
+     *         required: true
+     *         description: The image file to upload
+     *     responses:
+     *       200:
+     *         description: Profile picture updated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 message:
+     *                   type: string
+     *                 profilePictureUrl:
+     *                   type: string
+     *                 employee:
+     *                   type: object
+     *       400:
+     *         description: Invalid request or missing image
+     *       401:
+     *         description: Unauthorized
+     *       403:
+     *         description: Forbidden
+     *       500:
+     *         description: Server error
+     */
     this.router.post(
       '/upload-profile-picture/:id',
       authMiddleware,

@@ -1,6 +1,6 @@
 import { PrismaClient, AttendanceRecord } from '@prisma/client'
 import { CreateAttendanceRecord, AttendanceRecord as DTOAttendanceRecord } from 'shared'
-import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository'
+import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository.js'
 
 export class AttendanceRecordRepository implements IAttendanceRecordRepository {
   constructor(private readonly prisma: PrismaClient) {}

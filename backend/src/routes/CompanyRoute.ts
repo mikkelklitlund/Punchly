@@ -1,14 +1,14 @@
 import { Request, Response, Router } from 'express'
-import { IEmployeeService } from '../interfaces/services/IEmployeeService'
-import { Failure } from '../utils/Result'
-import { ICompanyService } from '../interfaces/services/ICompanyService'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
+import { Failure } from '../utils/Result.js'
+import { ICompanyService } from '../interfaces/services/ICompanyService.js'
 import { body, validationResult } from 'express-validator'
-import authMiddleware from '../middleware/Auth'
-import { IDepartmentService } from '../interfaces/services/IDepartmentService'
-import authorizeRoles from '../middleware/authorizeRole'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import authMiddleware from '../middleware/Auth.js'
+import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
+import authorizeRoles from '../middleware/authorizeRole.js'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Employee, Role } from 'shared'
-import { IUserService } from '../interfaces/services/IUserService'
+import { IUserService } from '../interfaces/services/IUserService.js'
 
 export class CompanyRoutes {
   public router: Router
@@ -24,22 +24,186 @@ export class CompanyRoutes {
   }
 
   private initializeRoutes() {
+    /**
+     * @swagger
+     * /companies/{companyId}/employees:
+     *   get:
+     *     summary: Get all employees by company ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of employees
+     */
     this.router.get('/:companyId/employees', authMiddleware, this.getAllEmployeesByCompany.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/{departmentId}/employees:
+     *   get:
+     *     summary: Get all employees by company and department ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *       - in: path
+     *         name: departmentId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of employees
+     */
     this.router.get(
       '/:companyId/:departmentId/employees',
       authMiddleware,
       this.getAllEmployeesByCompanyAndDepartment.bind(this)
     )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/{departmentId}/simple-employees:
+     *   get:
+     *     summary: Get simplified employee list for a company and department
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *       - in: path
+     *         name: departmentId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of simplified employees
+     */
     this.router.get(
       '/:companyId/:departmentId/simple-employees',
       authMiddleware,
       this.getAllSimpleEmployeesByCompanyAndDepartment.bind(this)
     )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/managers:
+     *   get:
+     *     summary: Get all managers for a company (Admin only)
+     *     tags:
+     *       - Companies
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of managers
+     *       403:
+     *         description: Unauthorized
+     */
+    this.router.get('/:companyId/managers', authMiddleware, authorizeRoles(Role.ADMIN), this.getAllManagers.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/departments:
+     *   get:
+     *     summary: Get departments by company ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of departments
+     */
     this.router.get('/:companyId/departments', authMiddleware, this.getDepartmentsByCompanyId.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/simple-employees:
+     *   get:
+     *     summary: Get simplified employee list for a company
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of simplified employees
+     */
     this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
 
+    /**
+     * @swagger
+     * /companies/all:
+     *   get:
+     *     summary: Get all companies
+     *     tags:
+     *       - Companies
+     *     responses:
+     *       200:
+     *         description: A list of companies
+     */
     this.router.get('/all', this.getAllCompanies.bind(this))
 
+    /**
+     * @swagger
+     * /companies:
+     *   post:
+     *     summary: Create a new company
+     *     tags:
+     *       - Companies
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *               - address
+     *             properties:
+     *               name:
+     *                 type: string
+     *               address:
+     *                 type: string
+     *     responses:
+     *       201:
+     *         description: Company created successfully
+     *       400:
+     *         description: Validation error
+     *       500:
+     *         description: Server error
+     */
     this.router.post(
       '/',
       authMiddleware,
@@ -68,6 +232,21 @@ export class CompanyRoutes {
     }
 
     return true
+  }
+
+  private async getAllManagers(req: Request, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN]))) return
+    const companyId = parseInt(req.params.companyId)
+
+    const result = await this.userService.getAllManagersByCompanyId(companyId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+    res.status(200).json({
+      managers: result.value,
+    })
   }
 
   private async getAllSimpleEmployeesByCompanyAndDepartment(req: Request, res: Response) {

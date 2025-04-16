@@ -1,4 +1,4 @@
-import { User, UserCompanyAccess, UserRefreshToken } from 'shared'
+import { Role, User, UserCompanyAccess, UserRefreshToken } from 'shared'
 
 export interface IUserRepository {
   createUser(email: string, password: string, username: string): Promise<User>
@@ -14,4 +14,5 @@ export interface IUserRepository {
   cleanupExpiredTokens(): Promise<void>
   revokeAllActiveUserTokens(userId: number): Promise<void>
   getUserCompanyAccess(userId: number, companyId: number): Promise<UserCompanyAccess | null>
+  getUsersByCompanyAndRole(companyId: number, role: Role): Promise<User[]>
 }

@@ -1,11 +1,11 @@
-import bcrypt from 'bcrypt'
+import argon2 from 'argon2'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { Role, User, UserRefreshToken } from 'shared'
-import { Result, success, failure, Failure } from '../utils/Result'
-import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
+import { Result, success, failure, Failure } from '../utils/Result.js'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { addDays } from 'date-fns'
-import { IUserService } from '../interfaces/services/IUserService'
-import { IUserRepository } from '../interfaces/repositories/IUserRepository'
+import { IUserService } from '../interfaces/services/IUserService.js'
+import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
 
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
@@ -22,7 +22,7 @@ export class UserService implements IUserService {
         return failure(new ValidationError('User with username already exists', 'username'))
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10)
+      const hashedPassword = await argon2.hash(password)
       const user = await this.userRepository.createUser(email, hashedPassword, username)
       return success(user)
     } catch (error) {
@@ -44,7 +44,8 @@ export class UserService implements IUserService {
         throw new Error('Invalid username')
       }
 
-      if (!(await bcrypt.compare(password, user.password))) {
+      const match = await argon2.verify(user.password, password)
+      if (!match) {
         throw new Error('Invalid password')
       }
 
@@ -185,6 +186,16 @@ export class UserService implements IUserService {
       })
     } catch {
       return failure(new Error('Invalid refresh token'))
+    }
+  }
+
+  async getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
+    try {
+      const users = await this.userRepository.getUsersByCompanyAndRole(companyId, Role.MANAGER)
+
+      return success(users)
+    } catch {
+      return failure(new Error('Error in database connection'))
     }
   }
 

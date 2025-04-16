@@ -1,20 +1,12 @@
-import { useAppContext } from '../../contexts/AppContext'
-import { useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useCompany } from '../../contexts/CompanyContext'
 
 function Header() {
-  const { logout, companyId } = useAuth()
-  const { departments, fetchDepartments, setCurrentDepartment, currentDepartment } = useAppContext()
-
-  useEffect(() => {
-    const getDepartments = async () => {
-      if (companyId) await fetchDepartments(companyId)
-    }
-    getDepartments()
-  }, [companyId])
+  const { logout } = useAuth()
+  const { departments, setCurrentDepartment, currentDepartment } = useCompany()
 
   return (
-    <header className="text-cream fixed left-0 top-0 z-10 h-16 w-full bg-gray-300 p-4 shadow-md">
+    <header className="text-cream h-16 w-full bg-gray-300 p-4 shadow-md">
       <div className="flex h-full items-center justify-between">
         <nav className="flex space-x-4">
           {departments.map((department) => (
@@ -38,7 +30,7 @@ function Header() {
           </button>
         </nav>
 
-        <button onClick={logout} className="rounded bg-mustard px-4 py-1 text-white hover:bg-burnt">
+        <button onClick={logout} className="bg-mustard hover:bg-burnt rounded-sm px-4 py-1 text-white">
           Log ud
         </button>
       </div>

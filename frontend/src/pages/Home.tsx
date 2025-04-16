@@ -1,5 +1,4 @@
 import { useCallback } from 'react'
-import { useEmployees } from '../hooks/useEmployees'
 import { useEmployeeModal } from '../hooks/useEmployeeModal'
 import EmployeeCard from '../components/employee/EmployeeCard'
 import Modal from '../components/common/Modal'
@@ -7,9 +6,10 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import { employeeService } from '../services/employeeService'
 import { useToast } from '../contexts/ToastContext'
 import EmployeeList from '../components/employee/EmployeeList'
+import { useCompany } from '../contexts/CompanyContext'
 
 function Home() {
-  const { employees, isLoading, error, refresh } = useEmployees()
+  const { employees, isLoading, error, refreshEmployees } = useCompany()
   const { showToast } = useToast()
 
   const handleCheckAction = useCallback(
@@ -20,20 +20,20 @@ function Home() {
 
         if (result.success) {
           showToast(`Medarbejder ${checkIn ? 'er tjekket ind' : 'er tjekket ud'}`, 'success')
-          await refresh()
         } else if (result.message) {
           showToast(result.message, 'warning')
         }
       } catch (error) {
         showToast(`Der skete en fejl under ${checkIn ? 'tjek ind' : 'tjek ud'}`, 'error')
         console.error('Failed to update employee status:', error)
+      } finally {
+        refreshEmployees()
       }
     },
-    [refresh, showToast]
+    [showToast, refreshEmployees]
   )
 
-  // eslint-disable-next-line max-len
-  const { selectedEmployee, showModal, openModal, closeModal } = useEmployeeModal(() => {}) // Empty callback since we handle refresh separately
+  const { selectedEmployee, showModal, openModal, closeModal } = useEmployeeModal(() => {})
 
   if (isLoading && employees.length === 0) {
     return <LoadingSpinner fullScreen message="Loading employees..." />
@@ -43,9 +43,6 @@ function Home() {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8">
         <p className="mb-4 text-red-500">{error}</p>
-        <button onClick={refresh} className="rounded bg-mustard px-4 py-2 text-white hover:bg-burnt">
-          Prøv igen
-        </button>
       </div>
     )
   }

@@ -1,5 +1,5 @@
 # Stage 1: Build the shared package
-FROM node:20-alpine AS shared-builder
+FROM node:22-alpine AS shared-builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY shared/package.json ./shared/
@@ -8,7 +8,7 @@ COPY shared ./shared
 RUN npm run build --workspace=shared
 
 # Stage 2: Build the frontend
-FROM node:20-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY frontend/package.json ./frontend/

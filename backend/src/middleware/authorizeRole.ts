@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest'
+import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Role } from '@prisma/client'
 
 const authorizeRoles = (...allowedRoles: Role[]) => {

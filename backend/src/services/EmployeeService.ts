@@ -1,11 +1,11 @@
 import { Employee, CreateEmployee } from 'shared'
-import { Result, failure, success } from '../utils/Result'
-import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors'
-import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository'
-import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository'
-import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry'
-import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository'
-import { IEmployeeService } from '../interfaces/services/IEmployeeService'
+import { Result, failure, success } from '../utils/Result.js'
+import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
+import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
+import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRepository.js'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
+import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository.js'
+import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
 
 export class EmployeeService implements IEmployeeService {
   constructor(

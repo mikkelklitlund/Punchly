@@ -1,6 +1,6 @@
 import { PrismaClient, User } from '@prisma/client'
-import { Role as RoleDTO, User as UserDTO, UserRefreshToken, UserCompanyAccess as UCADTO } from 'shared'
-import { IUserRepository } from '../interfaces/repositories/IUserRepository'
+import { Role as RoleDTO, User as UserDTO, UserRefreshToken, UserCompanyAccess as UCADTO, Role } from 'shared'
+import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
 
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -150,6 +150,20 @@ export class UserRepository implements IUserRepository {
       }
     }
     return null
+  }
+
+  async getUsersByCompanyAndRole(companyId: number, role: Role) {
+    const accesses = await this.prisma.userCompanyAccess.findMany({
+      where: {
+        companyId,
+        role,
+      },
+      include: {
+        user: true,
+      },
+    })
+
+    return accesses.map((acc) => this.translateToDTO(acc.user))
   }
 
   private translateToDTO(user: User): UserDTO {

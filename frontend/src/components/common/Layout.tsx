@@ -10,15 +10,15 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   const { user, role } = useAuth()
-  console.log(role)
   const showSidebar = (user && role === Role.ADMIN) || role === Role.MANAGER
+  const showHeader = user && role == Role.COMPANY
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex">
       {showSidebar && <Sidebar />}
-      <div className="flex flex-grow flex-col">
-        {user && <Header />}
-        <main className={`flex-grow ${user ? 'pt-16' : ''}`}>{children}</main>
+      <div className="w-full">
+        {showHeader && <Header />}
+        {children}
       </div>
     </div>
   )
