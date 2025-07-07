@@ -1,6 +1,6 @@
 import { Department, Role } from 'shared'
 import { useAuth } from '../../contexts/AuthContext'
-import { House, Users, Settings, ChevronDown, ChevronUp, LogOut } from 'lucide-react'
+import { House, Users, Settings, ChevronDown, ChevronUp, LogOut, CalendarClock } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useCompany } from '../../contexts/CompanyContext'
@@ -16,14 +16,16 @@ function Sidebar() {
 
   const menuItems = [
     { label: 'Medarbejdere', href: '/employees', icon: Users, roles: [Role.ADMIN, Role.MANAGER] },
+    { label: 'Registrerede tider', href: '/attendance', icon: CalendarClock, roles: [Role.ADMIN, Role.MANAGER] },
     { label: 'Managere', href: '/managers', icon: Users, roles: [Role.ADMIN] },
     { label: 'Indstillinger', href: '/settings', icon: Settings, roles: [Role.ADMIN, Role.MANAGER] },
   ]
 
   return (
-    <aside className="bg-burnt flex min-h-screen w-[12rem] max-w-56 flex-col p-4 text-white">
-      <nav className="flex h-full flex-col justify-between">
-        <ul className="grow space-y-4">
+    <aside className="bg-burnt flex h-screen w-full max-w-56 flex-col text-white">
+      <div className="flex h-full flex-col justify-between p-4">
+        {/* Scrollable content */}
+        <ul className="flex-1 space-y-4 overflow-y-auto pr-1">
           <li className="border-mustard border-b-2 pb-2">
             <p className="text-3xl font-bold">Punchly</p>
           </li>
@@ -93,18 +95,17 @@ function Sidebar() {
             ))}
         </ul>
 
-        <ul className="border-mustard/30 border-t pt-4">
-          <li>
-            <button
-              onClick={logout}
-              className="bg-rust hover:bg-rust/80 flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white transition-colors duration-200"
-            >
-              <LogOut size={16} />
-              Log ud
-            </button>
-          </li>
-        </ul>
-      </nav>
+        {/* Sticky Logout */}
+        <div className="border-mustard/30 border-t pt-4">
+          <button
+            onClick={logout}
+            className="bg-rust hover:bg-rust/80 flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white transition-colors duration-200"
+          >
+            <LogOut size={16} />
+            Log ud
+          </button>
+        </div>
+      </div>
     </aside>
   )
 }

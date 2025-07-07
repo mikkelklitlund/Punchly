@@ -9,6 +9,7 @@ import authorizeRoles from '../middleware/authorizeRole.js'
 import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Employee, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
+import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
 
 export class CompanyRoutes {
   public router: Router
@@ -17,7 +18,8 @@ export class CompanyRoutes {
     private readonly companyService: ICompanyService,
     private readonly employeeService: IEmployeeService,
     private readonly departmentService: IDepartmentService,
-    private readonly userService: IUserService
+    private readonly userService: IUserService,
+    private readonly employeeTypeService: IEmployeeTypeService
   ) {
     this.router = Router()
     this.initializeRoutes()
@@ -214,6 +216,25 @@ export class CompanyRoutes {
       ],
       this.createCompany.bind(this)
     )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/employee-types:
+     *   get:
+     *     summary: Get employee types by company ID
+     *     tags:
+     *       - Companies
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: A list of employee types
+     */
+    this.router.get('/:companyId/employee-types', authMiddleware, this.getEmployeeTypesByCompany.bind(this))
   }
 
   private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
@@ -341,6 +362,19 @@ export class CompanyRoutes {
     res.status(200).json({ employees: result.value })
   }
 
+  private async getEmployeeTypesByCompany(req: Request, res: Response) {
+    const companyId = parseInt(req.params.companyId)
+
+    const result = await this.employeeTypeService.getEmployeeTypesByCompanyId(companyId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ employeeTypes: result.value })
+  }
+
   private formatSimpleEmployee(em: Employee) {
     return {
       departmentId: em.departmentId,
@@ -348,9 +382,7 @@ export class CompanyRoutes {
       id: em.id,
       name: em.name,
       checkedIn: em.checkedIn,
-      profilePicturePath: em.profilePicturePath
-        ? `http://localhost:4000/uploads/${em.profilePicturePath}`
-        : 'http://localhost:4000/uploads/default-avatar.jpg',
+      profilePicturePath: em.profilePicturePath,
     }
   }
 }

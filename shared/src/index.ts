@@ -98,6 +98,7 @@ export interface AttendanceRecord {
 	employeeId: number
 	checkIn: Date
 	checkOut?: Date
+	autoClosed: boolean
 }
 
 export interface CreateAttendanceRecord {

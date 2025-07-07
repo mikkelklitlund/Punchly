@@ -1,5 +1,6 @@
 import React from 'react'
 import { SimpleEmployee } from 'shared'
+import { getProfilePictureUrl } from '../../utils/imageUtils'
 
 interface EmployeeCardProps {
   employee: SimpleEmployee
@@ -9,7 +10,7 @@ const EmployeeCard = React.memo(({ employee }: EmployeeCardProps) => {
   return (
     <div className="flex h-full w-full flex-col items-center rounded-lg border border-gray-200 bg-white p-4 shadow-md">
       <img
-        src={employee.profilePicturePath}
+        src={getProfilePictureUrl(employee.profilePicturePath)}
         className="h-40 w-40 rounded-lg object-cover shadow-lg sm:h-48 sm:w-48 lg:h-52 lg:w-52"
         alt={`${employee.name}'s profile`}
         loading="lazy"
@@ -27,7 +28,5 @@ const EmployeeCard = React.memo(({ employee }: EmployeeCardProps) => {
     </div>
   )
 })
-
-EmployeeCard.displayName = 'EmployeeCard'
 
 export default EmployeeCard

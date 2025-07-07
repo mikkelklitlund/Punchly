@@ -14,11 +14,15 @@ function Layout({ children }: LayoutProps) {
   const showHeader = user && role == Role.COMPANY
 
   return (
-    <div className="flex">
-      {showSidebar && <Sidebar />}
-      <div className="w-full">
+    <div className="flex h-screen overflow-hidden">
+      {showSidebar && (
+        <div className="flex-shrink-0 overflow-y-auto border-r bg-white">
+          <Sidebar />
+        </div>
+      )}
+      <div className="flex flex-1 flex-col overflow-hidden">
         {showHeader && <Header />}
-        {children}
+        <main className="flex-1 overflow-y-auto p-4">{children}</main>
       </div>
     </div>
   )

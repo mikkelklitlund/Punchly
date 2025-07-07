@@ -24,11 +24,22 @@ export class AttendanceService implements IAttendanceService {
 
   async checkInEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
+      const openRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId)
+
+      if (openRecord) {
+        await this.attendanceRecordRepository.updateAttendanceRecord(openRecord.id, {
+          checkOut: undefined,
+          autoClosed: true,
+        })
+      }
+
       const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord({
         employeeId,
         checkIn: new Date(),
       })
+
       await this.employeeRepository.updateEmployee(employeeId, { checkedIn: true })
+
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error during employee check-in:', error)
@@ -112,6 +123,16 @@ export class AttendanceService implements IAttendanceService {
     } catch (error) {
       console.error('Error deleting attendance record:', error)
       return failure(new DatabaseError('Database error occurred while deleting the attendance record.'))
+    }
+  }
+
+  async getLast30AttendanceRecords(employeeId: number): Promise<Result<AttendanceRecord[], Error>> {
+    try {
+      const records = await this.attendanceRecordRepository.getLast30ByEmployeeId(employeeId)
+      return success(records)
+    } catch (error) {
+      console.error('Error fetching last 30 attendance records:', error)
+      return failure(new DatabaseError('Database error occurred while fetching recent attendance records.'))
     }
   }
 }

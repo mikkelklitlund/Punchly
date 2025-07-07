@@ -51,21 +51,20 @@ const companyRoutes = new CompanyRoutes(
   serviceContainer.companyService,
   serviceContainer.employeeService,
   serviceContainer.departmentService,
-  serviceContainer.userService
+  serviceContainer.userService,
+  serviceContainer.employeeTypeService
 )
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 app.use('/api/auth', authRoutes.router)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 app.use('/api/employees', employeeRoutes.router)
 app.use('/api/employees', employeePictureRoutes.router)
 app.use('/api/companies', companyRoutes.router)
 
 app.use(errorHandler)
-
-console.log(JSON.stringify(swaggerSpec, null, 2))
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 

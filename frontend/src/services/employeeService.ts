@@ -1,5 +1,5 @@
 import axiosInstance from '../api/axios'
-import { SimpleEmployee } from 'shared'
+import { SimpleEmployee, Employee, AttendanceRecord } from 'shared'
 
 export interface EmployeeResponse {
   employees: SimpleEmployee[]
@@ -24,5 +24,47 @@ export const employeeService = {
   checkOut: async (employeeId: number): Promise<{ success: boolean; message?: string }> => {
     const response = await axiosInstance.post(`/employees/${employeeId}/checkout`)
     return response.data
+  },
+
+  async getEmployeeById(id: number): Promise<Employee> {
+    const res = await axiosInstance.get<{ employee: Employee }>(`/employees/${id}`)
+    return res.data.employee
+  },
+
+  async updateEmployee(id: number, data: Partial<Employee>): Promise<Employee> {
+    const res = await axiosInstance.put<{ employee: Employee }>(`/employees/${id}`, data)
+    return res.data.employee
+  },
+
+  async uploadProfilePicture(employeeId: number, file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('profilePicture', file)
+
+    const res = await axiosInstance.post<{ profilePictureUrl: string }>(
+      `/employees/upload-profile-picture/${employeeId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+
+    return res.data.profilePictureUrl
+  },
+
+  getAttendanceRecords: async (employeeId: number): Promise<AttendanceRecord[]> => {
+    const response = await axiosInstance.get<{ records: AttendanceRecord[] }>(
+      `/employees/${employeeId}/attendance-records-last-30`
+    )
+    return response.data.records
+  },
+
+  updateAttendanceRecord: async (
+    id: number,
+    data: Partial<Pick<AttendanceRecord, 'checkIn' | 'checkOut' | 'autoClosed'>>
+  ): Promise<AttendanceRecord> => {
+    const res = await axiosInstance.put(`/employees/attendance-records/${id}`, data)
+    return res.data.record
   },
 }

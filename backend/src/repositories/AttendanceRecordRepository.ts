@@ -52,6 +52,10 @@ export class AttendanceRecordRepository implements IAttendanceRecordRepository {
       where: {
         employeeId,
         checkOut: null,
+        autoClosed: false,
+      },
+      orderBy: {
+        checkIn: 'desc',
       },
     })
 
@@ -70,6 +74,16 @@ export class AttendanceRecordRepository implements IAttendanceRecordRepository {
     return this.translateToDto(ar)
   }
 
+  async getLast30ByEmployeeId(employeeId: number): Promise<DTOAttendanceRecord[]> {
+    const ars = await this.prisma.attendanceRecord.findMany({
+      where: { employeeId },
+      orderBy: { checkIn: 'desc' },
+      take: 30,
+    })
+
+    return ars.map(this.translateToDto)
+  }
+
   async deleteAttendanceRecord(id: number): Promise<DTOAttendanceRecord> {
     const ar = await this.prisma.attendanceRecord.delete({
       where: { id },
@@ -84,6 +98,7 @@ export class AttendanceRecordRepository implements IAttendanceRecordRepository {
       employeeId: attendance.employeeId,
       checkIn: attendance.checkIn,
       checkOut: attendance.checkOut ? attendance.checkOut : undefined,
+      autoClosed: attendance.autoClosed,
     }
   }
 }

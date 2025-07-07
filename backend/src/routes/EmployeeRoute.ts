@@ -11,8 +11,6 @@ import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 
 export class EmployeeRoutes {
   public router: Router
-  private clients: { id: number; companyId: number; departmentId: number; res: Response }[] = []
-  private clientId = 0
   constructor(
     private readonly userService: IUserService,
     private readonly employeeService: IEmployeeService,
@@ -264,6 +262,84 @@ export class EmployeeRoutes {
      *         description: Server error
      */
     this.router.delete('/:id', authMiddleware, authorizeRoles(Role.ADMIN, Role.MANAGER), this.deleteEmployee.bind(this))
+
+    /**
+     * @swagger
+     * /employees/{employeeId}/attendance-records-last-30:
+     *   get:
+     *     summary: Get the last 30 attendance records for an employee
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: employeeId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Attendance records retrieved
+     *       500:
+     *         description: Server error
+     */
+    this.router.get(
+      '/:employeeId/attendance-records-last-30',
+      authMiddleware,
+      authorizeRoles(Role.MANAGER, Role.ADMIN),
+      this.getLast30AttendanceRecordsForEmployee.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /attendance-records/{id}:
+     *   put:
+     *     summary: Update an attendance record (check-in / check-out)
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               checkIn:
+     *                 type: string
+     *                 format: date-time
+     *               checkOut:
+     *                 type: string
+     *                 format: date-time
+     *     responses:
+     *       200:
+     *         description: Record updated successfully
+     *       400:
+     *         description: Invalid input
+     *       404:
+     *         description: Record not found
+     *       500:
+     *         description: Server error
+     */
+    this.router.put(
+      '/attendance-records/:id',
+      authMiddleware,
+      authorizeRoles(Role.ADMIN, Role.MANAGER),
+      [
+        body('checkIn').optional().isISO8601().withMessage('Check-in must be a valid ISO date string'),
+        body('checkOut').optional().isISO8601().withMessage('Check-out must be a valid ISO date string'),
+        body('autoClosed').optional().isBoolean(),
+      ],
+      this.updateAttendanceRecord.bind(this)
+    )
   }
 
   private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
@@ -416,5 +492,44 @@ export class EmployeeRoutes {
     }
 
     res.status(204).send({ employeeDeleted: result.value })
+  }
+
+  private async getLast30AttendanceRecordsForEmployee(req: Request, res: Response) {
+    const employeeId = parseInt(req.params.employeeId)
+
+    const result = await this.attendanceService.getLast30AttendanceRecords(employeeId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ records: result.value })
+  }
+
+  private async updateAttendanceRecord(req: AuthenticatedRequest, res: Response) {
+    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
+
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: errors.array() })
+      return
+    }
+
+    const id = parseInt(req.params.id)
+    const { checkIn, checkOut, autoClosed } = req.body
+
+    const result = await this.attendanceService.updateAttendanceRecord(id, {
+      checkIn: checkIn ? new Date(checkIn) : undefined,
+      checkOut: checkOut ? new Date(checkOut) : undefined,
+      autoClosed,
+    })
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ record: result.value })
   }
 }

@@ -1,14 +1,17 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginForm from './components/Login'
 import Home from './pages/Home'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import Layout from './components/common/Layout'
 import { ToastProvider } from './contexts/ToastContext'
-import ManagerList from './components/manager/ManagerList'
-import AdminRoute from './components/AdminRoute'
+import ManagerTable from './components/manager/ManagerTable'
 import { CompanyProvider } from './contexts/CompanyContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import EmployeeTable from './components/employee/EmployeeTable'
+import { Role } from 'shared'
+import RoleLayout from './components/RoleLayout'
+import AttendanceOverviewPage from './components/attendance/AttendanceOverviewPage'
 
 function App() {
   const queryClient = new QueryClient()
@@ -21,11 +24,16 @@ function App() {
             <CompanyProvider>
               <Layout>
                 <Routes>
+                  <Route path="*" element={<Navigate to="/" replace />} />
                   <Route path="/login" element={<LoginForm />} />
                   <Route element={<ProtectedRoute />}>
                     <Route path="/" element={<Home />} />
-                    <Route element={<AdminRoute />}>
-                      <Route path="/managers" element={<ManagerList />} />
+                    <Route element={<RoleLayout allowedRoles={[Role.ADMIN, Role.MANAGER]} />}>
+                      <Route path="/employees" element={<EmployeeTable />} />
+                      <Route path="/attendance" element={<AttendanceOverviewPage />} />
+                    </Route>
+                    <Route element={<RoleLayout allowedRoles={[Role.ADMIN]} />}>
+                      <Route path="/managers" element={<ManagerTable />} />
                     </Route>
                   </Route>
                 </Routes>

@@ -14,6 +14,7 @@ dist-ssr
 
 # Ignore TypeScript build info files
 *.tsbuildinfo
+.env
 
 # Editor directories and files
 .vscode/*

@@ -2,6 +2,7 @@ import { useReducer, useCallback, createContext, useContext, ReactNode, useEffec
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
 import { authService } from '../services/authService'
+import { setAuthContextUpdater, clearAuthContextUpdater, setLogoutTrigger } from '../api/axios'
 import { Role } from 'shared'
 
 // Types
@@ -40,6 +41,8 @@ type AuthAction =
   | { type: 'AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'AUTH_LOGOUT' }
+  | { type: 'SILENT_AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
+  | { type: 'FORCE_LOGOUT' } // New action for forced logout
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
@@ -54,9 +57,18 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         companyId: action.payload.companyId,
         error: null,
       }
+    case 'SILENT_AUTH_SUCCESS':
+      return {
+        ...state,
+        user: action.payload.user,
+        role: action.payload.role,
+        companyId: action.payload.companyId,
+        error: null,
+      }
     case 'AUTH_FAILURE':
       return { ...state, isLoading: false, error: action.payload }
     case 'AUTH_LOGOUT':
+    case 'FORCE_LOGOUT':
       return { ...initialState, isLoading: false }
     default:
       return state
@@ -73,6 +85,28 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
+
+  const updateAuthContext = useCallback((user: string, role: Role, companyId?: number) => {
+    dispatch({
+      type: 'SILENT_AUTH_SUCCESS',
+      payload: { user, role, companyId },
+    })
+  }, [])
+
+  const forceLogout = useCallback(() => {
+    sessionStorage.removeItem('accessToken')
+    dispatch({ type: 'FORCE_LOGOUT' })
+  }, [])
+
+  useEffect(() => {
+    setAuthContextUpdater(updateAuthContext)
+    setLogoutTrigger(forceLogout)
+
+    return () => {
+      clearAuthContextUpdater()
+      // Clear logout trigger when component unmounts
+    }
+  }, [updateAuthContext, forceLogout])
 
   const login = useCallback(async (username: string, password: string, companyId?: number) => {
     dispatch({ type: 'AUTH_START' })
@@ -165,6 +199,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await refresh()
       } catch (error) {
         console.log('Failed to refresh token:', error)
+        // Don't set error state here, just log it
       }
     }
     initializeAuth()

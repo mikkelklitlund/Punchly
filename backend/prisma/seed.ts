@@ -1,4 +1,5 @@
 import { PrismaClient, Role, AbsenceType } from '@prisma/client'
+import { v4 as uuid } from 'uuid'
 import { addDays, subDays, subMonths } from 'date-fns'
 
 const prisma = new PrismaClient()
@@ -154,25 +155,25 @@ async function main() {
   await prisma.refreshToken.createMany({
     data: [
       {
-        token: 'valid-refresh-token-1',
+        token: `valid-refresh-token-1-${uuid()}`,
         userId: testUser.id,
         expiryDate: addDays(now, 7),
         revoked: false,
       },
       {
-        token: 'valid-refresh-token-2',
+        token: `valid-refresh-token-2-${uuid()}`,
         userId: adminUser.id,
         expiryDate: addDays(now, 30),
         revoked: false,
       },
       {
-        token: 'expired-refresh-token',
+        token: `expired-refresh-token-1-${uuid()}`,
         userId: testUser.id,
         expiryDate: subDays(now, 1),
         revoked: false,
       },
       {
-        token: 'revoked-refresh-token',
+        token: `revoked-refresh-token-2-${uuid()}`,
         userId: managerUser.id,
         expiryDate: addDays(now, 7),
         revoked: true,

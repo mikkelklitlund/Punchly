@@ -119,6 +119,7 @@ model AttendanceRecord {
   employee   Employee  @relation(fields: [employeeId], references: [id])
   checkIn    DateTime
   checkOut   DateTime?
+  autoClosed Boolean   @default(false)
 
   @@index([employeeId])
 }

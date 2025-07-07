@@ -21,14 +21,14 @@ const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunc
 
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err, decoded) => {
     if (err) {
-      res.status(403).json({ message: 'Invalid or expired token' })
+      res.status(401).json({ message: 'Invalid or expired token' })
       return
     }
 
     const payload = decoded as AuthJwtPayload
 
     if (!payload.username || !payload.companyId || !payload.role) {
-      res.status(403).json({ message: 'Invalid token payload' })
+      res.status(401).json({ message: 'Invalid token payload' })
       return
     }
 
