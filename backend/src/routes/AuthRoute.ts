@@ -2,8 +2,7 @@ import { IUserService } from '../interfaces/services/IUserService.js'
 import { Failure } from '../utils/Result.js'
 import { ValidationError } from '../utils/Errors.js'
 import { body, validationResult } from 'express-validator'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
-import { Router, Response } from 'express'
+import { Router, Response, Request } from 'express'
 import authMiddleware from '../middleware/Auth.js'
 
 export class AuthRoutes {
@@ -152,7 +151,7 @@ export class AuthRoutes {
     this.router.post('/logout', authMiddleware, this.logout.bind(this))
   }
 
-  private validateRequest(req: AuthenticatedRequest, res: Response): boolean {
+  private validateRequest(req: Request, res: Response): boolean {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() })
@@ -161,7 +160,7 @@ export class AuthRoutes {
     return true
   }
 
-  private async register(req: AuthenticatedRequest, res: Response) {
+  private async register(req: Request, res: Response) {
     if (!this.validateRequest(req, res)) return
 
     const { email, password, username } = req.body
@@ -183,7 +182,7 @@ export class AuthRoutes {
     })
   }
 
-  private async login(req: AuthenticatedRequest, res: Response) {
+  private async login(req: Request, res: Response) {
     if (!this.validateRequest(req, res)) return
 
     const { username, password, companyId } = req.body
@@ -204,7 +203,7 @@ export class AuthRoutes {
     })
   }
 
-  private async getProfile(req: AuthenticatedRequest, res: Response) {
+  private async getProfile(req: Request, res: Response) {
     if (!req.username) {
       res.status(401).json({ error: 'Authentication required' })
       return
@@ -223,7 +222,7 @@ export class AuthRoutes {
     res.json(userWithoutPassword)
   }
 
-  private async refreshToken(req: AuthenticatedRequest, res: Response) {
+  private async refreshToken(req: Request, res: Response) {
     const refreshToken = req.cookies?.jwt
     if (!refreshToken) {
       res.status(401).json({ error: 'No refresh token' })
@@ -241,7 +240,7 @@ export class AuthRoutes {
     res.json({ accessToken: result.value.accessToken })
   }
 
-  private async logout(req: AuthenticatedRequest, res: Response) {
+  private async logout(req: Request, res: Response) {
     try {
       const refreshToken = req.cookies.jwt
       if (refreshToken) {
@@ -249,7 +248,7 @@ export class AuthRoutes {
       }
 
       this.clearAuthCookies(res)
-      res.status(204).json({ message: 'Logged out successfully' })
+      res.status(200).json({ message: 'Logged out successfully' })
     } catch {
       this.clearAuthCookies(res)
       res.status(500).json({ error: 'Internal server error' })
@@ -261,7 +260,7 @@ export class AuthRoutes {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000,
     })
   }
 

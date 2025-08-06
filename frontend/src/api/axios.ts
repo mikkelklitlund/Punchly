@@ -9,7 +9,7 @@ interface AuthResponse extends JwtPayload {
   role?: Role
 }
 
-const API_BASE_URL = 'http://localhost:4000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 const STORAGE_TYPE = (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'sessionStorage') || 'localStorage'
 
 const axiosInstance = axios.create({
@@ -51,19 +51,19 @@ export const clearAuthContextUpdater = () => {
   logoutTrigger = null
 }
 
-const getStorage = () => {
+export const getStorage = () => {
   return STORAGE_TYPE === 'localStorage' ? localStorage : sessionStorage
 }
 
-const getStoredToken = (): string | null => {
+export const getStoredToken = (): string | null => {
   return getStorage().getItem('accessToken')
 }
 
-const setStoredToken = (token: string): void => {
+export const setStoredToken = (token: string): void => {
   getStorage().setItem('accessToken', token)
 }
 
-const removeStoredToken = (): void => {
+export const removeStoredToken = (): void => {
   getStorage().removeItem('accessToken')
 }
 

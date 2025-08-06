@@ -1,4 +1,4 @@
 export const getProfilePictureUrl = (filename?: string): string => {
-  if (!filename) return '/default-avatar.png'
-  return `${import.meta.env.VITE_API_BASE_URL}/uploads/${filename}`
+  if (!filename) return '/uploads/default-avatar.png'
+  return `${import.meta.env.VITE_STATIC_BASE_URL}/uploads/${filename}`
 }

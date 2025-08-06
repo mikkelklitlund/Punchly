@@ -2,7 +2,13 @@ import { useReducer, useCallback, createContext, useContext, ReactNode, useEffec
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
 import { authService } from '../services/authService'
-import { setAuthContextUpdater, clearAuthContextUpdater, setLogoutTrigger } from '../api/axios'
+import {
+  setAuthContextUpdater,
+  clearAuthContextUpdater,
+  setLogoutTrigger,
+  removeStoredToken,
+  setStoredToken,
+} from '../api/axios'
 import { Role } from 'shared'
 
 // Types
@@ -39,30 +45,23 @@ const initialState: AuthState = {
 type AuthAction =
   | { type: 'AUTH_START' }
   | { type: 'AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
+  | { type: 'SILENT_AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'AUTH_LOGOUT' }
-  | { type: 'SILENT_AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
-  | { type: 'FORCE_LOGOUT' } // New action for forced logout
+  | { type: 'FORCE_LOGOUT' }
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'AUTH_START':
       return { ...state, isLoading: true, error: null }
     case 'AUTH_SUCCESS':
-      return {
-        ...state,
-        isLoading: false,
-        user: action.payload.user,
-        role: action.payload.role,
-        companyId: action.payload.companyId,
-        error: null,
-      }
     case 'SILENT_AUTH_SUCCESS':
       return {
         ...state,
         user: action.payload.user,
         role: action.payload.role,
         companyId: action.payload.companyId,
+        isLoading: false,
         error: null,
       }
     case 'AUTH_FAILURE':
@@ -94,18 +93,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [])
 
   const forceLogout = useCallback(() => {
-    sessionStorage.removeItem('accessToken')
+    removeStoredToken()
     dispatch({ type: 'FORCE_LOGOUT' })
   }, [])
 
   useEffect(() => {
     setAuthContextUpdater(updateAuthContext)
     setLogoutTrigger(forceLogout)
-
-    return () => {
-      clearAuthContextUpdater()
-      // Clear logout trigger when component unmounts
-    }
+    return () => clearAuthContextUpdater()
   }, [updateAuthContext, forceLogout])
 
   const login = useCallback(async (username: string, password: string, companyId?: number) => {
@@ -113,7 +108,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authService.login(username, password, companyId)
 
-      sessionStorage.setItem('accessToken', data.accessToken)
+      setStoredToken(data.accessToken)
 
       const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
@@ -129,12 +124,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const axiosError = error as AxiosError<{ message?: string }>
       let errorMessage = 'An unexpected error occurred'
 
-      if (axiosError.response) {
-        if (axiosError.response.status === 401) {
-          errorMessage = 'Invalid username or password'
-        } else if (axiosError.response.data?.message) {
-          errorMessage = axiosError.response.data.message
-        }
+      if (axiosError.response?.status === 401) {
+        errorMessage = 'Invalid username or password'
+      } else if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message
       }
 
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
@@ -157,10 +150,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'AUTH_START' })
     try {
       const data = await authService.refresh()
-
-      if (!data.accessToken) {
-        throw new Error('No access token returned')
-      }
+      setStoredToken(data.accessToken)
 
       const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
@@ -172,10 +162,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           companyId: decoded.companyId,
         },
       })
-
-      sessionStorage.setItem('accessToken', data.accessToken)
     } catch (error) {
-      sessionStorage.removeItem('accessToken')
+      removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
       throw error
     }
@@ -188,7 +176,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
-      sessionStorage.removeItem('accessToken')
+      removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
     }
   }, [])
@@ -199,7 +187,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await refresh()
       } catch (error) {
         console.log('Failed to refresh token:', error)
-        // Don't set error state here, just log it
       }
     }
     initializeAuth()

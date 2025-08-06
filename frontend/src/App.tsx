@@ -8,10 +8,11 @@ import { ToastProvider } from './contexts/ToastContext'
 import ManagerTable from './components/manager/ManagerTable'
 import { CompanyProvider } from './contexts/CompanyContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import EmployeeTable from './components/employee/EmployeeTable'
+import EmployeeTable from './pages/EmployeeTable'
 import { Role } from 'shared'
 import RoleLayout from './components/RoleLayout'
-import AttendanceOverviewPage from './components/attendance/AttendanceOverviewPage'
+import AttendanceOverviewPage from './pages/AttendanceOverviewPage'
+import AttendanceReportPage from './pages/AttendanceReport'
 
 function App() {
   const queryClient = new QueryClient()
@@ -31,6 +32,7 @@ function App() {
                     <Route element={<RoleLayout allowedRoles={[Role.ADMIN, Role.MANAGER]} />}>
                       <Route path="/employees" element={<EmployeeTable />} />
                       <Route path="/attendance" element={<AttendanceOverviewPage />} />
+                      <Route path="/attendance-report" element={<AttendanceReportPage />} />
                     </Route>
                     <Route element={<RoleLayout allowedRoles={[Role.ADMIN]} />}>
                       <Route path="/managers" element={<ManagerTable />} />

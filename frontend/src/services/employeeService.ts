@@ -60,11 +60,27 @@ export const employeeService = {
     return response.data.records
   },
 
+  getAttendanceReport: async (startDate: Date, endDate: Date, departmentId?: number): Promise<Buffer> => {
+    const response = await axiosInstance.get('/employees/attendance-report', {
+      params: {
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        departmentId,
+      },
+      responseType: 'arraybuffer',
+    })
+    return response.data
+  },
+
   updateAttendanceRecord: async (
     id: number,
     data: Partial<Pick<AttendanceRecord, 'checkIn' | 'checkOut' | 'autoClosed'>>
   ): Promise<AttendanceRecord> => {
     const res = await axiosInstance.put(`/employees/attendance-records/${id}`, data)
     return res.data.record
+  },
+
+  deleteAttendanceRecord: async (id: number) => {
+    await axiosInstance.delete(`/attendance/${id}`)
   },
 }

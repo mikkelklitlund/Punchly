@@ -13,6 +13,7 @@ interface Props {
 const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
   const { showToast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [checkIn, setCheckIn] = useState(dayjs(record.checkIn).format('YYYY-MM-DDTHH:mm'))
   const [checkOut, setCheckOut] = useState(record.checkOut ? dayjs(record.checkOut).format('YYYY-MM-DDTHH:mm') : '')
 
@@ -29,7 +30,7 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
       }
 
       const checkInDate = new Date(checkIn)
-      const checkOutDate = checkOut ? new Date(checkOut) : null
+      const checkOutDate = new Date(checkOut)
 
       if (checkOutDate && checkOutDate < checkInDate) {
         showToast('Check ud kan ikke være før check ind', 'warning')
@@ -38,7 +39,7 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
 
       await employeeService.updateAttendanceRecord(record.id, {
         checkIn: checkInDate,
-        checkOut: checkOutDate ?? undefined,
+        checkOut: checkOutDate,
         autoClosed: false,
       })
 
@@ -49,6 +50,23 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
       showToast('Fejl ved opdatering af registrering', 'error')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm('Er du sikker på, at du vil slette denne registrering?')
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    try {
+      await employeeService.deleteAttendanceRecord(record.id)
+      showToast('Tidsregistrering slettet', 'success')
+      onSuccess()
+    } catch (err) {
+      console.error(err)
+      showToast('Fejl ved sletning af registrering', 'error')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -85,7 +103,7 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
 
           <p className="text-xs text-gray-500 italic">Både check ind og check ud skal være gyldige tidsstempler.</p>
 
-          <div className="flex justify-end gap-4 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-4">
             <button
               type="button"
               onClick={onCancel}
@@ -93,13 +111,25 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
             >
               Annuller
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
-            >
-              {isSaving ? 'Gemmer...' : 'Gem ændringer'}
-            </button>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting || isSaving}
+                className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? 'Sletter...' : 'Slet'}
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting}
+                className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {isSaving ? 'Gemmer...' : 'Gem og godkend'}
+              </button>
+            </div>
           </div>
         </>
       )}

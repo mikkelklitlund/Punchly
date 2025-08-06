@@ -3,12 +3,12 @@ import { CheckCircle, XCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 import { AttendanceRecord } from 'shared'
-import { useCompany } from '../../contexts/CompanyContext'
-import { employeeService } from '../../services/employeeService'
-import DataTable from '../common/DataTable'
-import LoadingSpinner from '../common/LoadingSpinner'
-import Modal from '../common/Modal'
-import EditAttendanceForm from './EditAttendanceForm'
+import { useCompany } from '../contexts/CompanyContext'
+import { employeeService } from '../services/employeeService'
+import DataTable, { Column } from '../components/common/DataTable'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import Modal from '../components/common/Modal'
+import EditAttendanceForm from '../components/attendance/EditAttendanceForm'
 
 dayjs.extend(duration)
 
@@ -46,14 +46,23 @@ const AttendanceOverviewPage = () => {
     }
   }, [selectedEmployeeId])
 
-  const columns = [
+  const columns: Column<AttendanceRecord>[] = [
+    {
+      header: 'Dato',
+      accessor: (rec: AttendanceRecord) =>
+        `${
+          dayjs(rec.checkIn).format('DD/MM/YYYY') == dayjs(rec.checkOut).format('DD/MM/YYYY')
+            ? dayjs(rec.checkIn).format('DD/MM/YYYY')
+            : dayjs(rec.checkIn).format('DD/MM/YYYY') + ' - ' + dayjs(rec.checkOut).format('DD/MM/YYYY')
+        }`,
+    },
     {
       header: 'Check ind',
-      accessor: (rec: AttendanceRecord) => dayjs(rec.checkIn).format('DD/MM/YYYY HH:mm'),
+      accessor: (rec: AttendanceRecord) => dayjs(rec.checkIn).format('HH:mm'),
     },
     {
       header: 'Check ud',
-      accessor: (rec: AttendanceRecord) => (rec.checkOut ? dayjs(rec.checkOut).format('DD/MM/YYYY HH:mm') : '-'),
+      accessor: (rec: AttendanceRecord) => (rec.checkOut ? dayjs(rec.checkOut).format('HH:mm') : '-'),
     },
     {
       header: 'Varighed',
@@ -64,12 +73,12 @@ const AttendanceOverviewPage = () => {
       },
     },
     {
-      header: 'Auto-lukket',
+      header: 'Skal gennemgås',
       accessor: (rec: AttendanceRecord) =>
         rec.autoClosed ? (
-          <CheckCircle className="inline-block text-green-600" size={18} />
+          <CheckCircle className="inline-block text-orange-500" size={18} />
         ) : (
-          <XCircle className="inline-block text-red-500" size={18} />
+          <XCircle className="inline-block text-gray-400" size={18} />
         ),
       className: 'text-center',
     },

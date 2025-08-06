@@ -6,7 +6,6 @@ import { body, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth.js'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { Employee, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
@@ -122,7 +121,12 @@ export class CompanyRoutes {
      *       403:
      *         description: Unauthorized
      */
-    this.router.get('/:companyId/managers', authMiddleware, authorizeRoles(Role.ADMIN), this.getAllManagers.bind(this))
+    this.router.get(
+      '/:companyId/managers',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      this.getAllManagers.bind(this)
+    )
 
     /**
      * @swagger
@@ -209,7 +213,7 @@ export class CompanyRoutes {
     this.router.post(
       '/',
       authMiddleware,
-      authorizeRoles(Role.ADMIN),
+      authorizeRoles(this.userService, Role.ADMIN),
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('address').notEmpty().withMessage('Address is required'),
@@ -237,26 +241,7 @@ export class CompanyRoutes {
     this.router.get('/:companyId/employee-types', authMiddleware, this.getEmployeeTypesByCompany.bind(this))
   }
 
-  private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
-    const { username, companyId, role } = req
-
-    if (!username || !companyId || role === undefined) {
-      res.status(401).json({ message: 'Invalid request: Missing user credentials' })
-      return false
-    }
-
-    const accessResult = await this.userService.userHasAccess(username, parseInt(companyId), allowedRoles)
-
-    if (accessResult instanceof Failure) {
-      res.status(403).json({ message: accessResult.error.message })
-      return false
-    }
-
-    return true
-  }
-
   private async getAllManagers(req: Request, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN]))) return
     const companyId = parseInt(req.params.companyId)
 
     const result = await this.userService.getAllManagersByCompanyId(companyId)

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useCompany } from '../../contexts/CompanyContext'
+import { useCompany } from '../contexts/CompanyContext'
 import { Employee, SimpleEmployee } from 'shared'
-import { employeeService } from '../../services/employeeService'
-import { useToast } from '../../contexts/ToastContext'
-import Modal from '../common/Modal'
-import EditEmployeeForm from './EditEmployeeForm'
-import { getProfilePictureUrl } from '../../utils/imageUtils'
-import DataTable, { Column } from '../common/DataTable'
+import { employeeService } from '../services/employeeService'
+import { useToast } from '../contexts/ToastContext'
+import Modal from '../components/common/Modal'
+import EditEmployeeForm from '../components/employee/EditEmployeeForm'
+import { getProfilePictureUrl } from '../utils/imageUtils'
+import DataTable, { Column } from '../components/common/DataTable'
 
 const EmployeeTable = () => {
   const { employees, isLoading, error, departments, setCurrentDepartment } = useCompany()
