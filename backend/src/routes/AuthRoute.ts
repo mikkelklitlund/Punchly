@@ -131,7 +131,7 @@ export class AuthRoutes {
      *       403:
      *         description: Invalid refresh token
      */
-    this.router.get('/refresh', this.refreshToken.bind(this))
+    this.router.post('/refresh', this.refreshToken.bind(this))
 
     /**
      * @swagger
@@ -256,19 +256,23 @@ export class AuthRoutes {
   }
 
   private setAuthCookies(res: Response, refreshToken: string) {
+    const isProd = process.env.NODE_ENV === 'production'
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // same-site -> perfect for example.com/api
+      secure: isProd, // true in prod (HTTPS), false in dev (http://localhost)
+      path: '/api', // <-- important: cookie sent to /api/refresh AND /api/logout
       maxAge: 24 * 60 * 60 * 1000,
     })
   }
 
   private clearAuthCookies(res: Response) {
+    const isProd = process.env.NODE_ENV === 'production'
     res.clearCookie('jwt', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProd,
+      path: '/api', // must match setAuthCookies
     })
   }
 }

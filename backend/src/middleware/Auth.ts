@@ -9,6 +9,7 @@ interface AuthJwtPayload extends JwtPayload {
 }
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'OPTIONS') next()
   try {
     const authHeader = req.headers['authorization']
     if (!authHeader) {

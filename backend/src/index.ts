@@ -19,15 +19,20 @@ import { fileURLToPath } from 'url'
 dotenv.config()
 
 const app = express()
-const corsOptions = {
-  origin: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+const FRONTEND_ORIGIN = process.env.CLIENT_URL ?? 'http://localhost:5173'
+
+app.set('trust proxy', 1)
+
+const corsOptions: cors.CorsOptions = {
+  origin: FRONTEND_ORIGIN, // no '*'
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 app.use(cookieParser())
 app.use(express.json())
-app.use(cors(corsOptions))
 const httpServer = createServer(app)
 
 //Prisma
