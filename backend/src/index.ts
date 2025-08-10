@@ -24,7 +24,7 @@ const FRONTEND_ORIGIN = process.env.CLIENT_URL ?? 'http://localhost:5173'
 app.set('trust proxy', 1)
 
 const corsOptions: cors.CorsOptions = {
-  origin: FRONTEND_ORIGIN, // no '*'
+  origin: FRONTEND_ORIGIN,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -73,7 +73,7 @@ app.use(errorHandler)
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
-const PORT = 4000
+const PORT = process.env.PORT
 
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)

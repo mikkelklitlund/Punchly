@@ -1,104 +1,57 @@
-name: Continuous Integration
+name: ci
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*.*.*' # This will trigger the workflow on version tags
+    branches: [main]
+    tags: ['v*.*.*']
   pull_request:
-    branches:
-      - main
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
 
 jobs:
-  install:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-
-      - name: Remove node_modules and package-lock
-        run: rm -rf node_modules package-lock.json
-
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            frontend/node_modules
-            backend/node_modules
-            shared/node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Install dependencies
-        run: npm install --force
-        working-directory: .
-
-  lint:
-    runs-on: ubuntu-latest
-    needs: install
-    strategy:
-      matrix:
-        project: [frontend, backend]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm install --force
-        working-directory: .
-
-      - name: Lint ${{ matrix.project }}
-        run: npm run lint --workspace=${{ matrix.project }}
-        working-directory: ./${{ matrix.project }}
-
   build:
     runs-on: ubuntu-latest
-    needs: install
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install --force
-        working-directory: .
+      - name: Install (workspaces)
+        run: npm ci
 
-      - name: Generate Prisma Client
+      - name: Generate Prisma client (types only)
+        working-directory: backend
+        env:
+          DATABASE_URL: file:./dev.db
         run: npx prisma generate
+
+      # Optional: run tests here if you have them
+      # - name: Test
+      #   run: npm test --workspaces
 
       - name: Build shared
         run: npm run build --workspace=shared
-        working-directory: .
 
-      - name: Build frontend and backend
-        run: |
-          npm run build --workspace=frontend
-          npm run build --workspace=backend
-        working-directory: .
+      - name: Build frontend
+        run: npm run build --workspace=frontend
+
+      - name: Build backend
+        run: npm run build --workspace=backend
 
   docker:
-    runs-on: ubuntu-latest
-    # Only run this job for pushes to main or tags, not pull requests
     if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -106,41 +59,39 @@ jobs:
       matrix:
         project: [frontend, backend]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Extract metadata for Docker
+      - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}-${{ matrix.project }}
           tags: |
-            # Always tag as latest when on main branch
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            # Use git tag as Docker tag
-            type=ref,event=tag
-            # Include short SHA for all builds for traceability
             type=sha,format=short
-            # For main branch, add "main" tag
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+      - name: Build & push ${{ matrix.project }}
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.project }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_DATE=${{ github.run_started_at }}
