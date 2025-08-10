@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Department, SimpleEmployee } from 'shared'
+import { Department, EmployeeType, SimpleEmployee } from 'shared'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
 import { employeeService } from '../services/employeeService'
@@ -10,6 +10,7 @@ interface CompanyContextType {
   currentDepartment: Department | undefined
   setCurrentDepartment: (dep: Department | undefined) => void
   employees: SimpleEmployee[]
+  employeeTypes: EmployeeType[]
   isLoading: boolean
   error: string | null
   refreshEmployees: () => void
@@ -28,6 +29,16 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
   } = useQuery({
     queryKey: ['departments', companyId],
     queryFn: () => (companyId ? companyService.getDepartments(companyId) : Promise.reject('No company ID')),
+    enabled: !!companyId,
+  })
+
+  const {
+    data: employeeTypeData,
+    isLoading: typeLoading,
+    error: typeError,
+  } = useQuery({
+    queryKey: ['employeeTypes', companyId],
+    queryFn: () => (companyId ? companyService.getEmployeeTypes(companyId) : Promise.reject('No company ID')),
     enabled: !!companyId,
   })
 
@@ -56,8 +67,9 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
         currentDepartment,
         setCurrentDepartment,
         employees: filteredEmployees,
-        isLoading: deptLoading || empLoading,
-        error: deptError ? deptError.message : empError ? empError.message : null,
+        employeeTypes: employeeTypeData?.employeeTypes || [],
+        isLoading: deptLoading || empLoading || typeLoading,
+        error: deptError?.message || empError?.message || typeError?.message || null,
         refreshEmployees,
       }}
     >

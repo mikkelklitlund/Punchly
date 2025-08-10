@@ -10,15 +10,23 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   const { user, role } = useAuth()
-  const showSidebar = (user && role === Role.ADMIN) || role === Role.MANAGER
-  const showHeader = user && role == Role.COMPANY
+  const showSidebar = user && role && (role === Role.ADMIN || role === Role.MANAGER)
+  const showHeader = user && role && role === Role.COMPANY
+
+  if (!user || !role) {
+    return <main className="h-dvh w-full">{children}</main>
+  }
 
   return (
-    <div className="flex">
-      {showSidebar && <Sidebar />}
-      <div className="w-full">
+    <div className="flex h-dvh w-full overflow-hidden">
+      {showSidebar && (
+        <div className="flex-shrink-0 overflow-y-auto border-r bg-white">
+          <Sidebar />
+        </div>
+      )}
+      <div className="flex w-full flex-col">
         {showHeader && <Header />}
-        {children}
+        <main className="overflow-y-auto p-4">{children}</main>
       </div>
     </div>
   )

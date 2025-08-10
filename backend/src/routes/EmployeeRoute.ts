@@ -7,12 +7,9 @@ import { CreateEmployee, Employee, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 
 export class EmployeeRoutes {
   public router: Router
-  private clients: { id: number; companyId: number; departmentId: number; res: Response }[] = []
-  private clientId = 0
   constructor(
     private readonly userService: IUserService,
     private readonly employeeService: IEmployeeService,
@@ -23,6 +20,53 @@ export class EmployeeRoutes {
   }
 
   private initializeRoutes() {
+    /**
+     * @swagger
+     * /employees/attendance-report:
+     *   get:
+     *     summary: Generate and download an employee attendance Excel report
+     *     tags:
+     *       - Employees
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: startDate
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date
+     *       - in: query
+     *         name: endDate
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date
+     *       - in: query
+     *         name: departmentId
+     *         required: false
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Excel report generated successfully
+     *         content:
+     *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+     *             schema:
+     *               type: string
+     *               format: binary
+     *       400:
+     *         description: Validation error
+     *       500:
+     *         description: Server error
+     */
+    this.router.get(
+      '/attendance-report',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      this.generateAttendanceReport.bind(this)
+    )
+
     /**
      * @swagger
      * /employees:
@@ -60,7 +104,7 @@ export class EmployeeRoutes {
     this.router.post(
       '/',
       authMiddleware,
-      authorizeRoles(Role.ADMIN, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('companyId').isNumeric().withMessage('Valid company ID is required'),
@@ -95,7 +139,7 @@ export class EmployeeRoutes {
     this.router.post(
       '/:employeeId/checkin',
       authMiddleware,
-      authorizeRoles(Role.ADMIN, Role.COMPANY, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.COMPANY, Role.MANAGER),
       this.employeeCheckin.bind(this)
     )
 
@@ -125,7 +169,7 @@ export class EmployeeRoutes {
     this.router.post(
       '/:employeeId/checkout',
       authMiddleware,
-      authorizeRoles(Role.ADMIN, Role.COMPANY, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.COMPANY, Role.MANAGER),
       this.employeeCheckout.bind(this)
     )
 
@@ -233,7 +277,7 @@ export class EmployeeRoutes {
     this.router.put(
       '/:id',
       authMiddleware,
-      authorizeRoles(Role.ADMIN, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
         body('name').optional().notEmpty().withMessage('Name is required if provided'),
         body('companyId').optional().isNumeric().withMessage('Valid company ID is required if provided'),
@@ -263,30 +307,123 @@ export class EmployeeRoutes {
      *       500:
      *         description: Server error
      */
-    this.router.delete('/:id', authMiddleware, authorizeRoles(Role.ADMIN, Role.MANAGER), this.deleteEmployee.bind(this))
+    this.router.delete(
+      '/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      this.deleteEmployee.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /employees/{employeeId}/attendance-records-last-30:
+     *   get:
+     *     summary: Get the last 30 attendance records for an employee
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: employeeId
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       200:
+     *         description: Attendance records retrieved
+     *       500:
+     *         description: Server error
+     */
+    this.router.get(
+      '/:employeeId/attendance-records-last-30',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.MANAGER, Role.ADMIN),
+      this.getLast30AttendanceRecordsForEmployee.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /attendance-records/{id}:
+     *   put:
+     *     summary: Update an attendance record (check-in / check-out)
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               checkIn:
+     *                 type: string
+     *                 format: date-time
+     *               checkOut:
+     *                 type: string
+     *                 format: date-time
+     *     responses:
+     *       200:
+     *         description: Record updated successfully
+     *       400:
+     *         description: Invalid input
+     *       404:
+     *         description: Record not found
+     *       500:
+     *         description: Server error
+     */
+    this.router.put(
+      '/attendance-records/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        body('checkIn').optional().isISO8601().withMessage('Check-in must be a valid ISO date string'),
+        body('checkOut').optional().isISO8601().withMessage('Check-out must be a valid ISO date string'),
+        body('autoClosed').optional().isBoolean(),
+      ],
+      this.updateAttendanceRecord.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /attendance-records/{id}:
+     *   delete:
+     *     summary: Delete an attendance record
+     *     tags:
+     *       - Attendance
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: integer
+     *     responses:
+     *       204:
+     *         description: Record deleted successfully
+     *       404:
+     *         description: Record not found
+     *       500:
+     *         description: Server error
+     */
+    this.router.delete(
+      '/attendance-records/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      this.deleteAttendanceRecord.bind(this)
+    )
   }
 
-  private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
-    const { username, companyId, role } = req
-
-    if (!username || !companyId || role === undefined) {
-      res.status(401).json({ message: 'Invalid request: Missing user credentials' })
-      return false
-    }
-
-    const accessResult = await this.userService.userHasAccess(username, parseInt(companyId), allowedRoles)
-
-    if (accessResult instanceof Failure) {
-      res.status(403).json({ message: accessResult.error.message })
-      return false
-    }
-
-    return true
-  }
-
-  private async employeeCheckin(req: AuthenticatedRequest, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.COMPANY, Role.MANAGER]))) return
-
+  private async employeeCheckin(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
     const checkInResult = await this.attendanceService.checkInEmployee(employeeId)
 
@@ -304,9 +441,7 @@ export class EmployeeRoutes {
     res.status(200).json({ success: true })
   }
 
-  private async employeeCheckout(req: AuthenticatedRequest, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.COMPANY, Role.MANAGER]))) return
-
+  private async employeeCheckout(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
     const checkOutResult = await this.attendanceService.checkOutEmployee(employeeId)
 
@@ -325,7 +460,6 @@ export class EmployeeRoutes {
   }
 
   private async createEmployee(req: Request, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ message: errors.array() })
@@ -385,8 +519,7 @@ export class EmployeeRoutes {
     res.status(200).json({ employee: result.value })
   }
 
-  private async updateEmployee(req: AuthenticatedRequest, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
+  private async updateEmployee(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ message: errors.array() })
@@ -405,8 +538,7 @@ export class EmployeeRoutes {
     res.status(200).json({ employee: result.value })
   }
 
-  private async deleteEmployee(req: AuthenticatedRequest, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.COMPANY, Role.MANAGER]))) return
+  private async deleteEmployee(req: Request, res: Response) {
     const employeeId = parseInt(req.params.id)
     const result = await this.employeeService.deleteEmployee(employeeId)
 
@@ -416,5 +548,84 @@ export class EmployeeRoutes {
     }
 
     res.status(204).send({ employeeDeleted: result.value })
+  }
+
+  private async getLast30AttendanceRecordsForEmployee(req: Request, res: Response) {
+    const employeeId = parseInt(req.params.employeeId)
+
+    const result = await this.attendanceService.getLast30AttendanceRecords(employeeId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ records: result.value })
+  }
+
+  private async updateAttendanceRecord(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: errors.array() })
+      return
+    }
+
+    const id = parseInt(req.params.id)
+    const { checkIn, checkOut, autoClosed } = req.body
+
+    const result = await this.attendanceService.updateAttendanceRecord(id, {
+      checkIn: checkIn ? new Date(checkIn) : undefined,
+      checkOut: checkOut ? new Date(checkOut) : undefined,
+      autoClosed,
+    })
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ record: result.value })
+  }
+
+  private async deleteAttendanceRecord(req: Request, res: Response) {
+    const id = parseInt(req.params.id)
+
+    const result = await this.attendanceService.deleteAttendanceRecord(id)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(204).send()
+  }
+
+  private async generateAttendanceReport(req: Request, res: Response) {
+    const { startDate, endDate, departmentId } = req.query
+    if (!req.companyId) {
+      res.status(500).json({ message: 'CompanyId must be provided, try to log out and login again' })
+      return
+    }
+    const companyId = parseInt(req.companyId)
+
+    if (!startDate || !endDate) {
+      res.status(400).json({ message: 'startDate and endDate are required query parameters' })
+      return
+    }
+
+    const start = new Date(startDate as string)
+    const end = new Date(endDate as string)
+    const deptId = departmentId ? parseInt(departmentId as string, 10) : undefined
+
+    const result = await this.attendanceService.generateEmployeeAttendanceReport(start, end, companyId, deptId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename=employee-attendance-report.xlsx')
+    res.send(result.value)
   }
 }

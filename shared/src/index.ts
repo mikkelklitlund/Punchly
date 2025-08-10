@@ -1,17 +1,17 @@
-export interface Company {
+export type Company = {
 	id: number
 	address: string
 	name: string
 }
 
-export interface User {
+export type User = {
 	id: number
 	email: string
 	password: string
 	username: string
 }
 
-export interface UserRefreshToken {
+export type UserRefreshToken = {
 	id: number
 	token: string
 	userId: number
@@ -20,19 +20,19 @@ export interface UserRefreshToken {
 	createdAt: Date
 }
 
-export interface UserCompanyAccess {
+export type UserCompanyAccess = {
 	userId: number
 	companyId: number
 	role: Role
 }
 
-export interface Department {
+export type Department = {
 	id: number
 	name: string
 	companyId: number
 }
 
-export interface SimpleEmployee {
+export type SimpleEmployee = {
 	id: number
 	name: string
 	profilePicturePath: string
@@ -41,7 +41,7 @@ export interface SimpleEmployee {
 	checkedIn: boolean
 }
 
-export interface Employee {
+export type Employee = {
 	id: number
 	name: string
 	profilePicturePath: string
@@ -51,6 +51,7 @@ export interface Employee {
 	birthdate: Date
 	employeeTypeId: number
 	monthlySalary?: number
+	monthlyHours?: number
 	hourlySalary?: number
 	address: string
 	city: string
@@ -58,7 +59,7 @@ export interface Employee {
 	attendanceRecords?: AttendanceRecord[]
 }
 
-export interface CreateEmployee {
+export type CreateEmployee = {
 	name: string
 	profilePicturePath: string
 	companyId: number
@@ -67,25 +68,26 @@ export interface CreateEmployee {
 	birthdate: Date
 	employeeTypeId: number
 	monthlySalary?: number
+	monthlyHours?: number
 	hourlySalary?: number
 	address: string
 	city: string
 }
 
-export interface EmployeeType {
+export type EmployeeType = {
 	id: number
 	name: string
 	companyId: number
 }
 
-export interface CreateAbsenceRecord {
+export type CreateAbsenceRecord = {
 	employeeId: number
 	startDate: Date
 	endDate: Date
 	absenceType: AbsenceType
 }
 
-export interface AbsenceRecord {
+export type AbsenceRecord = {
 	id: number
 	employeeId: number
 	startDate: Date
@@ -93,16 +95,24 @@ export interface AbsenceRecord {
 	absenceType: AbsenceType
 }
 
-export interface AttendanceRecord {
+export type AttendanceRecord = {
 	id: number
 	employeeId: number
 	checkIn: Date
 	checkOut?: Date
+	autoClosed: boolean
 }
 
-export interface CreateAttendanceRecord {
+export type CreateAttendanceRecord = {
 	employeeId: number
 	checkIn: Date
+}
+
+export type EmployeeWithRecords = Employee & {
+	attendanceRecords: AttendanceRecord[]
+	absenceRecords: AbsenceRecord[]
+	department: Department
+	employeeType: EmployeeType
 }
 
 export enum AbsenceType {

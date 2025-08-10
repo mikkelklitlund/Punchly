@@ -19,15 +19,20 @@ import { fileURLToPath } from 'url'
 dotenv.config()
 
 const app = express()
-const corsOptions = {
-  origin: ['http://localhost:4173', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+const FRONTEND_ORIGIN = process.env.CLIENT_URL ?? 'http://localhost:5173'
+
+app.set('trust proxy', 1)
+
+const corsOptions: cors.CorsOptions = {
+  origin: FRONTEND_ORIGIN,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 app.use(cookieParser())
 app.use(express.json())
-app.use(cors(corsOptions))
 const httpServer = createServer(app)
 
 //Prisma
@@ -51,25 +56,24 @@ const companyRoutes = new CompanyRoutes(
   serviceContainer.companyService,
   serviceContainer.employeeService,
   serviceContainer.departmentService,
-  serviceContainer.userService
+  serviceContainer.userService,
+  serviceContainer.employeeTypeService
 )
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 app.use('/api/auth', authRoutes.router)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 app.use('/api/employees', employeeRoutes.router)
 app.use('/api/employees', employeePictureRoutes.router)
 app.use('/api/companies', companyRoutes.router)
 
 app.use(errorHandler)
 
-console.log(JSON.stringify(swaggerSpec, null, 2))
-
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
-const PORT = 4000
+const PORT = process.env.PORT
 
 httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)

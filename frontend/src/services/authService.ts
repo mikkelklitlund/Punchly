@@ -17,7 +17,7 @@ export const authService = {
   },
 
   refresh: async (): Promise<AuthTokens> => {
-    const response = await axiosInstance.get('/auth/refresh')
+    const response = await axiosInstance.post('/auth/refresh')
     return response.data
   },
 }

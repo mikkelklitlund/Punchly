@@ -1,10 +1,9 @@
-import { Router, Response } from 'express'
+import { Router, Response, Request } from 'express'
 import { upload } from '../middleware/Upload.js'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
 import { Failure } from '../utils/Result.js'
 import authMiddleware from '../middleware/Auth.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { Role } from 'shared'
 
@@ -68,33 +67,13 @@ export class EmployeePictureRoutes {
     this.router.post(
       '/upload-profile-picture/:id',
       authMiddleware,
-      authorizeRoles(Role.ADMIN, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       upload.single('profilePicture'),
       this.uploadProfilePicture.bind(this)
     )
   }
 
-  private async validateUserAccess(req: AuthenticatedRequest, res: Response, allowedRoles: Role[]): Promise<boolean> {
-    const { username, companyId, role } = req
-
-    if (!username || !companyId || role === undefined) {
-      res.status(401).json({ message: 'Invalid request: Missing user credentials' })
-      return false
-    }
-
-    const accessResult = await this.userService.userHasAccess(username, parseInt(companyId), allowedRoles)
-
-    if (accessResult instanceof Failure) {
-      res.status(403).json({ message: accessResult.error.message })
-      return false
-    }
-
-    return true
-  }
-
-  private async uploadProfilePicture(req: AuthenticatedRequest, res: Response) {
-    if (!(await this.validateUserAccess(req, res, [Role.ADMIN, Role.MANAGER]))) return
-
+  private async uploadProfilePicture(req: Request, res: Response) {
     const employeeId = parseInt(req.params.id, 10)
     if (isNaN(employeeId)) {
       res.status(400).json({ message: 'Invalid employee ID' })

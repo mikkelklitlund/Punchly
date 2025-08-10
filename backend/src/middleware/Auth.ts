@@ -1,7 +1,6 @@
-import { Response, NextFunction } from 'express'
+import { Response, NextFunction, Request } from 'express'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
-import { Role } from '@prisma/client'
+import { Role } from 'shared'
 
 interface AuthJwtPayload extends JwtPayload {
   username: string
@@ -9,35 +8,32 @@ interface AuthJwtPayload extends JwtPayload {
   role: string
 }
 
-const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization']
-
-  if (!authHeader) {
-    res.status(401).json({ message: 'Authorization header required' })
-    return
-  }
-
-  const token = authHeader.split(' ')[1]
-
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err, decoded) => {
-    if (err) {
-      res.status(403).json({ message: 'Invalid or expired token' })
+const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'OPTIONS') next()
+  try {
+    const authHeader = req.headers['authorization']
+    if (!authHeader) {
+      res.status(401).json({ message: 'Authorization header required' })
       return
     }
 
-    const payload = decoded as AuthJwtPayload
+    const token = authHeader.split(' ')[1]
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as AuthJwtPayload
 
-    if (!payload.username || !payload.companyId || !payload.role) {
-      res.status(403).json({ message: 'Invalid token payload' })
+    if (!decoded.username || !decoded.companyId || !decoded.role) {
+      res.status(401).json({ message: 'Invalid token payload' })
       return
     }
 
-    req.username = payload.username
-    req.companyId = payload.companyId
-    req.role = payload.role as Role
+    req.username = decoded.username
+    req.companyId = decoded.companyId
+    req.role = decoded.role as Role
 
     next()
-  })
+  } catch {
+    res.status(401).json({ message: 'Invalid or expired token' })
+    return
+  }
 }
 
 export default authMiddleware

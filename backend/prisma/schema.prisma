@@ -81,6 +81,7 @@ model Employee {
   employeeTypeId     Int
   employeeType       EmployeeType       @relation(fields: [employeeTypeId], references: [id])
   monthlySalary      Float?
+  monthlyHours       Float?
   hourlySalary       Float?
   address            String
   city               String
@@ -119,6 +120,7 @@ model AttendanceRecord {
   employee   Employee  @relation(fields: [employeeId], references: [id])
   checkIn    DateTime
   checkOut   DateTime?
+  autoClosed Boolean   @default(false)
 
   @@index([employeeId])
 }

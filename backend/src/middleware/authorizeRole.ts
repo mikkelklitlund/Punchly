@@ -1,15 +1,23 @@
-import { Response, NextFunction } from 'express'
-import { AuthenticatedRequest } from '../interfaces/AuthenticateRequest.js'
-import { Role } from '@prisma/client'
+import { Response, NextFunction, Request } from 'express'
+import { Role } from 'shared'
+import { IUserService } from '../interfaces/services/IUserService.js'
+import { Failure } from '../utils/Result.js'
 
-const authorizeRoles = (...allowedRoles: Role[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.role) {
-      res.status(403).json({ message: 'No role found in request' })
+const authorizeRoles = (userService: IUserService, ...allowedRoles: Role[]) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.username || !req.companyId || !req.role) {
+      res.status(403).json({ message: 'Unauthorized: Missing credentials' })
       return
     }
 
-    if (!allowedRoles.includes(req.role)) {
+    const access = await userService.userHasAccess(req.username, parseInt(req.companyId), allowedRoles)
+
+    if (access instanceof Failure) {
+      res.status(403).json({ message: access.error.message })
+      return
+    }
+
+    if (!access.value) {
       res.status(403).json({ message: 'Access denied: Insufficient permissions' })
       return
     }

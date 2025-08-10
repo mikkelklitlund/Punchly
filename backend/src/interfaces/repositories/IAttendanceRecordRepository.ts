@@ -12,4 +12,5 @@ export interface IAttendanceRecordRepository {
   getOngoingAttendanceRecord(employeeId: number): Promise<AttendanceRecord | null>
   updateAttendanceRecord(id: number, data: Partial<Omit<AttendanceRecord, 'id'>>): Promise<AttendanceRecord>
   deleteAttendanceRecord(id: number): Promise<AttendanceRecord>
+  getLast30ByEmployeeId(employeeId: number): Promise<AttendanceRecord[]>
 }

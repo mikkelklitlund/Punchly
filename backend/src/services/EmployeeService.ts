@@ -143,7 +143,7 @@ export class EmployeeService implements IEmployeeService {
 
       if (data.birthdate) {
         const currentDate = new Date()
-        const age = currentDate.getFullYear() - data.birthdate.getFullYear()
+        const age = currentDate.getFullYear() - new Date(data.birthdate).getFullYear()
         if (age < 13) {
           return failure(new ValidationError('Employee must be at least 13 years old', 'birthday'))
         }
@@ -169,9 +169,7 @@ export class EmployeeService implements IEmployeeService {
         profilePicturePath: filePath,
       })
 
-      const fileUrl = `http://localhost:4000/uploads/${filePath}`
-
-      return success({ ...updatedEmployee, profilePictureUrl: fileUrl })
+      return success(updatedEmployee)
     } catch (error) {
       console.error(`Error updating profile picture for employee with ID ${id}:`, error)
       return failure(new DatabaseError('Database error occurred while updating the profile picture'))

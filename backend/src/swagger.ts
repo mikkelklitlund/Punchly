@@ -14,6 +14,11 @@ export const swaggerOptions = {
       version: '1.0.0',
       description: 'Automatically generated Swagger docs',
     },
+    servers: [
+      {
+        url: 'http://localhost:4000/api',
+      },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {

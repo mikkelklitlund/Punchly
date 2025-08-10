@@ -16,4 +16,11 @@ export interface IAttendanceService {
     data: Partial<Omit<AttendanceRecord, 'id'>>
   ): Promise<Result<AttendanceRecord, Error>>
   deleteAttendanceRecord(id: number): Promise<Result<AttendanceRecord, Error>>
+  getLast30AttendanceRecords(employeeId: number): Promise<Result<AttendanceRecord[], Error>>
+  generateEmployeeAttendanceReport(
+    startDate: Date,
+    endDate: Date,
+    companyId: number,
+    departmentId?: number
+  ): Promise<Result<Buffer, Error>>
 }
