@@ -2,7 +2,6 @@ import express from 'express'
 import { createServer } from 'http'
 import { errorHandler } from './middleware/ErrorHandler.js'
 import swaggerUi from 'swagger-ui-express'
-import { swaggerSpec } from './swagger.js'
 import { PrismaClient } from '@prisma/client'
 import { AuthRoutes } from './routes/AuthRoute.js'
 import cors from 'cors'
@@ -15,6 +14,7 @@ import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { existsSync, readFileSync } from 'fs'
 
 dotenv.config()
 
@@ -30,7 +30,6 @@ const corsOptions: cors.CorsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 }
 app.use(cors(corsOptions))
-app.options('*', cors(corsOptions))
 app.use(cookieParser())
 app.use(express.json())
 const httpServer = createServer(app)
@@ -68,10 +67,20 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 app.use('/api/employees', employeeRoutes.router)
 app.use('/api/employees', employeePictureRoutes.router)
 app.use('/api/companies', companyRoutes.router)
+app.get('/health', (_req, res) => res.status(200).send('ok'))
+
+let swaggerDoc: swaggerUi.JsonObject
+
+const candidates = [path.join(__dirname, '../openapi.json'), path.join(__dirname, '../dist/openapi.json')]
+
+const existing = candidates.find((p) => existsSync(p))
+
+if (existing) {
+  swaggerDoc = JSON.parse(readFileSync(existing, 'utf-8'))
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc))
+}
 
 app.use(errorHandler)
-
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 const PORT = process.env.PORT
 

@@ -1,5 +1,5 @@
 import axiosInstance from '../api/axios'
-import { SimpleEmployee, Employee, AttendanceRecord } from 'shared'
+import { SimpleEmployee, Employee, AttendanceRecord, CreateEmployee } from 'shared'
 
 export interface EmployeeResponse {
   employees: SimpleEmployee[]
@@ -14,6 +14,15 @@ export const employeeService = {
 
     const response = await axiosInstance.get(endpoint)
     return response.data
+  },
+
+  async createEmployee(payload: Omit<CreateEmployee, 'profilePicturePath'>): Promise<Employee> {
+    const res = await axiosInstance.post<{ employee: Employee }>('/employees', payload)
+    return res.data.employee
+  },
+
+  async deleteEmployee(id: number): Promise<void> {
+    await axiosInstance.delete(`/employees/${id}`)
   },
 
   checkIn: async (employeeId: number): Promise<{ success: boolean; message?: string }> => {
