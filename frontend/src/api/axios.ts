@@ -67,21 +67,6 @@ export const removeStoredToken = (): void => {
   getStorage().removeItem('accessToken')
 }
 
-const isTokenExpired = (token: string): boolean => {
-  try {
-    const decoded = jwtDecode<AuthResponse>(token)
-    if (!decoded.exp) return false
-
-    const currentTime = Date.now()
-    const expiryTime = decoded.exp * 1000
-    const timeUntilExpiry = expiryTime - currentTime
-
-    return timeUntilExpiry <= 30000
-  } catch {
-    return true
-  }
-}
-
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (token) {
@@ -178,5 +163,4 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-export { isTokenExpired }
 export default axiosInstance

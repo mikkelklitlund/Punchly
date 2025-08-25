@@ -1,9 +1,11 @@
-import { createContext, useContext, useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { createContext, useContext, useState } from 'react'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { Department, EmployeeType, SimpleEmployee } from 'shared'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
 import { employeeService } from '../services/employeeService'
+
+type ApiError = { status?: number; message?: string }
 
 interface CompanyContextType {
   departments: Department[]
@@ -21,53 +23,60 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined)
 export const CompanyProvider = ({ children }: { children: React.ReactNode }) => {
   const { companyId } = useAuth()
   const [currentDepartment, setCurrentDepartment] = useState<Department | undefined>(undefined)
+  const departmentId = currentDepartment?.id
 
   const {
-    data: departmentData,
+    data: departments = [],
     isLoading: deptLoading,
     error: deptError,
-  } = useQuery({
-    queryKey: ['departments', companyId],
-    queryFn: () => (companyId ? companyService.getDepartments(companyId) : Promise.reject('No company ID')),
+  } = useQuery<{ departments: Department[] }, ApiError, Department[]>({
+    queryKey: ['departments', { companyId }],
     enabled: !!companyId,
+    queryFn: () => companyService.getDepartments(companyId!),
+    select: (d) => d.departments,
+    staleTime: 5 * 60 * 1000,
+    retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
+    refetchOnWindowFocus: false,
   })
 
   const {
-    data: employeeTypeData,
+    data: employeeTypes = [],
     isLoading: typeLoading,
     error: typeError,
-  } = useQuery({
-    queryKey: ['employeeTypes', companyId],
-    queryFn: () => (companyId ? companyService.getEmployeeTypes(companyId) : Promise.reject('No company ID')),
+  } = useQuery<{ employeeTypes: EmployeeType[] }, ApiError, EmployeeType[]>({
+    queryKey: ['employeeTypes', { companyId }],
     enabled: !!companyId,
+    queryFn: () => companyService.getEmployeeTypes(companyId!),
+    select: (d) => d.employeeTypes,
+    staleTime: 5 * 60 * 1000,
+    retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
+    refetchOnWindowFocus: false,
   })
 
   const {
-    data: employeeData,
+    data: employees = [],
     isLoading: empLoading,
     error: empError,
     refetch: refreshEmployees,
-  } = useQuery({
-    queryKey: ['employees', companyId, currentDepartment?.id],
-    queryFn: () =>
-      companyId ? employeeService.getEmployees(companyId, currentDepartment?.id) : Promise.reject('No company ID'),
+  } = useQuery<{ employees: SimpleEmployee[]; total: number }, ApiError, SimpleEmployee[]>({
+    queryKey: ['employees', { companyId, departmentId }],
     enabled: !!companyId,
-    refetchInterval: 30000,
+    queryFn: () => employeeService.getEmployees(companyId!, departmentId),
+    select: (d) => d.employees,
+    placeholderData: keepPreviousData,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+    retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
   })
-
-  const filteredEmployees = useMemo(() => {
-    if (!currentDepartment) return employeeData?.employees || []
-    return employeeData?.employees.filter((e) => e.departmentId === currentDepartment.id) || []
-  }, [employeeData, currentDepartment])
 
   return (
     <CompanyContext.Provider
       value={{
-        departments: departmentData?.departments || [],
+        departments,
         currentDepartment,
         setCurrentDepartment,
-        employees: filteredEmployees,
-        employeeTypes: employeeTypeData?.employeeTypes || [],
+        employees,
+        employeeTypes,
         isLoading: deptLoading || empLoading || typeLoading,
         error: deptError?.message || empError?.message || typeError?.message || null,
         refreshEmployees,
@@ -79,7 +88,7 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
 }
 
 export const useCompany = () => {
-  const context = useContext(CompanyContext)
-  if (!context) throw new Error('useCompany must be used within a CompanyProvider')
-  return context
+  const ctx = useContext(CompanyContext)
+  if (!ctx) throw new Error('useCompany must be used within a CompanyProvider')
+  return ctx
 }
