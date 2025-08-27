@@ -3,6 +3,8 @@ import dayjs from 'dayjs'
 import { useCompany } from '../contexts/CompanyContext'
 import { employeeService } from '../services/employeeService'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from 'react-toastify'
 
 const AttendanceReportPage = () => {
   const { departments } = useCompany()
@@ -10,35 +12,47 @@ const AttendanceReportPage = () => {
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
   const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'))
   const [departmentId, setDepartmentId] = useState<number | ''>('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+
+  const reportMutation = useMutation({
+    mutationFn: (vars: { start: Date; end: Date; departmentId?: number }) =>
+      employeeService.getAttendanceReport(vars.start, vars.end, vars.departmentId),
+  })
 
   const handleDownload = async () => {
-    setIsLoading(true)
-    setError(null)
+    const start = dayjs(startDate)
+    const end = dayjs(endDate)
+
+    if (!start.isValid() || !end.isValid()) {
+      toast.error('Ugyldige datoer')
+      return
+    }
+    if (end.isBefore(start, 'day')) {
+      toast.error('Slutdato må ikke være før startdato')
+      return
+    }
+
     try {
-      const buffer = await employeeService.getAttendanceReport(
-        new Date(startDate),
-        new Date(endDate),
-        departmentId ? Number(departmentId) : undefined
+      const blob = await toast.promise(
+        reportMutation.mutateAsync({
+          start: start.toDate(),
+          end: end.toDate(),
+          departmentId: departmentId ? Number(departmentId) : undefined,
+        }),
+        {
+          error: 'Kunne ikke hente rapporten',
+        }
       )
 
-      const blob = new Blob([buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      })
-      const url = window.URL.createObjectURL(blob)
+      const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `attendance-report-${startDate}-to-${endDate}.xlsx`
+      a.download = `attendance-report-${start.format('YYYY-MM-DD')}-to-${end.format('YYYY-MM-DD')}.xlsx`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
+      URL.revokeObjectURL(url)
     } catch (err) {
       console.error(err)
-      setError('Kunne ikke hente rapporten')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -47,7 +61,6 @@ const AttendanceReportPage = () => {
       <h1 className="text-2xl font-bold text-gray-800">Download fremmøderapport</h1>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Start Date */}
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
             Startdato
@@ -61,7 +74,6 @@ const AttendanceReportPage = () => {
           />
         </div>
 
-        {/* End Date */}
         <div>
           <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
             Slutdato
@@ -76,7 +88,6 @@ const AttendanceReportPage = () => {
         </div>
       </div>
 
-      {/* Department filter */}
       <div>
         <label htmlFor="department" className="block text-sm font-medium text-gray-700">
           Afdeling (valgfri)
@@ -96,19 +107,16 @@ const AttendanceReportPage = () => {
         </select>
       </div>
 
-      {/* Download Button */}
       <div>
         <button
           onClick={handleDownload}
-          disabled={isLoading}
-          className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={reportMutation.isPending}
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {isLoading ? 'Genererer...' : 'Download rapport'}
+          {reportMutation.isPending && <LoadingSpinner size="small" />}
+          {reportMutation.isPending ? 'Genererer...' : 'Download rapport'}
         </button>
       </div>
-
-      {isLoading && <LoadingSpinner message="Genererer rapport..." />}
-      {error && <p className="text-red-500">{error}</p>}
     </div>
   )
 }

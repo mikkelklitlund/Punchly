@@ -72,8 +72,7 @@ export class EmployeeRoutes {
      * /employees:
      *   post:
      *     summary: Create a new employee
-     *     tags:
-     *       - Employees
+     *     tags: [Employees]
      *     security:
      *       - bearerAuth: []
      *     requestBody:
@@ -82,33 +81,60 @@ export class EmployeeRoutes {
      *         application/json:
      *           schema:
      *             type: object
-     *             required:
-     *               - name
-     *               - companyId
-     *               - departmentId
+     *             required: [name, companyId, departmentId, employeeTypeId, address, city, birthdate]
      *             properties:
-     *               name:
+     *               name:            { type: string }
+     *               companyId:       { type: integer }
+     *               departmentId:    { type: integer }
+     *               employeeTypeId:  { type: integer }
+     *               address:         { type: string }
+     *               city:            { type: string }
+     *               birthdate:
      *                 type: string
-     *               companyId:
-     *                 type: integer
-     *               departmentId:
-     *                 type: integer
+     *                 format: date        # e.g. "2000-10-11"
+     *               monthlySalary:   { type: number, minimum: 0 }
+     *               hourlySalary:    { type: number, minimum: 0 }
+     *               checkedIn:       { type: boolean }
      *     responses:
-     *       201:
-     *         description: Employee created successfully
-     *       400:
-     *         description: Validation failed
-     *       500:
-     *         description: Server error
+     *       201: { description: Employee created successfully }
+     *       400: { description: Validation failed }
+     *       500: { description: Server error }
      */
     this.router.post(
       '/',
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
-        body('name').notEmpty().withMessage('Name is required'),
-        body('companyId').isNumeric().withMessage('Valid company ID is required'),
-        body('departmentId').isNumeric().withMessage('Valid department ID is required'),
+        // required ints
+        body('companyId').isInt().toInt().withMessage('Valid company ID is required'),
+        body('departmentId').isInt().toInt().withMessage('Valid department ID is required'),
+        body('employeeTypeId').isInt().toInt().withMessage('Valid employee type ID is required'),
+
+        // required strings
+        body('name').trim().notEmpty().withMessage('Name is required'),
+        body('address').trim().notEmpty(),
+        body('city').trim().notEmpty(),
+
+        body('monthlySalary').optional({ nullable: true }).isFloat({ gt: 0 }).toFloat(),
+        body('hourlySalary').optional({ nullable: true }).isFloat({ gt: 0 }).toFloat(),
+
+        body('birthdate')
+          .notEmpty()
+          .isISO8601()
+          .withMessage('birthdate must be an ISO date')
+          .customSanitizer((v: string) => (v.length === 10 ? new Date(v + 'T00:00:00Z') : new Date(v))),
+
+        // optional checkedIn
+        body('checkedIn').optional({ nullable: true }).isBoolean().toBoolean(),
+
+        body().custom((value) => {
+          const hasMonthly = typeof value.monthlySalary === 'number' && value.monthlySalary > 0
+          const hasHourly = typeof value.hourlySalary === 'number' && value.hourlySalary > 0
+          if (hasMonthly && hasHourly) {
+            throw new Error('Provide either monthlySalary OR hourlySalary, not both')
+          }
+          return true
+        }),
       ],
       this.createEmployee.bind(this)
     )

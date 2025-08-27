@@ -1,15 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { companyService } from '../services/companyService'
-import { Company } from 'shared'
+import { EmployeeType } from 'shared'
 import { qk } from './queryKeys'
 
 type ApiError = { status?: number; message?: string }
 
-export function useCompanies() {
-  return useQuery<{ companies: Company[] }, ApiError, Company[]>({
-    queryKey: qk.companies,
-    queryFn: () => companyService.getAllCompanies(),
-    select: (d) => d.companies,
+export function useEmployeeTypes(companyId: number | undefined) {
+  return useQuery<{ employeeTypes: EmployeeType[] }, ApiError, EmployeeType[]>({
+    queryKey: qk.employeeTypes(companyId),
+    enabled: !!companyId,
+    queryFn: () => companyService.getEmployeeTypes(companyId!),
+    select: (d) => d.employeeTypes,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

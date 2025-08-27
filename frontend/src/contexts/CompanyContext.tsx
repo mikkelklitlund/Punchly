@@ -34,7 +34,7 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
     enabled: !!companyId,
     queryFn: () => companyService.getDepartments(companyId!),
     select: (d) => d.departments,
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
     retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
     refetchOnWindowFocus: false,
   })
@@ -48,10 +48,12 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
     enabled: !!companyId,
     queryFn: () => companyService.getEmployeeTypes(companyId!),
     select: (d) => d.employeeTypes,
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
     retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
     refetchOnWindowFocus: false,
   })
+
+  const poll = () => (document.visibilityState === 'visible' ? 30_000 : false)
 
   const {
     data: employees = [],
@@ -64,8 +66,8 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
     queryFn: () => employeeService.getEmployees(companyId!, departmentId),
     select: (d) => d.employees,
     placeholderData: keepPreviousData,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: true,
+    refetchInterval: poll,
+    refetchIntervalInBackground: false,
     retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
   })
 

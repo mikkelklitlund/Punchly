@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { AttendanceRecord } from 'shared'
-import { useToast } from '../../contexts/ToastContext'
+import { toast } from 'react-toastify'
 import { employeeService } from '../../services/employeeService'
 import dayjs from 'dayjs'
+import LoadingSpinner from '../common/LoadingSpinner'
 
 interface Props {
   record: AttendanceRecord
@@ -11,43 +12,52 @@ interface Props {
 }
 
 const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
-  const { showToast } = useToast()
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [checkIn, setCheckIn] = useState(dayjs(record.checkIn).format('YYYY-MM-DDTHH:mm'))
   const [checkOut, setCheckOut] = useState(record.checkOut ? dayjs(record.checkOut).format('YYYY-MM-DDTHH:mm') : '')
 
-  const isOpenRecord = !record.checkOut
+  const isOpenRecord = !record.checkOut && !record.autoClosed
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
 
+    if (!checkIn) {
+      toast.error('Angiv venligst check ind')
+      setIsSaving(false)
+      return
+    }
+
+    const checkInD = dayjs(checkIn)
+    const checkOutD = checkOut ? dayjs(checkOut) : null
+
+    if (!checkInD.isValid() || (checkOut && !checkOutD!.isValid())) {
+      toast.error('Ugyldigt tidsstempel')
+      setIsSaving(false)
+      return
+    }
+
+    if (checkOutD && checkOutD.isBefore(checkInD)) {
+      toast.error('Check ud kan ikke være før check ind')
+      setIsSaving(false)
+      return
+    }
+
     try {
-      if (!checkIn) {
-        showToast('Check ind skal udfyldes', 'warning')
-        return
-      }
-
-      const checkInDate = new Date(checkIn)
-      const checkOutDate = new Date(checkOut)
-
-      if (checkOutDate && checkOutDate < checkInDate) {
-        showToast('Check ud kan ikke være før check ind', 'warning')
-        return
-      }
-
-      await employeeService.updateAttendanceRecord(record.id, {
-        checkIn: checkInDate,
-        checkOut: checkOutDate,
-        autoClosed: false,
-      })
-
-      showToast('Tidsregistrering opdateret', 'success')
+      await toast.promise(
+        employeeService.updateAttendanceRecord(record.id, {
+          checkIn: checkInD.toDate(),
+          checkOut: checkOutD?.toDate(),
+          autoClosed: false,
+        }),
+        {
+          pending: 'Gemmer...',
+          success: 'Tidsregistrering opdateret',
+          error: 'Fejl ved opdatering af registrering',
+        }
+      )
       onSuccess()
-    } catch (err) {
-      console.error(err)
-      showToast('Fejl ved opdatering af registrering', 'error')
     } finally {
       setIsSaving(false)
     }
@@ -56,15 +66,14 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
   const handleDelete = async () => {
     const confirmed = window.confirm('Er du sikker på, at du vil slette denne registrering?')
     if (!confirmed) return
-
     setIsDeleting(true)
     try {
-      await employeeService.deleteAttendanceRecord(record.id)
-      showToast('Tidsregistrering slettet', 'success')
+      await toast.promise(employeeService.deleteAttendanceRecord(record.id), {
+        pending: 'Gemmer...',
+        success: 'Tidsregistering slettet',
+        error: 'Fejl ved sletning af tidsregistrering',
+      })
       onSuccess()
-    } catch (err) {
-      console.error(err)
-      showToast('Fejl ved sletning af registrering', 'error')
     } finally {
       setIsDeleting(false)
     }
@@ -114,20 +123,22 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
 
             <div className="flex gap-2">
               <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting || isSaving}
-                className="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+                type="submit"
+                disabled={isSaving || isDeleting}
+                className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
               >
-                {isDeleting ? 'Sletter...' : 'Slet'}
+                {isSaving && <LoadingSpinner size="small" />}
+                {isSaving ? 'Gemmer...' : 'Gem og godkend'}
               </button>
 
               <button
-                type="submit"
-                disabled={isSaving || isDeleting}
-                className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting || isSaving}
+                className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
               >
-                {isSaving ? 'Gemmer...' : 'Gem og godkend'}
+                {isDeleting && <LoadingSpinner size="small" />}
+                {isDeleting ? 'Sletter...' : 'Slet'}
               </button>
             </div>
           </div>

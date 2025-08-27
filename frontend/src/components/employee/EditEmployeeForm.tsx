@@ -1,221 +1,68 @@
-import { useState } from 'react'
+import dayjs from 'dayjs'
+import EmployeeForm, { EmployeeFormValues } from './EmployeeForm'
 import { Employee } from 'shared'
-import { useCompany } from '../../contexts/CompanyContext'
 import { employeeService } from '../../services/employeeService'
-import { useToast } from '../../contexts/ToastContext'
-import { getProfilePictureUrl } from '../../utils/imageUtils'
+import { toast } from 'react-toastify'
 
-interface Props {
-  employee: Employee
-  onSuccess: () => void
-}
-
-const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
-  const { departments, employeeTypes, refreshEmployees } = useCompany()
-  const { showToast } = useToast()
-
-  const [name, setName] = useState(employee.name)
-  const [birthdate, setBirthdate] = useState(employee.birthdate?.toString().slice(0, 10) || '')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [profilePicturePath, setProfilePicturePath] = useState(employee.profilePicturePath || '')
-  const [address, setAddress] = useState(employee.address)
-  const [city, setCity] = useState(employee.city)
-  const [monthlySalary, setMonthlySalary] = useState(employee.monthlySalary || 0)
-  const [hourlySalary, setHourlySalary] = useState(employee.hourlySalary || 0)
-  const [departmentId, setDepartmentId] = useState(employee.departmentId)
-  const [employeeTypeId, setEmployeeTypeId] = useState(employee.employeeTypeId)
-  const [isSaving, setIsSaving] = useState(false)
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setImageFile(file)
-
-      const reader = new FileReader()
-      reader.onload = () => {
-        if (reader.result) {
-          setProfilePicturePath(reader.result.toString())
-        }
-      }
-      reader.readAsDataURL(file)
-    }
+const EditEmployeeForm = ({ employee, onSuccess }: { employee: Employee; onSuccess: () => void }) => {
+  const initial: EmployeeFormValues = {
+    name: employee.name,
+    birthdate: employee.birthdate ? dayjs(employee.birthdate).format('YYYY-MM-DD') : '',
+    address: employee.address,
+    city: employee.city,
+    departmentId: employee.departmentId,
+    employeeTypeId: employee.employeeTypeId,
+    monthlySalary: employee.monthlySalary || 0,
+    hourlySalary: employee.hourlySalary || 0,
+    profilePicturePath: employee.profilePicturePath || '',
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSaving(true)
+  const submit = async (v: EmployeeFormValues, imageFile: File | null) => {
+    if ((v.monthlySalary ?? 0) > 0 && (v.hourlySalary ?? 0) > 0) {
+      toast.error('Vælg enten månedsløn eller timeløn (ikke begge).')
+      return
+    }
 
-    try {
-      if (imageFile) {
-        await employeeService.uploadProfilePicture(employee.id, imageFile)
-      }
-
-      await employeeService.updateEmployee(employee.id, {
-        name,
-        birthdate: new Date(birthdate),
-        address,
-        city,
-        departmentId,
-        employeeTypeId,
-        monthlySalary: monthlySalary > 0 ? monthlySalary : undefined,
-        hourlySalary: hourlySalary > 0 ? hourlySalary : undefined,
+    if (imageFile) {
+      await toast.promise(employeeService.uploadProfilePicture(employee.id, imageFile), {
+        pending: 'Uploader billede…',
+        success: 'Profilbillede opdateret',
+        error: 'Fejl under billedupload',
       })
-
-      showToast('Medarbejder opdateret!', 'success')
-      refreshEmployees()
-      onSuccess()
-    } catch (error) {
-      console.error(error)
-      showToast('Kunne ikke opdatere medarbejderen', 'error')
-    } finally {
-      setIsSaving(false)
     }
+
+    await toast.promise(
+      employeeService.updateEmployee(employee.id, {
+        name: v.name,
+        address: v.address,
+        city: v.city,
+        departmentId: Number(v.departmentId),
+        employeeTypeId: Number(v.employeeTypeId),
+        monthlySalary: (v.monthlySalary ?? 0) > 0 ? v.monthlySalary : undefined,
+        hourlySalary: (v.hourlySalary ?? 0) > 0 ? v.hourlySalary : undefined,
+        ...(v.birthdate ? { birthdate: new Date(v.birthdate) } : {}),
+      }),
+      { pending: 'Gemmer…', success: 'Medarbejder opdateret', error: 'Fejl under opdatering' }
+    )
+
+    onSuccess()
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Image + Upload */}
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-        <img
-          src={profilePicturePath.startsWith('data:') ? profilePicturePath : getProfilePictureUrl(profilePicturePath)}
-          alt="Profilbillede"
-          className="h-28 w-28 rounded-full object-cover shadow-md"
-        />
+  const del = async () => {
+    if (employee.checkedIn) {
+      toast.warn('Kan ikke slette en medarbejder der er tjekket ind.')
+      return
+    }
 
-        <div className="flex h-28 flex-col items-center justify-end sm:items-start sm:justify-end">
-          <label
-            htmlFor="imageUpload"
-            className="cursor-pointer rounded bg-gray-100 px-4 py-2 text-sm text-gray-700 shadow hover:bg-gray-200"
-          >
-            Skift billede
-          </label>
-          <input
-            id="imageUpload"
-            type="file"
-            accept="image/*"
-            capture="user"
-            onChange={handleImageChange}
-            className="hidden"
-          />
-          <p className="mt-1 text-xs text-gray-500">{imageFile ? imageFile.name : 'Ingen fil valgt'}</p>
-        </div>
-      </div>
+    await toast.promise(employeeService.deleteEmployee(employee.id), {
+      pending: 'Sletter…',
+      success: 'Medarbejder slettet',
+      error: 'Sletning mislykkedes',
+    })
+    onSuccess()
+  }
 
-      {/* Fields Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Personal Info */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Navn</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Fødselsdato</label>
-          <input
-            type="date"
-            value={birthdate}
-            onChange={(e) => setBirthdate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Adresse</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">By</label>
-          <input
-            type="text"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          />
-        </div>
-
-        {/* Department and Type */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Afdeling</label>
-          <select
-            value={departmentId}
-            onChange={(e) => setDepartmentId(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          >
-            {departments.map((dept) => (
-              <option key={dept.id} value={dept.id}>
-                {dept.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Medarbejdertype</label>
-          <select
-            value={employeeTypeId}
-            onChange={(e) => setEmployeeTypeId(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          >
-            {employeeTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Salaries */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Månedsløn (DKK)</label>
-          <input
-            type="number"
-            value={monthlySalary}
-            onChange={(e) => setMonthlySalary(Number(e.target.value))}
-            disabled={hourlySalary > 0}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm disabled:bg-gray-100"
-            min={0}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Timeløn (DKK)</label>
-          <input
-            type="number"
-            value={hourlySalary}
-            onChange={(e) => setHourlySalary(Number(e.target.value))}
-            disabled={monthlySalary > 0}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm disabled:bg-gray-100"
-            min={0}
-          />
-        </div>
-      </div>
-
-      <p className="mt-2 text-xs text-gray-500 italic">Udfyld kun én af lønfelterne: månedsløn eller timeløn.</p>
-
-      {/* Submit */}
-      <div className="pt-4">
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="w-full rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
-        >
-          {isSaving ? 'Gemmer...' : 'Gem ændringer'}
-        </button>
-      </div>
-    </form>
-  )
+  return <EmployeeForm initialValues={initial} onSubmit={submit} submitLabel="Gem" onDelete={del} />
 }
 
 export default EditEmployeeForm

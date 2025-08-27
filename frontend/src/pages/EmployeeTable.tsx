@@ -1,18 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useCompany } from '../contexts/CompanyContext'
 import { Employee, SimpleEmployee } from 'shared'
 import { employeeService } from '../services/employeeService'
-import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
 import EditEmployeeForm from '../components/employee/EditEmployeeForm'
+import CreateEmployeeForm from '../components/employee/CreateEmployeeForm'
 import { getProfilePictureUrl } from '../utils/imageUtils'
 import DataTable, { Column } from '../components/common/DataTable'
+import { toast } from 'react-toastify'
+import { useEmployees } from '../hooks/useEmployees'
+import { useAuth } from '../contexts/AuthContext'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 
 const EmployeeTable = () => {
-  const { employees, isLoading, error, departments, setCurrentDepartment } = useCompany()
+  const { companyId } = useAuth()
+  const { currentDepartment, setCurrentDepartment, departments } = useCompany()
+
+  const { data: employees = [], isLoading, isFetching, error, refetch } = useEmployees(companyId, currentDepartment?.id)
+
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-  const [showModal, setShowModal] = useState(false)
-  const { showToast } = useToast()
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
 
   useEffect(() => {
     setCurrentDepartment(undefined)
@@ -20,30 +28,36 @@ const EmployeeTable = () => {
 
   const openEditModal = async (id: number) => {
     try {
-      const employee = await employeeService.getEmployeeById(id)
+      const employee = await toast.promise(employeeService.getEmployeeById(id), {
+        pending: 'Henter medarbejder…',
+        error: 'Kunne ikke hente medarbejderens data',
+      })
       setSelectedEmployee(employee)
-      setShowModal(true)
+      setShowEditModal(true)
     } catch (err) {
       console.error(err)
-      showToast('Kunne ikke hente medarbejderens data', 'error')
     }
   }
 
-  const closeModal = () => {
+  const closeEditModal = () => {
     setSelectedEmployee(null)
-    setShowModal(false)
+    setShowEditModal(false)
   }
 
-  const sortedEmployees = [...employees].sort((a, b) => {
-    const depA = departments.find((d) => d.id === a.departmentId)?.name || ''
-    const depB = departments.find((d) => d.id === b.departmentId)?.name || ''
-    return depA.localeCompare(depB)
-  })
+  const sortedEmployees = useMemo(() => {
+    if (!employees?.length) return []
+    const depNameById = new Map(departments.map((d) => [d.id, d.name]))
+    return [...employees].sort((a, b) => {
+      const depA = depNameById.get(a.departmentId) || ''
+      const depB = depNameById.get(b.departmentId) || ''
+      return depA.localeCompare(depB)
+    })
+  }, [employees, departments])
 
   const columns: Column<SimpleEmployee>[] = [
     {
       header: 'Navn',
-      accessor: (emp: SimpleEmployee) => (
+      accessor: (emp) => (
         <div className="flex items-center space-x-3">
           <img
             src={getProfilePictureUrl(emp.profilePicturePath)}
@@ -56,11 +70,11 @@ const EmployeeTable = () => {
     },
     {
       header: 'Afdeling',
-      accessor: (emp: SimpleEmployee) => departments.find((dp) => dp.id === emp.departmentId)?.name ?? '-',
+      accessor: (emp) => departments.find((dp) => dp.id === emp.departmentId)?.name ?? '-',
     },
     {
       header: 'Status',
-      accessor: (emp: SimpleEmployee) => (
+      accessor: (emp) => (
         <span className="flex items-center gap-2">
           <span className={`inline-block h-3 w-3 rounded-full ${emp.checkedIn ? 'bg-green-500' : 'bg-red-500'}`} />
           {emp.checkedIn ? 'Tjekket ind' : 'Ikke tjekket ind'}
@@ -69,7 +83,7 @@ const EmployeeTable = () => {
     },
     {
       header: 'Handling',
-      accessor: (emp: SimpleEmployee) => (
+      accessor: (emp) => (
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -86,21 +100,56 @@ const EmployeeTable = () => {
   return (
     <>
       <div className="w-full p-6">
-        <h2 className="mb-4 text-xl font-semibold">Medarbejderliste</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Medarbejderliste</h2>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700"
+          >
+            Ny medarbejder
+          </button>
+        </div>
+
+        {isFetching && employees.length > 0 && (
+          <div className="mb-2 flex items-center gap-2 text-xs text-gray-500">
+            <LoadingSpinner size="small" />
+            Opdaterer...
+          </div>
+        )}
+
         <DataTable
           columns={columns}
           data={sortedEmployees}
           rowKey={(emp) => emp.id}
           isLoading={isLoading && employees.length === 0}
-          error={error}
+          error={error?.message || null}
           emptyMessage="Ingen medarbejdere fundet"
           onRowClick={(emp) => openEditModal(emp.id)}
         />
       </div>
 
-      {showModal && selectedEmployee && (
-        <Modal title="Rediger medarbejder" closeModal={closeModal}>
-          <EditEmployeeForm employee={selectedEmployee} onSuccess={closeModal} />
+      {/* Create modal */}
+      {showCreateModal && (
+        <Modal title="Ny medarbejder" closeModal={() => setShowCreateModal(false)}>
+          <CreateEmployeeForm
+            onSuccess={() => {
+              setShowCreateModal(false)
+              refetch()
+            }}
+          />
+        </Modal>
+      )}
+
+      {/* Edit modal */}
+      {showEditModal && selectedEmployee && (
+        <Modal title="Rediger medarbejder" closeModal={closeEditModal}>
+          <EditEmployeeForm
+            employee={selectedEmployee}
+            onSuccess={() => {
+              closeEditModal()
+              refetch()
+            }}
+          />
         </Modal>
       )}
     </>

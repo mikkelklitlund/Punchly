@@ -61,7 +61,6 @@ export type Employee = {
 
 export type CreateEmployee = {
 	name: string
-	profilePicturePath: string
 	companyId: number
 	departmentId: number
 	checkedIn: boolean

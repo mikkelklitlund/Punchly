@@ -69,14 +69,14 @@ export const employeeService = {
     return response.data.records
   },
 
-  getAttendanceReport: async (startDate: Date, endDate: Date, departmentId?: number): Promise<Buffer> => {
-    const response = await axiosInstance.get('/employees/attendance-report', {
+  getAttendanceReport: async (startDate: Date, endDate: Date, departmentId?: number): Promise<Blob> => {
+    const response = await axiosInstance.get<Blob>('/employees/attendance-report', {
       params: {
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
         departmentId,
       },
-      responseType: 'arraybuffer',
+      responseType: 'blob' as const,
     })
     return response.data
   },
