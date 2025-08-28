@@ -44,4 +44,24 @@ export class EmployeeTypeService implements IEmployeeTypeService {
       return failure(new DatabaseError('Database error occurred while deleting the employee type.'))
     }
   }
+
+  async deleteEmployeeType(employeeTypeId: number): Promise<Result<EmployeeType, Error>> {
+    try {
+      const type = await this.employeeTypeRepository.deleteEmployeeType(employeeTypeId)
+      return success(type)
+    } catch (error) {
+      console.error('Error deleting employee type:', error)
+      return failure(new DatabaseError('Database error occurred while deleting the employee type.'))
+    }
+  }
+
+  async renameEmployeeType(employeeTypeId: number, newName: string): Promise<Result<EmployeeType, Error>> {
+    try {
+      const types = await this.employeeTypeRepository.updateEmployeeType(employeeTypeId, { name: newName })
+      return success(types)
+    } catch (error) {
+      console.error('Error updating employee type:', error)
+      return failure(new DatabaseError('Database error occurred while updating the employee type.'))
+    }
+  }
 }

@@ -239,6 +239,206 @@ export class CompanyRoutes {
      *         description: A list of employee types
      */
     this.router.get('/:companyId/employee-types', authMiddleware, this.getEmployeeTypesByCompany.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/departments:
+     *   post:
+     *     summary: Create department (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: string, maxLength: 100 }
+     *     responses:
+     *       201: { description: Created }
+     *       400: { description: Validation error }
+     *       409: { description: Already exists }
+     */
+    this.router.post(
+      '/:companyId/departments',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [body('name').trim().notEmpty().isLength({ max: 100 })],
+      this.createDepartment.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/departments/{id}:
+     *   patch:
+     *     summary: Rename department (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: string, maxLength: 100 }
+     *     responses:
+     *       200: { description: Updated }
+     *       400: { description: Validation error }
+     *       404: { description: Not found }
+     *       409: { description: Name already exists }
+     */
+    this.router.patch(
+      '/:companyId/departments/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [body('name').trim().notEmpty().isLength({ max: 100 })],
+      this.renameDepartment.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/departments/{id}:
+     *   delete:
+     *     summary: Delete department (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     responses:
+     *       204: { description: Deleted }
+     *       404: { description: Not found }
+     *       409: { description: Cannot delete: in use }
+     */
+    this.router.delete(
+      '/:companyId/departments/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [],
+      this.deleteDepartment.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/employee-types:
+     *   post:
+     *     summary: Create employee type (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: string, maxLength: 100 }
+     *     responses:
+     *       201: { description: Created }
+     *       400: { description: Validation error }
+     */
+    this.router.post(
+      '/:companyId/employee-types',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [body('name').trim().notEmpty().isLength({ max: 100 })],
+      this.createEmployeeType.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/employee-types/{id}:
+     *   patch:
+     *     summary: Rename employee type (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: string, maxLength: 100 }
+     *     responses:
+     *       200: { description: Updated }
+     *       400: { description: Validation error }
+     *       404: { description: Not found }
+     */
+    this.router.patch(
+      '/:companyId/employee-types/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [body('name').trim().notEmpty().isLength({ max: 100 })],
+      this.renameEmployeeType.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/employee-types/{id}:
+     *   delete:
+     *     summary: Delete employee type (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     responses:
+     *       204: { description: Deleted }
+     *       404: { description: Not found }
+     */
+    this.router.delete(
+      '/:companyId/employee-types/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      this.deleteEmployeeType.bind(this)
+    )
   }
 
   private async getAllManagers(req: Request, res: Response) {
@@ -369,5 +569,99 @@ export class CompanyRoutes {
       checkedIn: em.checkedIn,
       profilePicturePath: em.profilePicturePath,
     }
+  }
+
+  private async createDepartment(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const companyId = parseInt(req.params.companyId, 10)
+    const { name } = req.body as { name: string }
+
+    const result = await this.departmentService.createDepartment(companyId, name)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    return res.status(201).json({ department: result.value })
+  }
+
+  private async renameDepartment(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const id = parseInt(req.params.id, 10)
+    const { name } = req.body as { name: string }
+
+    const result = await this.departmentService.renameDepartment(id, name)
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    return res.status(200).json({ department: result.value })
+  }
+
+  private async deleteDepartment(req: Request, res: Response) {
+    const id = parseInt(req.params.id, 10)
+
+    const result = await this.departmentService.deleteDepartment(id)
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    return res.status(204).send()
+  }
+
+  private async createEmployeeType(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const companyId = parseInt(req.params.companyId, 10)
+    const { name } = req.body as { name: string }
+
+    const result = await this.employeeTypeService.createEmployeeType(name, companyId)
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(201).json({ employeeType: result.value })
+  }
+
+  private async renameEmployeeType(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const id = parseInt(req.params.id, 10)
+    const { name } = req.body as { name: string }
+
+    const result = await this.employeeTypeService.renameEmployeeType(id, name)
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(200).json({ employeeType: result.value })
+  }
+
+  private async deleteEmployeeType(req: Request, res: Response) {
+    const id = parseInt(req.params.id, 10)
+
+    const result = await this.employeeTypeService.deleteEmployeeType(id)
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(204).send()
   }
 }

@@ -5,7 +5,6 @@ import { Failure } from '../utils/Result.js'
 
 const authorizeRoles = (userService: IUserService, ...allowedRoles: Role[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    // If auth middleware didn’t set identity, this is an auth problem → 401
     if (!req.username || !req.companyId || !req.role) {
       req.log?.warn({ allowedRoles }, 'Missing identity on request')
       return res.status(401).json({ message: 'Unauthorized' })

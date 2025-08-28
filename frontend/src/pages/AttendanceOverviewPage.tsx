@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CheckCircle, XCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
@@ -31,10 +31,6 @@ const AttendanceOverviewPage = () => {
     () => employees.find((e) => e.id === selectedEmployeeId),
     [employees, selectedEmployeeId]
   )
-
-  useEffect(() => {
-    if (selectedEmployeeId) refetch()
-  }, [selectedEmployeeId, refetch])
 
   const columns: Column<AttendanceRecord>[] = [
     {

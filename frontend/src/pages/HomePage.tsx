@@ -10,7 +10,7 @@ import { useEmployees } from '../hooks/useEmployees'
 import { useAuth } from '../contexts/AuthContext'
 import { toast } from 'react-toastify'
 
-function Home() {
+const Home = () => {
   const { companyId } = useAuth()
   const { currentDepartment } = useCompany()
 

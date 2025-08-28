@@ -1,6 +1,6 @@
 import argon2 from 'argon2'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { Role, User, UserRefreshToken } from 'shared'
+import { Company, Role, User, UserRefreshToken } from 'shared'
 import { Result, success, failure, Failure } from '../utils/Result.js'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { addDays } from 'date-fns'
@@ -217,5 +217,29 @@ export class UserService implements IUserService {
     }
 
     return success(true)
+  }
+
+  async getUserCompanyAccesses(userId: number): Promise<Result<Company[], Error>> {
+    try {
+      const companies = await this.userRepository.getCompaniesForUserId(userId)
+      return success(companies)
+    } catch (err) {
+      console.error('Error fetching companies for user:', err)
+      return failure(new DatabaseError('Database error while fetching user companies'))
+    }
+  }
+
+  async getCompaniesForUsername(username: string): Promise<Result<Company[], Error>> {
+    try {
+      const user = await this.userRepository.getUserByUsername(username)
+      if (!user) {
+        return success([])
+      }
+      const companies = await this.userRepository.getCompaniesForUserId(user.id)
+      return success(companies)
+    } catch (err) {
+      console.error('Error fetching companies for username:', err)
+      return failure(new DatabaseError('Database error while fetching companies for username'))
+    }
   }
 }

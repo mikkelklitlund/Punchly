@@ -36,4 +36,24 @@ export class DepartmentService implements IDepartmentService {
       return failure(new DatabaseError('Database error occured during deletion of department'))
     }
   }
+
+  async renameDepartment(departmentId: number, newName: string): Promise<Result<Department, Error>> {
+    try {
+      const department = await this.departmentRepository.updateDepartment(departmentId, { name: newName })
+      return success(department)
+    } catch (error) {
+      console.log('Database error while updating department: ', error)
+      return failure(new DatabaseError('Database error occured during update of department'))
+    }
+  }
+
+  async deleteDepartment(departmentId: number): Promise<Result<Department, Error>> {
+    try {
+      const department = await this.departmentRepository.deleteDepartment(departmentId)
+      return success(department)
+    } catch (error) {
+      console.log('Database error while deleting department: ', error)
+      return failure(new DatabaseError('Database error occured during deletion of department'))
+    }
+  }
 }

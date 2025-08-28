@@ -12,7 +12,7 @@ import { useEmployees } from '../hooks/useEmployees'
 import { useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 
-const EmployeeTable = () => {
+const EmployeeTablePage = () => {
   const { companyId } = useAuth()
   const { currentDepartment, setCurrentDepartment, departments } = useCompany()
 
@@ -29,7 +29,6 @@ const EmployeeTable = () => {
   const openEditModal = async (id: number) => {
     try {
       const employee = await toast.promise(employeeService.getEmployeeById(id), {
-        pending: 'Henter medarbejder…',
         error: 'Kunne ikke hente medarbejderens data',
       })
       setSelectedEmployee(employee)
@@ -156,4 +155,4 @@ const EmployeeTable = () => {
   )
 }
 
-export default EmployeeTable
+export default EmployeeTablePage

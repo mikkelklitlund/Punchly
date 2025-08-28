@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { companyService } from '../../services/companyService'
 import { User } from 'shared'
-import { useAuth } from '../../contexts/AuthContext'
-import DataTable, { Column } from '../common/DataTable'
-import LoadingSpinner from '../common/LoadingSpinner'
+import DataTable, { Column } from '../components/common/DataTable'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import { useAuth } from '../contexts/AuthContext'
+import { companyService } from '../services/companyService'
 
 type ApiError = { status?: number; message?: string }
 
-const ManagerTable = () => {
+const ManagerTablePage = () => {
   const { companyId } = useAuth()
 
   const {
@@ -53,4 +53,4 @@ const ManagerTable = () => {
   )
 }
 
-export default ManagerTable
+export default ManagerTablePage

@@ -1,3 +1,4 @@
+import { Company } from 'shared'
 import axiosInstance from '../api/axios'
 import { AuthTokens } from '../types/types'
 
@@ -19,5 +20,10 @@ export const authService = {
   refresh: async (): Promise<AuthTokens> => {
     const response = await axiosInstance.post('/auth/refresh')
     return response.data
+  },
+
+  getUserCompanies: async (username: string): Promise<Company[]> => {
+    const response = await axiosInstance.post('/auth/companies-for-user', { username })
+    return response.data.companies as Company[]
   },
 }

@@ -149,6 +149,35 @@ export class AuthRoutes {
      *         description: Server error during logout
      */
     this.router.post('/logout', authMiddleware, this.logout.bind(this))
+
+    /**
+     * @swagger
+     * /auth/companies-for-user:
+     *   post:
+     *     summary: Get companies accessible to a username (pre-login)
+     *     tags: [Auth]
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [username]
+     *             properties:
+     *               username: { type: string }
+     *     responses:
+     *       200:
+     *         description: List of companies (empty list if user not found)
+     *       400:
+     *         description: Validation error
+     *       500:
+     *         description: Server error
+     */
+    this.router.post(
+      '/companies-for-user',
+      [body('username').trim().notEmpty().isLength({ max: 100 })],
+      this.getCompaniesForUser.bind(this)
+    )
   }
 
   private validateRequest(req: Request, res: Response): boolean {
@@ -259,9 +288,9 @@ export class AuthRoutes {
     const isProd = process.env.NODE_ENV === 'production'
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
-      sameSite: 'lax', // same-site -> perfect for example.com/api
-      secure: isProd, // true in prod (HTTPS), false in dev (http://localhost)
-      path: '/api', // <-- important: cookie sent to /api/refresh AND /api/logout
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/api',
       maxAge: 24 * 60 * 60 * 1000,
     })
   }
@@ -272,7 +301,28 @@ export class AuthRoutes {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
-      path: '/api', // must match setAuthCookies
+      path: '/api',
     })
+  }
+
+  private async getCompaniesForUser(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { username } = req.body as { username: string }
+
+    try {
+      const companies = await this.userService.getCompaniesForUsername(username)
+      if (companies instanceof Failure) {
+        return res.status(500).json({ message: 'Server error' })
+      }
+
+      return res.status(200).json({ companies: companies.value })
+    } catch (err) {
+      console.error('companies-for-user failed:', err)
+      return res.status(500).json({ message: 'Server error' })
+    }
   }
 }

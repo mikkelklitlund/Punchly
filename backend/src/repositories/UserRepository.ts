@@ -1,5 +1,5 @@
 import { PrismaClient, User } from '@prisma/client'
-import { Role as RoleDTO, User as UserDTO, UserRefreshToken, UserCompanyAccess as UCADTO, Role } from 'shared'
+import { Role as RoleDTO, User as UserDTO, UserRefreshToken, UserCompanyAccess as UCADTO, Role, Company } from 'shared'
 import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
 
 export class UserRepository implements IUserRepository {
@@ -173,5 +173,18 @@ export class UserRepository implements IUserRepository {
       email: user.email,
       password: user.password,
     }
+  }
+
+  async getCompaniesForUserId(userId: number): Promise<Company[]> {
+    const rows = await this.prisma.userCompanyAccess.findMany({
+      where: { userId },
+      include: { company: true },
+    })
+
+    return rows.map((r) => ({
+      id: r.company.id,
+      name: r.company.name,
+      address: r.company.address,
+    }))
   }
 }
