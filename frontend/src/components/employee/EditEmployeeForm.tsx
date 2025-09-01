@@ -25,7 +25,6 @@ const EditEmployeeForm = ({ employee, onSuccess }: { employee: Employee; onSucce
 
     if (imageFile) {
       await toast.promise(employeeService.uploadProfilePicture(employee.id, imageFile), {
-        pending: 'Uploader billede…',
         success: 'Profilbillede opdateret',
         error: 'Fejl under billedupload',
       })
@@ -42,7 +41,7 @@ const EditEmployeeForm = ({ employee, onSuccess }: { employee: Employee; onSucce
         hourlySalary: (v.hourlySalary ?? 0) > 0 ? v.hourlySalary : undefined,
         ...(v.birthdate ? { birthdate: new Date(v.birthdate) } : {}),
       }),
-      { pending: 'Gemmer…', success: 'Medarbejder opdateret', error: 'Fejl under opdatering' }
+      { success: 'Medarbejder opdateret', error: 'Fejl under opdatering' }
     )
 
     onSuccess()
@@ -55,7 +54,6 @@ const EditEmployeeForm = ({ employee, onSuccess }: { employee: Employee; onSucce
     }
 
     await toast.promise(employeeService.deleteEmployee(employee.id), {
-      pending: 'Sletter…',
       success: 'Medarbejder slettet',
       error: 'Sletning mislykkedes',
     })

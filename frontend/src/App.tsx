@@ -14,6 +14,7 @@ import ManagerTablePage from './pages/ManagerTablePage'
 import EmployeeTablePage from './pages/EmployeeTablePage'
 import Home from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
+import AbsenceOverviewPage from './pages/AbsenceOverviewPage'
 
 function App() {
   const queryClient = new QueryClient()
@@ -33,6 +34,7 @@ function App() {
                     <Route path="/employees" element={<EmployeeTablePage />} />
                     <Route path="/attendance" element={<AttendanceOverviewPage />} />
                     <Route path="/attendance-report" element={<AttendanceReportPage />} />
+                    <Route path="/absence" element={<AbsenceOverviewPage />} />
                   </Route>
                   <Route element={<RoleLayout allowedRoles={[Role.ADMIN]} />}>
                     <Route path="/managers" element={<ManagerTablePage />} />

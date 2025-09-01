@@ -52,7 +52,6 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
           autoClosed: false,
         }),
         {
-          pending: 'Gemmer...',
           success: 'Tidsregistrering opdateret',
           error: 'Fejl ved opdatering af registrering',
         }
@@ -69,7 +68,6 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
     setIsDeleting(true)
     try {
       await toast.promise(employeeService.deleteAttendanceRecord(record.id), {
-        pending: 'Gemmer...',
         success: 'Tidsregistering slettet',
         error: 'Fejl ved sletning af tidsregistrering',
       })

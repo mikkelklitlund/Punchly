@@ -13,6 +13,8 @@ import { EmployeeRepository } from './EmployeeRepository.js'
 import { DepartmentRepository } from './DepartmentRepository.js'
 import { UserRepository } from './UserRepository.js'
 import { EmployeeTypeRepository } from './EmployeeTypeRepository.js'
+import { IAbsenceTypeRepository } from '../interfaces/repositories/IAbsenceTypeRepository.js'
+import { AbsenceTypeRepository } from './AbsenceTypeRepository.js'
 
 export class RepositoryContainer {
   public absenceRepository: IAbsenceRecordRepository
@@ -22,6 +24,7 @@ export class RepositoryContainer {
   public departmentRepository: IDepartmentRepository
   public userRepository: IUserRepository
   public employeeTypeRepository: IEmployeeTypeRepository
+  public absenceTypeRpository: IAbsenceTypeRepository
 
   constructor(prisma: PrismaClient) {
     this.absenceRepository = new AbsenceRecordRepository(prisma)
@@ -31,5 +34,6 @@ export class RepositoryContainer {
     this.departmentRepository = new DepartmentRepository(prisma)
     this.userRepository = new UserRepository(prisma)
     this.employeeTypeRepository = new EmployeeTypeRepository(prisma)
+    this.absenceTypeRpository = new AbsenceTypeRepository(prisma)
   }
 }

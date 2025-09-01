@@ -1,4 +1,4 @@
-import { CreateEmployee, Employee } from 'shared'
+import { CreateEmployee, Employee, SimpleEmployee } from 'shared'
 import { Result } from '../../utils/Result.js'
 
 export interface IEmployeeService {
@@ -10,4 +10,6 @@ export interface IEmployeeService {
   getAllEmployeesByCompanyId(companyId: number): Promise<Result<Employee[], Error>>
   getAllEmployeesByDepartmentIdAndCompanyId(departmentId: number, companyId: number): Promise<Result<Employee[], Error>>
   updateProfilePicture(id: number, filePath: string): Promise<Result<Employee, Error>>
+  getSimpleEmployeesByDepartment(companyId: number, departmentId: number): Promise<Result<SimpleEmployee[], Error>>
+  getSimpleEmployees(companyId: number): Promise<Result<SimpleEmployee[], Error>>
 }

@@ -7,30 +7,41 @@ import { useDepartmentMutations } from '../hooks/useDepartmentMutations'
 import { useEmployeeTypeMutations } from '../hooks/useEmployeeTypeMutations'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
+import { useAbsenceTypes } from '../hooks/useAbsenceTypes'
+import { useAbsenceTypeMutations } from '../hooks/useAbsenceTypeMutations'
 
-type ConfirmDelete = { kind: 'dep'; id: number; name: string } | { kind: 'type'; id: number; name: string }
+type ConfirmDelete =
+  | { kind: 'dep'; id: number; name: string }
+  | { kind: 'type'; id: number; name: string }
+  | { kind: 'absence'; id: number; name: string }
 
 const SettingsPage = () => {
   const { companyId } = useAuth()
 
   const { data: departments = [], isLoading: depLoading } = useDepartments(companyId)
   const { data: employeeTypes = [], isLoading: typeLoading } = useEmployeeTypes(companyId)
+  const { data: absenceTypes = [], isLoading: absenceLoading } = useAbsenceTypes(companyId)
 
   const depMut = useDepartmentMutations(companyId)
   const typeMut = useEmployeeTypeMutations(companyId)
+  const absenceMut = useAbsenceTypeMutations(companyId)
 
   const [newDep, setNewDep] = useState('')
   const [newType, setNewType] = useState('')
+  const [newAbsence, setNewAbsence] = useState('')
+
   const [editingDepId, setEditingDepId] = useState<number | null>(null)
   const [editingDepName, setEditingDepName] = useState('')
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null)
   const [editingTypeName, setEditingTypeName] = useState('')
+  const [editingAbsenceId, setEditingAbsenceId] = useState<number | null>(null)
+  const [editingAbsenceName, setEditingAbsenceName] = useState('')
 
   // confirm modal
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
 
-  const busy = depLoading || typeLoading
+  const busy = depLoading || typeLoading || absenceLoading
 
   async function handleConfirmDelete() {
     if (!confirmDelete) return
@@ -38,8 +49,10 @@ const SettingsPage = () => {
     try {
       if (confirmDelete.kind === 'dep') {
         await depMut.remove.mutateAsync(confirmDelete.id)
-      } else {
+      } else if (confirmDelete.kind === 'type') {
         await typeMut.remove.mutateAsync(confirmDelete.id)
+      } else {
+        await absenceMut.remove.mutateAsync(confirmDelete.id) // NEW
       }
       setConfirmDelete(null)
     } finally {
@@ -201,10 +214,92 @@ const SettingsPage = () => {
         </ul>
       </section>
 
+      {/* Absence Types (NEW) */}
+      <section className="rounded-lg border bg-white p-4 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold">Fraværstyper</h2>
+
+        <div className="mb-3 flex gap-2">
+          <input
+            className="w-full rounded-md border px-3 py-2"
+            placeholder="Ny fraværstype…"
+            value={newAbsence}
+            onChange={(e) => setNewAbsence(e.target.value)}
+          />
+          <button
+            className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
+            onClick={() =>
+              newAbsence.trim() && absenceMut.create.mutate(newAbsence.trim(), { onSuccess: () => setNewAbsence('') })
+            }
+            disabled={!newAbsence.trim() || absenceMut.create.isPending}
+          >
+            Opret
+          </button>
+        </div>
+
+        <ul className="divide-y">
+          {absenceTypes.map((a) => (
+            <li key={a.id} className="flex items-center justify-between py-2">
+              {editingAbsenceId === a.id ? (
+                <div className="flex w-full items-center gap-2">
+                  <input
+                    className="w-full rounded-md border px-3 py-2"
+                    value={editingAbsenceName}
+                    onChange={(e) => setEditingAbsenceName(e.target.value)}
+                  />
+                  <button
+                    className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
+                    onClick={() =>
+                      editingAbsenceName.trim() &&
+                      absenceMut.rename.mutate(
+                        { id: a.id, name: editingAbsenceName.trim() },
+                        { onSuccess: () => setEditingAbsenceId(null) }
+                      )
+                    }
+                    disabled={!editingAbsenceName.trim() || absenceMut.rename.isPending}
+                  >
+                    Gem
+                  </button>
+                  <button className="rounded-md bg-gray-200 px-3 py-2" onClick={() => setEditingAbsenceId(null)}>
+                    Annuller
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span className="text-gray-800">{a.name}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="rounded-md bg-blue-600 px-3 py-1.5 text-white"
+                      onClick={() => {
+                        setEditingAbsenceId(a.id)
+                        setEditingAbsenceName(a.name)
+                      }}
+                    >
+                      Rediger
+                    </button>
+                    <button
+                      className="rounded-md bg-red-600 px-3 py-1.5 text-white"
+                      onClick={() => setConfirmDelete({ kind: 'absence', id: a.id, name: a.name })}
+                    >
+                      Slet
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {/* Confirm Delete Modal */}
       {confirmDelete && (
         <Modal
-          title={confirmDelete.kind === 'dep' ? 'Slet afdeling' : 'Slet medarbejdertype'}
+          title={
+            confirmDelete.kind === 'dep'
+              ? 'Slet afdeling'
+              : confirmDelete.kind === 'type'
+                ? 'Slet medarbejdertype'
+                : 'Slet fraværstype'
+          }
           closeModal={() => (isConfirming ? null : setConfirmDelete(null))}
         >
           <p className="mb-6 text-center">

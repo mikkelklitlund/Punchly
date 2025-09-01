@@ -39,6 +39,7 @@ export type SimpleEmployee = {
 	companyId: number
 	departmentId: number
 	checkedIn: boolean
+	absence?: AbsenceRecord
 }
 
 export type Employee = {
@@ -83,7 +84,7 @@ export type CreateAbsenceRecord = {
 	employeeId: number
 	startDate: Date
 	endDate: Date
-	absenceType: AbsenceType
+	absenceTypeId: number
 }
 
 export type AbsenceRecord = {
@@ -91,7 +92,14 @@ export type AbsenceRecord = {
 	employeeId: number
 	startDate: Date
 	endDate: Date
+	absenceTypeId: number
 	absenceType: AbsenceType
+}
+
+export type AbsenceType = {
+	id: number
+	name: string
+	companyId: number
 }
 
 export type AttendanceRecord = {
@@ -112,13 +120,6 @@ export type EmployeeWithRecords = Employee & {
 	absenceRecords: AbsenceRecord[]
 	department: Department
 	employeeType: EmployeeType
-}
-
-export enum AbsenceType {
-	VACATION = 'VACATION',
-	SICK = 'SICK',
-	HOMEDAY = 'HOMEDAY',
-	PUBLIC_HOLIDAY = 'PUBLIC_HOLIDAY'
 }
 
 export enum Role {

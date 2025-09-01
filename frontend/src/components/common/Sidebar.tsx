@@ -116,6 +116,11 @@ function Sidebar() {
                     Medarbejder tider
                   </span>
                 </Link>
+                <Link to={'/absence'} className="w-full rounded px-2 py-1 text-left text-sm transition duration-150">
+                  <span className="block truncate overflow-hidden whitespace-nowrap" title="Fravær">
+                    Fravær
+                  </span>
+                </Link>
                 <Link
                   to={'/attendance-report'}
                   className="w-full rounded px-2 py-1 text-left text-sm transition duration-150"

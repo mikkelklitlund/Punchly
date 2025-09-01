@@ -1,5 +1,5 @@
 import axiosInstance from '../api/axios'
-import { Company, Department, EmployeeType, User } from 'shared'
+import { AbsenceType, Company, Department, EmployeeType, User } from 'shared'
 
 export const companyService = {
   getAllCompanies: async (): Promise<{ companies: Company[] }> => {
@@ -44,5 +44,21 @@ export const companyService = {
   },
   async deleteEmployeeType(companyId: number, id: number): Promise<void> {
     await axiosInstance.delete(`/companies/${companyId}/employee-types/${id}`)
+  },
+
+  getAbsenceTypes: async (companyId: number): Promise<{ absenceTypes: AbsenceType[] }> => {
+    const { data } = await axiosInstance.get(`/companies/${companyId}/absence-types`)
+    return data
+  },
+  createAbsenceType: async (companyId: number, name: string): Promise<{ absenceType: AbsenceType }> => {
+    const { data } = await axiosInstance.post(`/companies/${companyId}/absence-types`, { name })
+    return data
+  },
+  renameAbsenceType: async (companyId: number, id: number, name: string): Promise<{ absenceType: AbsenceType }> => {
+    const { data } = await axiosInstance.patch(`/companies/${companyId}/absence-types/${id}`, { name })
+    return data
+  },
+  deleteAbsenceType: async (companyId: number, id: number): Promise<void> => {
+    await axiosInstance.delete(`/companies/${companyId}/absence-types/${id}`)
   },
 }

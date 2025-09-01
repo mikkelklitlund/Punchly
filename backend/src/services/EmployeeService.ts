@@ -1,4 +1,4 @@
-import { Employee, CreateEmployee } from 'shared'
+import { Employee, CreateEmployee, SimpleEmployee } from 'shared'
 import { Result, failure, success } from '../utils/Result.js'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
@@ -198,4 +198,42 @@ export class EmployeeService implements IEmployeeService {
       return failure(new DatabaseError('Database error while fetching employees'))
     }
   }
+
+  async getSimpleEmployees(companyId: number): Promise<Result<SimpleEmployee[], Error>> {
+    try {
+      const { start, end } = todayBounds()
+      const emps = await this.employeeRepository.getSimpleEmployeesByCompanyIdWithTodayAbsence(companyId, start, end)
+      return success(emps)
+    } catch (error) {
+      console.error('Error fetching simple employees:', error)
+      return failure(new DatabaseError('Database error while fetching simple employees'))
+    }
+  }
+
+  async getSimpleEmployeesByDepartment(
+    companyId: number,
+    departmentId: number
+  ): Promise<Result<SimpleEmployee[], Error>> {
+    try {
+      const { start, end } = todayBounds()
+      const emps = await this.employeeRepository.getSimpleEmployeesByCompanyAndDepartmentWithTodayAbsence(
+        companyId,
+        departmentId,
+        start,
+        end
+      )
+      return success(emps)
+    } catch (error) {
+      console.error('Error fetching simple employees by department:', error)
+      return failure(new DatabaseError('Database error while fetching simple employees by department'))
+    }
+  }
+}
+
+function todayBounds() {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  const end = new Date()
+  end.setHours(23, 59, 59, 999)
+  return { start, end }
 }

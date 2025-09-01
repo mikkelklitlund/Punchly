@@ -72,7 +72,8 @@ const authRoutes = new AuthRoutes(serviceContainer.userService)
 const employeeRoutes = new EmployeeRoutes(
   serviceContainer.userService,
   serviceContainer.employeeService,
-  serviceContainer.attendanceService
+  serviceContainer.attendanceService,
+  serviceContainer.absenceService
 )
 const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService, serviceContainer.userService)
 const companyRoutes = new CompanyRoutes(
@@ -80,7 +81,8 @@ const companyRoutes = new CompanyRoutes(
   serviceContainer.employeeService,
   serviceContainer.departmentService,
   serviceContainer.userService,
-  serviceContainer.employeeTypeService
+  serviceContainer.employeeTypeService,
+  serviceContainer.absenceTypeService
 )
 
 const __filename = fileURLToPath(import.meta.url)

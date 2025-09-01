@@ -1,5 +1,5 @@
 import axiosInstance from '../api/axios'
-import { SimpleEmployee, Employee, AttendanceRecord, CreateEmployee } from 'shared'
+import { SimpleEmployee, Employee, AttendanceRecord, CreateEmployee, AbsenceRecord, CreateAbsenceRecord } from 'shared'
 
 export interface EmployeeResponse {
   employees: SimpleEmployee[]
@@ -91,5 +91,35 @@ export const employeeService = {
 
   deleteAttendanceRecord: async (id: number) => {
     await axiosInstance.delete(`/attendance/${id}`)
+  },
+
+  async getAbsences(employeeId: number, startDate?: Date, endDate?: Date): Promise<AbsenceRecord[]> {
+    const params: Record<string, string> = {}
+    if (startDate) params.startDate = startDate.toISOString().split('T')[0]
+    if (endDate) params.endDate = endDate.toISOString().split('T')[0]
+    const res = await axiosInstance.get<{ absences: AbsenceRecord[] }>(`/employees/${employeeId}/absences`, { params })
+    return res.data.absences
+  },
+
+  async createAbsence(payload: CreateAbsenceRecord): Promise<AbsenceRecord> {
+    const { employeeId, startDate, endDate, absenceTypeId } = payload
+    const res = await axiosInstance.post<{ absenceRecord: AbsenceRecord }>(`/employees/${employeeId}/absences`, {
+      startDate,
+      endDate,
+      absenceTypeId,
+    })
+    return res.data.absenceRecord
+  },
+
+  async updateAbsence(
+    id: number,
+    data: Partial<Pick<AbsenceRecord, 'startDate' | 'endDate'>> & { absenceTypeId?: number }
+  ): Promise<AbsenceRecord> {
+    const res = await axiosInstance.put<{ absenceRecord: AbsenceRecord }>(`/employees/absences/${id}`, data)
+    return res.data.absenceRecord
+  },
+
+  async deleteAbsence(id: number): Promise<void> {
+    await axiosInstance.delete(`/employees/absences/${id}`)
   },
 }

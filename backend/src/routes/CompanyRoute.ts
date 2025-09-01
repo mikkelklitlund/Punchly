@@ -6,9 +6,10 @@ import { body, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth.js'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
-import { Employee, Role } from 'shared'
+import { Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
+import { IAbsenceTypeService } from '../interfaces/services/IAbsenceTypeService.js'
 
 export class CompanyRoutes {
   public router: Router
@@ -18,7 +19,8 @@ export class CompanyRoutes {
     private readonly employeeService: IEmployeeService,
     private readonly departmentService: IDepartmentService,
     private readonly userService: IUserService,
-    private readonly employeeTypeService: IEmployeeTypeService
+    private readonly employeeTypeService: IEmployeeTypeService,
+    private readonly absenceTypeService: IAbsenceTypeService
   ) {
     this.router = Router()
     this.initializeRoutes()
@@ -439,6 +441,122 @@ export class CompanyRoutes {
       authorizeRoles(this.userService, Role.ADMIN),
       this.deleteEmployeeType.bind(this)
     )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/absence-types:
+     *   get:
+     *     summary: Get absence types by company ID
+     *     tags: [Companies]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *     responses:
+     *       200: { description: A list of absence types }
+     */
+    this.router.get('/:companyId/absence-types', authMiddleware, this.getAbsenceTypesByCompany.bind(this))
+
+    /**
+     * @swagger
+     * /companies/{companyId}/absence-types:
+     *   post:
+     *     summary: Create absence type (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: string, maxLength: 100 }
+     *     responses:
+     *       201: { description: Created }
+     *       400: { description: Validation error }
+     *       409: { description: Already exists }
+     */
+    this.router.post(
+      '/:companyId/absence-types',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [body('name').trim().notEmpty().isLength({ max: 100 })],
+      this.createAbsenceType.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/absence-types/{id}:
+     *   patch:
+     *     summary: Rename absence type (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [name]
+     *             properties:
+     *               name: { type: string, maxLength: 100 }
+     *     responses:
+     *       200: { description: Updated }
+     *       400: { description: Validation error }
+     *       404: { description: Not found }
+     */
+    this.router.patch(
+      '/:companyId/absence-types/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      [body('name').trim().notEmpty().isLength({ max: 100 })],
+      this.renameAbsenceType.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /companies/{companyId}/absence-types/{id}:
+     *   delete:
+     *     summary: Delete absence type (ADMIN)
+     *     tags: [Companies]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: companyId
+     *         required: true
+     *         schema: { type: integer }
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     responses:
+     *       204: { description: Deleted }
+     *       404: { description: Not found }
+     *       409: { description: Cannot delete: in use }
+     */
+    this.router.delete(
+      '/:companyId/absence-types/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN),
+      this.deleteAbsenceType.bind(this)
+    )
   }
 
   private async getAllManagers(req: Request, res: Response) {
@@ -458,30 +576,24 @@ export class CompanyRoutes {
   private async getAllSimpleEmployeesByCompanyAndDepartment(req: Request, res: Response) {
     const companyId = parseInt(req.params.companyId)
     const departmentId = parseInt(req.params.departmentId)
+    const result = await this.employeeService.getSimpleEmployeesByDepartment(companyId, departmentId)
 
-    const result = await this.employeeService.getAllEmployeesByDepartmentIdAndCompanyId(departmentId, companyId)
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })
       return
     }
-
-    res.status(200).json({
-      employees: result.value.map(this.formatSimpleEmployee),
-    })
+    res.status(200).json({ employees: result.value })
   }
 
   private async getSimpleEmployees(req: Request, res: Response) {
     const companyId = parseInt(req.params.companyId)
+    const result = await this.employeeService.getSimpleEmployees(companyId)
 
-    const result = await this.employeeService.getAllEmployeesByCompanyId(companyId)
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })
       return
     }
-
-    res.status(200).json({
-      employees: result.value.map(this.formatSimpleEmployee),
-    })
+    res.status(200).json({ employees: result.value })
   }
 
   private async getAllEmployeesByCompanyAndDepartment(req: Request, res: Response) {
@@ -558,17 +670,6 @@ export class CompanyRoutes {
     }
 
     res.status(200).json({ employeeTypes: result.value })
-  }
-
-  private formatSimpleEmployee(em: Employee) {
-    return {
-      departmentId: em.departmentId,
-      companyId: em.companyId,
-      id: em.id,
-      name: em.name,
-      checkedIn: em.checkedIn,
-      profilePicturePath: em.profilePicturePath,
-    }
   }
 
   private async createDepartment(req: Request, res: Response) {
@@ -658,6 +759,62 @@ export class CompanyRoutes {
     const id = parseInt(req.params.id, 10)
 
     const result = await this.employeeTypeService.deleteEmployeeType(id)
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(204).send()
+  }
+
+  private async getAbsenceTypesByCompany(req: Request, res: Response) {
+    const companyId = parseInt(req.params.companyId, 10)
+
+    const result = await this.absenceTypeService.getAbsenceTypesByCompanyId(companyId)
+
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(200).json({ absenceTypes: result.value })
+  }
+
+  private async createAbsenceType(req: Request, res: Response) {
+    const errors = validationResult(req)
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const companyId = parseInt(req.params.companyId, 10)
+    const { name } = req.body as { name: string }
+
+    const result = await this.absenceTypeService.createAbsenceType(name, companyId)
+
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+    return res.status(201).json({ absenceType: result.value })
+  }
+
+  private async renameAbsenceType(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+
+    const id = parseInt(req.params.id, 10)
+    const { name } = req.body as { name: string }
+    const result = await this.absenceTypeService.renameAbsenceType(id, name)
+
+    if (result instanceof Failure) {
+      return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(200).json({ absenceType: result.value })
+  }
+
+  private async deleteAbsenceType(req: Request, res: Response) {
+    const id = parseInt(req.params.id, 10)
+    const result = await this.absenceTypeService.deleteAbsenceType(id)
+
     if (result instanceof Failure) {
       return res.status(500).json({ message: result.error.message })
     }

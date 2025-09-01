@@ -7,13 +7,15 @@ import { CreateEmployee, Employee, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
+import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
 
 export class EmployeeRoutes {
   public router: Router
   constructor(
     private readonly userService: IUserService,
     private readonly employeeService: IEmployeeService,
-    private readonly attendanceService: IAttendanceService
+    private readonly attendanceService: IAttendanceService,
+    private readonly absenceService: IAbsenceService
   ) {
     this.router = Router()
     this.initializeRoutes()
@@ -105,34 +107,24 @@ export class EmployeeRoutes {
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
-        // required ints
         body('companyId').isInt().toInt().withMessage('Valid company ID is required'),
         body('departmentId').isInt().toInt().withMessage('Valid department ID is required'),
         body('employeeTypeId').isInt().toInt().withMessage('Valid employee type ID is required'),
-
-        // required strings
         body('name').trim().notEmpty().withMessage('Name is required'),
         body('address').trim().notEmpty(),
         body('city').trim().notEmpty(),
-
         body('monthlySalary').optional({ nullable: true }).isFloat({ gt: 0 }).toFloat(),
         body('hourlySalary').optional({ nullable: true }).isFloat({ gt: 0 }).toFloat(),
-
         body('birthdate')
           .notEmpty()
           .isISO8601()
           .withMessage('birthdate must be an ISO date')
           .customSanitizer((v: string) => (v.length === 10 ? new Date(v + 'T00:00:00Z') : new Date(v))),
-
-        // optional checkedIn
         body('checkedIn').optional({ nullable: true }).isBoolean().toBoolean(),
-
         body().custom((value) => {
           const hasMonthly = typeof value.monthlySalary === 'number' && value.monthlySalary > 0
           const hasHourly = typeof value.hourlySalary === 'number' && value.hourlySalary > 0
-          if (hasMonthly && hasHourly) {
-            throw new Error('Provide either monthlySalary OR hourlySalary, not both')
-          }
+          if (hasMonthly && hasHourly) throw new Error('Provide either monthlySalary OR hourlySalary, not both')
           return true
         }),
       ],
@@ -155,12 +147,7 @@ export class EmployeeRoutes {
      *         schema:
      *           type: integer
      *     responses:
-     *       200:
-     *         description: Check-in successful
-     *       401:
-     *         description: Unauthorized
-     *       500:
-     *         description: Server error
+     *       200: { description: Check-in successful }
      */
     this.router.post(
       '/:employeeId/checkin',
@@ -185,12 +172,7 @@ export class EmployeeRoutes {
      *         schema:
      *           type: integer
      *     responses:
-     *       200:
-     *         description: Check-out successful
-     *       401:
-     *         description: Unauthorized
-     *       500:
-     *         description: Server error
+     *       200: { description: Check-out successful }
      */
     this.router.post(
       '/:employeeId/checkout',
@@ -204,21 +186,16 @@ export class EmployeeRoutes {
      * /employees/{id}:
      *   get:
      *     summary: Get an employee by ID
-     *     tags:
-     *       - Employees
-     *     security:
-     *       - bearerAuth: []
+     *     tags: [Employees]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *     responses:
-     *       200:
-     *         description: Employee retrieved successfully
-     *       404:
-     *         description: Employee not found
+     *       200: { description: Employee retrieved successfully }
+     *       404: { description: Employee not found }
      */
     this.router.get('/:id', authMiddleware, this.getEmployeeById.bind(this))
 
@@ -227,31 +204,22 @@ export class EmployeeRoutes {
      * /employees:
      *   get:
      *     summary: Get employees by company and optional department/type
-     *     tags:
-     *       - Employees
-     *     security:
-     *       - bearerAuth: []
+     *     tags: [Employees]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: query
      *         name: company
      *         required: true
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *       - in: query
      *         name: department
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *       - in: query
      *         name: type
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *     responses:
-     *       200:
-     *         description: Employees retrieved successfully
-     *       400:
-     *         description: Invalid query parameters
-     *       500:
-     *         description: Server error
+     *       200: { description: Employees retrieved successfully }
+     *       400: { description: Invalid query parameters }
      */
     this.router.get(
       '/',
@@ -269,36 +237,16 @@ export class EmployeeRoutes {
      * /employees/{id}:
      *   put:
      *     summary: Update an existing employee
-     *     tags:
-     *       - Employees
-     *     security:
-     *       - bearerAuth: []
+     *     tags: [Employees]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
-     *         schema:
-     *           type: integer
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               name:
-     *                 type: string
-     *               companyId:
-     *                 type: integer
-     *               departmentId:
-     *                 type: integer
+     *         schema: { type: integer }
      *     responses:
-     *       200:
-     *         description: Employee updated successfully
-     *       400:
-     *         description: Validation error
-     *       500:
-     *         description: Server error
+     *       200: { description: Employee updated successfully }
+     *       400: { description: Validation error }
      */
     this.router.put(
       '/:id',
@@ -317,21 +265,15 @@ export class EmployeeRoutes {
      * /employees/{id}:
      *   delete:
      *     summary: Delete an employee
-     *     tags:
-     *       - Employees
-     *     security:
-     *       - bearerAuth: []
+     *     tags: [Employees]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *     responses:
-     *       204:
-     *         description: Employee deleted successfully
-     *       500:
-     *         description: Server error
+     *       204: { description: Employee deleted successfully }
      */
     this.router.delete(
       '/:id',
@@ -345,21 +287,15 @@ export class EmployeeRoutes {
      * /employees/{employeeId}/attendance-records-last-30:
      *   get:
      *     summary: Get the last 30 attendance records for an employee
-     *     tags:
-     *       - Attendance
-     *     security:
-     *       - bearerAuth: []
+     *     tags: [Attendance]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: path
      *         name: employeeId
      *         required: true
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *     responses:
-     *       200:
-     *         description: Attendance records retrieved
-     *       500:
-     *         description: Server error
+     *       200: { description: Attendance records retrieved }
      */
     this.router.get(
       '/:employeeId/attendance-records-last-30',
@@ -370,41 +306,20 @@ export class EmployeeRoutes {
 
     /**
      * @swagger
-     * /attendance-records/{id}:
+     * /employees/attendance-records/{id}:
      *   put:
-     *     summary: Update an attendance record (check-in / check-out)
-     *     tags:
-     *       - Attendance
-     *     security:
-     *       - bearerAuth: []
+     *     summary: Update an attendance record
+     *     tags: [Attendance]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
-     *         schema:
-     *           type: integer
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               checkIn:
-     *                 type: string
-     *                 format: date-time
-     *               checkOut:
-     *                 type: string
-     *                 format: date-time
+     *         schema: { type: integer }
      *     responses:
-     *       200:
-     *         description: Record updated successfully
-     *       400:
-     *         description: Invalid input
-     *       404:
-     *         description: Record not found
-     *       500:
-     *         description: Server error
+     *       200: { description: Record updated successfully }
+     *       400: { description: Invalid input }
+     *       404: { description: Record not found }
      */
     this.router.put(
       '/attendance-records/:id',
@@ -420,26 +335,19 @@ export class EmployeeRoutes {
 
     /**
      * @swagger
-     * /attendance-records/{id}:
+     * /employees/attendance-records/{id}:
      *   delete:
      *     summary: Delete an attendance record
-     *     tags:
-     *       - Attendance
-     *     security:
-     *       - bearerAuth: []
+     *     tags: [Attendance]
+     *     security: [ { bearerAuth: [] } ]
      *     parameters:
      *       - in: path
      *         name: id
      *         required: true
-     *         schema:
-     *           type: integer
+     *         schema: { type: integer }
      *     responses:
-     *       204:
-     *         description: Record deleted successfully
-     *       404:
-     *         description: Record not found
-     *       500:
-     *         description: Server error
+     *       204: { description: Record deleted successfully }
+     *       404: { description: Record not found }
      */
     this.router.delete(
       '/attendance-records/:id',
@@ -447,7 +355,123 @@ export class EmployeeRoutes {
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       this.deleteAttendanceRecord.bind(this)
     )
+
+    // ---------------------- ABSENCES (NEW) ----------------------
+
+    /**
+     * @swagger
+     * /employees/{employeeId}/absences:
+     *   post:
+     *     summary: Create an absence record for an employee
+     *     tags: [Absences]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: employeeId
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [startDate, endDate, absenceTypeId]
+     *             properties:
+     *               startDate: { type: string, format: date }
+     *               endDate:   { type: string, format: date }
+     *               absenceTypeId: { type: integer }
+     *     responses:
+     *       201: { description: Absence created }
+     *       400: { description: Validation error }
+     */
+    this.router.post(
+      '/:employeeId/absences',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        body('startDate').notEmpty().isISO8601().withMessage('startDate must be an ISO date'),
+        body('endDate').notEmpty().isISO8601().withMessage('endDate must be an ISO date'),
+        body('absenceTypeId').isInt().toInt().withMessage('Valid absenceTypeId is required'),
+      ],
+      this.createAbsenceForEmployee.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /employees/absences/{id}:
+     *   put:
+     *     summary: Update an absence record
+     *     tags: [Absences]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               startDate: { type: string, format: date }
+     *               endDate:   { type: string, format: date }
+     *               absenceTypeId: { type: integer }
+     *     responses:
+     *       200: { description: Absence updated }
+     *       400: { description: Validation error }
+     *       404: { description: Not found }
+     */
+    this.router.put(
+      '/absences/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        body('startDate').optional().isISO8601().withMessage('startDate must be an ISO date'),
+        body('endDate').optional().isISO8601().withMessage('endDate must be an ISO date'),
+        body('absenceTypeId').optional().isInt().toInt(),
+      ],
+      this.updateAbsence.bind(this)
+    )
+
+    /**
+     * @swagger
+     * /employees/absences/{id}:
+     *   delete:
+     *     summary: Delete an absence record
+     *     tags: [Absences]
+     *     security: [ { bearerAuth: [] } ]
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: integer }
+     *     responses:
+     *       204: { description: Absence deleted }
+     *       404: { description: Not found }
+     */
+    this.router.delete(
+      '/absences/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      this.deleteAbsence.bind(this)
+    )
+
+    this.router.get(
+      '/:employeeId/absences',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        query('startDate').optional().isISO8601().withMessage('startDate must be ISO date'),
+        query('endDate').optional().isISO8601().withMessage('endDate must be ISO date'),
+      ],
+      this.getAbsencesForEmployee.bind(this)
+    )
   }
+
+  // ---------------- Handlers ----------------
 
   private async employeeCheckin(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
@@ -653,5 +677,100 @@ export class EmployeeRoutes {
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     res.setHeader('Content-Disposition', 'attachment; filename=employee-attendance-report.xlsx')
     res.send(result.value)
+  }
+
+  // ---------------- Absence Handlers (NEW) ----------------
+
+  private async createAbsenceForEmployee(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: errors.array() })
+      return
+    }
+
+    const employeeId = parseInt(req.params.employeeId, 10)
+    const { startDate, endDate, absenceTypeId } = req.body as {
+      startDate: string
+      endDate: string
+      absenceTypeId: number
+    }
+
+    const result = await this.absenceService.createAbsenceRecord({
+      employeeId,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      absenceTypeId,
+    })
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(201).json({ absenceRecord: result.value })
+  }
+
+  private async updateAbsence(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: errors.array() })
+      return
+    }
+
+    const id = parseInt(req.params.id, 10)
+    const { startDate, endDate, absenceTypeId } = req.body as {
+      startDate?: string
+      endDate?: string
+      absenceTypeId?: number
+    }
+
+    const result = await this.absenceService.updateAbsenceRecord(id, {
+      ...(startDate ? { startDate: new Date(startDate) } : {}),
+      ...(endDate ? { endDate: new Date(endDate) } : {}),
+      ...(typeof absenceTypeId === 'number' ? { absenceTypeId } : {}),
+    })
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ absenceRecord: result.value })
+  }
+
+  private async deleteAbsence(req: Request, res: Response) {
+    const id = parseInt(req.params.id, 10)
+
+    const result = await this.absenceService.deleteAbsenceRecord(id)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(204).send()
+  }
+
+  private async getAbsencesForEmployee(req: Request, res: Response) {
+    const employeeId = parseInt(req.params.employeeId, 10)
+    const { startDate, endDate } = req.query as { startDate?: string; endDate?: string }
+
+    let result
+    if (startDate && endDate) {
+      result = await this.absenceService.getAbsenceRecordsByEmployeeIdAndRange(
+        employeeId,
+        new Date(startDate),
+        new Date(endDate)
+      )
+    } else {
+      result = await this.absenceService.getAbsenceRecordsByEmployeeId(employeeId)
+    }
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ absences: result.value })
   }
 }

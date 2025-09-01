@@ -1,20 +1,40 @@
 import { Result, success, failure } from '../utils/Result.js'
 import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors.js'
-import { CreateAttendanceRecord, AttendanceRecord, AbsenceType, EmployeeWithRecords } from 'shared'
+import { CreateAttendanceRecord, AttendanceRecord, EmployeeWithRecords } from 'shared'
 import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository.js'
 import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import ExcelJS from 'exceljs'
 import { differenceInMinutes } from 'date-fns'
+import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
 
 export class AttendanceService implements IAttendanceService {
   constructor(
     private readonly attendanceRecordRepository: IAttendanceRecordRepository,
-    private readonly employeeRepository: IEmployeeRepository
+    private readonly employeeRepository: IEmployeeRepository,
+    private readonly absenceRecordRepository: IAbsenceRecordRepository
   ) {}
+
+  private async hasAbsenceOnDate(employeeId: number, date: Date): Promise<boolean> {
+    const startOfDay = new Date(date)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(date)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(
+      employeeId,
+      startOfDay,
+      endOfDay
+    )
+    return overlaps.length > 0
+  }
 
   async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {
     try {
+      if (await this.hasAbsenceOnDate(newAttendance.employeeId, newAttendance.checkIn)) {
+        return failure(new ValidationError('Employee has an active absence on this date.'))
+      }
+
       const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord(newAttendance)
       await this.employeeRepository.updateEmployee(newAttendance.employeeId, { checkedIn: true })
       return success(attendanceRecord)
@@ -26,6 +46,10 @@ export class AttendanceService implements IAttendanceService {
 
   async checkInEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
+      if (await this.hasAbsenceOnDate(employeeId, new Date())) {
+        return failure(new ValidationError('Employee has an active absence today and cannot check in.'))
+      }
+
       const openRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId)
 
       if (openRecord) {
@@ -51,6 +75,10 @@ export class AttendanceService implements IAttendanceService {
 
   async checkOutEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
+      if (await this.hasAbsenceOnDate(employeeId, new Date())) {
+        return failure(new ValidationError('Employee has an active absence today and cannot check out.'))
+      }
+
       const attendanceRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId)
 
       if (!attendanceRecord) {
@@ -138,19 +166,7 @@ export class AttendanceService implements IAttendanceService {
     }
   }
 
-  // ---------------------- Report functions ---------------------------
-  private translateAbsenceType(abtype: AbsenceType) {
-    switch (abtype) {
-      case AbsenceType.HOMEDAY:
-        return 'Hjemmedag'
-      case AbsenceType.PUBLIC_HOLIDAY:
-        return 'Helligdag'
-      case AbsenceType.SICK:
-        return 'Sygdom'
-      case AbsenceType.VACATION:
-        return 'Ferie'
-    }
-  }
+  // ---------------------- Report functions --------------------------
 
   private centerAlignRow(row: ExcelJS.Row) {
     row.eachCell((cell) => {
@@ -352,9 +368,8 @@ export class AttendanceService implements IAttendanceService {
           (a) => date >= a.startDate.toISOString().split('T')[0] && date <= a.endDate.toISOString().split('T')[0]
         )
         if (absence) {
-          const translated = this.translateAbsenceType(absence.absenceType)
-          checkInRow.push(translated)
-          checkOutRow.push(translated)
+          checkInRow.push(absence.absenceType.name)
+          checkOutRow.push(absence.absenceType.name)
         } else {
           const record = emp.attendanceRecords.find((r) => r.checkIn.toISOString().split('T')[0] === date)
           checkInRow.push(record ? this.formatTime(record.checkIn) : '')

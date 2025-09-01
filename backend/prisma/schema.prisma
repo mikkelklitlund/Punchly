@@ -14,6 +14,7 @@ model Company {
   employees     Employee[]
   departments   Department[]
   employeeTypes EmployeeType[]
+  absenceTypes  AbsenceType[]
   users         UserCompanyAccess[]
 
   @@unique(name: "addressName", [name, address])
@@ -109,9 +110,13 @@ model AbsenceRecord {
   employee    Employee    @relation(fields: [employeeId], references: [id])
   startDate   DateTime
   endDate     DateTime
-  absenceType AbsenceType
+  absenceTypeId  Int
+  absenceType    AbsenceType  @relation(fields: [absenceTypeId], references: [id])
 
   @@index([employeeId])
+  @@index([absenceTypeId])
+  @@index([employeeId, startDate])
+  @@index([employeeId, endDate])
 }
 
 model AttendanceRecord {
@@ -125,11 +130,15 @@ model AttendanceRecord {
   @@index([employeeId])
 }
 
-enum AbsenceType {
-  VACATION
-  SICK
-  HOMEDAY
-  PUBLIC_HOLIDAY
+model AbsenceType {
+  id             Int              @id @default(autoincrement())
+  name           String
+  companyId      Int
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  absenceRecords AbsenceRecord[]
+
+  @@unique([name, companyId], name: "absenceTypeCompany")
+  @@index([companyId])
 }
 
 enum Role {

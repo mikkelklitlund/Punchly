@@ -29,7 +29,6 @@ const Home = () => {
             return res
           })(),
           {
-            pending: checkIn ? 'Tjekker ind…' : 'Tjekker ud…',
             success: checkIn ? 'Medarbejder er tjekket ind' : 'Medarbejder er tjekket ud',
             error: {
               render({ data }) {
@@ -72,26 +71,31 @@ const Home = () => {
       {showModal && selectedEmployee && (
         <Modal closeModal={closeModal} title={selectedEmployee.name}>
           <EmployeeCard employee={selectedEmployee} />
-          <div className="mt-4 flex w-full justify-evenly">
-            <button
-              className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-              onClick={() => {
-                handleCheckAction(selectedEmployee.id, false)
-                closeModal()
-              }}
-            >
-              Tjek ud
-            </button>
-            <button
-              className="rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-              onClick={() => {
-                handleCheckAction(selectedEmployee.id, true)
-                closeModal()
-              }}
-            >
-              Tjek ind
-            </button>
-          </div>
+          {!selectedEmployee.absence && (
+            <div className="mt-4 flex w-full justify-evenly">
+              <button
+                className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-700"
+                onClick={() => {
+                  handleCheckAction(selectedEmployee.id, false)
+                  closeModal()
+                }}
+              >
+                Tjek ud
+              </button>
+              <button
+                className="rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                onClick={() => {
+                  handleCheckAction(selectedEmployee.id, true)
+                  closeModal()
+                }}
+              >
+                Tjek ind
+              </button>
+            </div>
+          )}
+          {selectedEmployee.absence && (
+            <span className="mt-2">Der kan ikke tjekkes ind eller ud når der er registreret fravær</span>
+          )}
         </Modal>
       )}
     </div>

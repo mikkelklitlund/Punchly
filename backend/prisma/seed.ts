@@ -1,15 +1,33 @@
-import { PrismaClient, Role, AbsenceType } from '@prisma/client'
+import { PrismaClient, Role } from '@prisma/client'
 import { v4 as uuid } from 'uuid'
 import { addDays, subDays, subMonths } from 'date-fns'
 
 const prisma = new PrismaClient()
 
+async function ensureCompanyAbsenceTypes(companyId: number) {
+  const defaults = ['VACATION', 'SICK', 'HOMEDAY', 'PUBLIC_HOLIDAY'] as const
+  // Upsert defaults
+  await Promise.all(
+    defaults.map((name) =>
+      prisma.absenceType.upsert({
+        where: { absenceTypeCompany: { name, companyId } },
+        update: {},
+        create: { name, companyId },
+      })
+    )
+  )
+  // Return a name -> id map
+  const rows = await prisma.absenceType.findMany({
+    where: { companyId },
+    select: { id: true, name: true },
+  })
+  return Object.fromEntries(rows.map((r) => [r.name, r.id])) as Record<(typeof defaults)[number], number>
+}
+
 async function main() {
-  // Create multiple companies
+  // Create companies (with employee types & departments)
   const companyNBV = await prisma.company.upsert({
-    where: {
-      addressName: { name: 'NBV', address: 'Poulsensvej 89' },
-    },
+    where: { addressName: { name: 'NBV', address: 'Poulsensvej 89' } },
     update: {},
     create: {
       name: 'NBV',
@@ -30,9 +48,7 @@ async function main() {
   })
 
   const companyARK = await prisma.company.upsert({
-    where: {
-      addressName: { name: 'ARK Design', address: 'Industrivej 42' },
-    },
+    where: { addressName: { name: 'ARK Design', address: 'Industrivej 42' } },
     update: {},
     create: {
       name: 'ARK Design',
@@ -46,13 +62,12 @@ async function main() {
     },
   })
 
-  // Create multiple users with different roles
+  // Users (same creds)
   const testUser = await prisma.user.upsert({
     where: { username: 'testperson' },
     update: {},
     create: {
       email: 'test@test.com',
-      //'admin' password
       password: '$argon2id$v=19$m=65536,t=3,p=4$PS8AfAvW2oQqD+NS9WiasA$CskdQm00Fd8iPokG/kUVnMJyinLXrV4xMOQA2COhen8',
       username: 'testperson',
     },
@@ -99,79 +114,40 @@ async function main() {
     },
   })
 
-  // Create user company access relationships with different roles
+  // Access roles
   await prisma.userCompanyAccess.upsert({
     where: { userId_companyId: { userId: testUser.id, companyId: companyNBV.id } },
     update: {},
-    create: {
-      userId: testUser.id,
-      companyId: companyNBV.id,
-      role: Role.COMPANY,
-    },
+    create: { userId: testUser.id, companyId: companyNBV.id, role: Role.COMPANY },
   })
-
   await prisma.userCompanyAccess.upsert({
     where: { userId_companyId: { userId: adminUser.id, companyId: companyNBV.id } },
     update: {},
-    create: {
-      userId: adminUser.id,
-      companyId: companyNBV.id,
-      role: Role.ADMIN,
-    },
+    create: { userId: adminUser.id, companyId: companyNBV.id, role: Role.ADMIN },
   })
-
   await prisma.userCompanyAccess.upsert({
     where: { userId_companyId: { userId: adminUser.id, companyId: companyARK.id } },
     update: {},
-    create: {
-      userId: adminUser.id,
-      companyId: companyARK.id,
-      role: Role.ADMIN,
-    },
+    create: { userId: adminUser.id, companyId: companyARK.id, role: Role.ADMIN },
   })
-
   await prisma.userCompanyAccess.upsert({
     where: { userId_companyId: { userId: managerUser.id, companyId: companyNBV.id } },
     update: {},
-    create: {
-      userId: managerUser.id,
-      companyId: companyNBV.id,
-      role: Role.MANAGER,
-    },
+    create: { userId: managerUser.id, companyId: companyNBV.id, role: Role.MANAGER },
   })
-
   await prisma.userCompanyAccess.upsert({
     where: { userId_companyId: { userId: companyUser.id, companyId: companyARK.id } },
     update: {},
-    create: {
-      userId: companyUser.id,
-      companyId: companyARK.id,
-      role: Role.COMPANY,
-    },
+    create: { userId: companyUser.id, companyId: companyARK.id, role: Role.COMPANY },
   })
 
-  // Add refresh tokens for testing
+  // Refresh tokens
   const now = new Date()
   await prisma.refreshToken.createMany({
     data: [
-      {
-        token: `valid-refresh-token-1-${uuid()}`,
-        userId: testUser.id,
-        expiryDate: addDays(now, 7),
-        revoked: false,
-      },
-      {
-        token: `valid-refresh-token-2-${uuid()}`,
-        userId: adminUser.id,
-        expiryDate: addDays(now, 30),
-        revoked: false,
-      },
-      {
-        token: `expired-refresh-token-1-${uuid()}`,
-        userId: testUser.id,
-        expiryDate: subDays(now, 1),
-        revoked: false,
-      },
+      { token: `valid-refresh-token-1-${uuid()}`, userId: testUser.id, expiryDate: addDays(now, 7), revoked: false },
+      { token: `valid-refresh-token-2-${uuid()}`, userId: adminUser.id, expiryDate: addDays(now, 30), revoked: false },
+      { token: `expired-refresh-token-1-${uuid()}`, userId: testUser.id, expiryDate: subDays(now, 1), revoked: false },
       {
         token: `revoked-refresh-token-2-${uuid()}`,
         userId: managerUser.id,
@@ -181,74 +157,38 @@ async function main() {
     ],
   })
 
-  // Get departments for NBV
-  const departmentSnedkeri = await prisma.department.findFirst({
-    where: { name: 'Snedkeri', companyId: companyNBV.id },
-  })
+  // Lookup departments
+  const [departmentSnedkeri, departmentKokken, departmentService, departmentAdmin, departmentMarketing] =
+    await Promise.all([
+      prisma.department.findFirst({ where: { name: 'Snedkeri', companyId: companyNBV.id } }),
+      prisma.department.findFirst({ where: { name: 'Køkken', companyId: companyNBV.id } }),
+      prisma.department.findFirst({ where: { name: 'Service', companyId: companyNBV.id } }),
+      prisma.department.findFirst({ where: { name: 'Administration', companyId: companyNBV.id } }),
+      prisma.department.findFirst({ where: { name: 'Marketing', companyId: companyNBV.id } }),
+    ])
 
-  const departmentKokken = await prisma.department.findFirst({
-    where: { name: 'Køkken', companyId: companyNBV.id },
-  })
+  const [departmentDesign, departmentProduction, departmentSales] = await Promise.all([
+    prisma.department.findFirst({ where: { name: 'Design', companyId: companyARK.id } }),
+    prisma.department.findFirst({ where: { name: 'Production', companyId: companyARK.id } }),
+    prisma.department.findFirst({ where: { name: 'Sales', companyId: companyARK.id } }),
+  ])
 
-  const departmentService = await prisma.department.findFirst({
-    where: { name: 'Service', companyId: companyNBV.id },
-  })
+  // Employee types
+  const [fullTimeNBV, partTimeNBV, contractNBV, seasonalNBV] = await Promise.all([
+    prisma.employeeType.findFirst({ where: { name: 'Full-Time', companyId: companyNBV.id } }),
+    prisma.employeeType.findFirst({ where: { name: 'Part-Time', companyId: companyNBV.id } }),
+    prisma.employeeType.findFirst({ where: { name: 'Contract', companyId: companyNBV.id } }),
+    prisma.employeeType.findFirst({ where: { name: 'Seasonal', companyId: companyNBV.id } }),
+  ])
+  const [fullTimeARK, partTimeARK, freelanceARK] = await Promise.all([
+    prisma.employeeType.findFirst({ where: { name: 'Full-Time', companyId: companyARK.id } }),
+    prisma.employeeType.findFirst({ where: { name: 'Part-Time', companyId: companyARK.id } }),
+    prisma.employeeType.findFirst({ where: { name: 'Freelance', companyId: companyARK.id } }),
+  ])
 
-  const departmentAdmin = await prisma.department.findFirst({
-    where: { name: 'Administration', companyId: companyNBV.id },
-  })
-
-  const departmentMarketing = await prisma.department.findFirst({
-    where: { name: 'Marketing', companyId: companyNBV.id },
-  })
-
-  // Get departments for ARK
-  const departmentDesign = await prisma.department.findFirst({
-    where: { name: 'Design', companyId: companyARK.id },
-  })
-
-  const departmentProduction = await prisma.department.findFirst({
-    where: { name: 'Production', companyId: companyARK.id },
-  })
-
-  const departmentSales = await prisma.department.findFirst({
-    where: { name: 'Sales', companyId: companyARK.id },
-  })
-
-  // Get employee types for NBV
-  const fullTimeNBV = await prisma.employeeType.findFirst({
-    where: { name: 'Full-Time', companyId: companyNBV.id },
-  })
-
-  const partTimeNBV = await prisma.employeeType.findFirst({
-    where: { name: 'Part-Time', companyId: companyNBV.id },
-  })
-
-  const contractNBV = await prisma.employeeType.findFirst({
-    where: { name: 'Contract', companyId: companyNBV.id },
-  })
-
-  const seasonalNBV = await prisma.employeeType.findFirst({
-    where: { name: 'Seasonal', companyId: companyNBV.id },
-  })
-
-  // Get employee types for ARK
-  const fullTimeARK = await prisma.employeeType.findFirst({
-    where: { name: 'Full-Time', companyId: companyARK.id },
-  })
-
-  const partTimeARK = await prisma.employeeType.findFirst({
-    where: { name: 'Part-Time', companyId: companyARK.id },
-  })
-
-  const freelanceARK = await prisma.employeeType.findFirst({
-    where: { name: 'Freelance', companyId: companyARK.id },
-  })
-
-  // Create NBV employees with the existing three plus more
+  // Employees NBV
   await prisma.employee.createMany({
     data: [
-      // Original employees
       {
         name: 'Jens Sørensens',
         profilePicturePath: 'default-avatar.jpg',
@@ -285,7 +225,6 @@ async function main() {
         address: 'Vestergade 10',
         city: 'Aarhus',
       },
-      // Additional NBV employees
       {
         name: 'Mette Pedersen',
         profilePicturePath: 'default-avatar.jpg',
@@ -357,12 +296,12 @@ async function main() {
         hourlySalary: 60,
         address: 'Østergade 12',
         city: 'Hjørring',
-        deletedAt: new Date(), // Deleted employee for testing
+        deletedAt: new Date(),
       },
     ],
   })
 
-  // Create ARK Design employees
+  // Employees ARK
   await prisma.employee.createMany({
     data: [
       {
@@ -428,166 +367,124 @@ async function main() {
     ],
   })
 
-  // Get all NBV employees for creating attendance records
+  // Build absence types per company (model-based)
+  const absenceIdsNBV = await ensureCompanyAbsenceTypes(companyNBV.id)
+  const absenceIdsARK = await ensureCompanyAbsenceTypes(companyARK.id)
+
+  // Employees to reference for records
   const nbvEmployeesList = await prisma.employee.findMany({
-    where: {
-      companyId: companyNBV.id,
-      deletedAt: null,
-    },
+    where: { companyId: companyNBV.id, deletedAt: null },
+    orderBy: { id: 'asc' },
   })
-
   const arkEmployeesList = await prisma.employee.findMany({
-    where: {
-      companyId: companyARK.id,
-      deletedAt: null,
-    },
+    where: { companyId: companyARK.id, deletedAt: null },
+    orderBy: { id: 'asc' },
   })
 
-  // Create attendance records for NBV employees
+  // Attendance records
   const today = new Date()
-  const attendanceRecords = []
+  const attendanceRecords: Array<{ employeeId: number; checkIn: Date; checkOut: Date | null }> = []
 
-  // For each NBV employee, create attendance records for the past week
   for (const employee of nbvEmployeesList) {
-    // Create records for the past 7 days
     for (let i = 1; i <= 7; i++) {
       const date = subDays(today, i)
-
-      // Skip weekends (Saturday and Sunday)
       if (date.getDay() === 0 || date.getDay() === 6) continue
-
       const checkIn = new Date(date)
       checkIn.setHours(8, Math.floor(Math.random() * 30), 0, 0)
-
       const checkOut = new Date(date)
-
-      // Some employees might have left early or stayed late
       const hourOffset = Math.random() < 0.2 ? Math.floor(Math.random() * 2) - 1 : 0
       checkOut.setHours(16 + hourOffset, Math.floor(Math.random() * 30), 0, 0)
-
-      attendanceRecords.push({
-        employeeId: employee.id,
-        checkIn,
-        checkOut,
-      })
+      attendanceRecords.push({ employeeId: employee.id, checkIn, checkOut })
     }
-
-    // If employee is currently checked in, add a record for today with no checkout
     if (employee.checkedIn) {
       const checkIn = new Date(today)
       checkIn.setHours(8, Math.floor(Math.random() * 30), 0, 0)
-
-      attendanceRecords.push({
-        employeeId: employee.id,
-        checkIn,
-        checkOut: null,
-      })
+      attendanceRecords.push({ employeeId: employee.id, checkIn, checkOut: null })
     }
   }
 
-  // Create some attendance records for ARK employees
   for (const employee of arkEmployeesList) {
-    // Create records for the past 3 days
     for (let i = 1; i <= 3; i++) {
       const date = subDays(today, i)
-
-      // Skip weekends (Saturday and Sunday)
       if (date.getDay() === 0 || date.getDay() === 6) continue
-
       const checkIn = new Date(date)
       checkIn.setHours(9, Math.floor(Math.random() * 30), 0, 0)
-
       const checkOut = new Date(date)
       checkOut.setHours(17, Math.floor(Math.random() * 30), 0, 0)
-
-      attendanceRecords.push({
-        employeeId: employee.id,
-        checkIn,
-        checkOut,
-      })
+      attendanceRecords.push({ employeeId: employee.id, checkIn, checkOut })
     }
-
-    // If employee is currently checked in, add a record for today with no checkout
     if (employee.checkedIn) {
       const checkIn = new Date(today)
       checkIn.setHours(9, Math.floor(Math.random() * 30), 0, 0)
-
-      attendanceRecords.push({
-        employeeId: employee.id,
-        checkIn,
-        checkOut: null,
-      })
+      attendanceRecords.push({ employeeId: employee.id, checkIn, checkOut: null })
     }
   }
 
-  // Create attendance records
-  await prisma.attendanceRecord.createMany({
-    data: attendanceRecords,
-  })
+  await prisma.attendanceRecord.createMany({ data: attendanceRecords })
 
-  // Create absence records
+  // Absence records (now using absenceTypeId)
   await prisma.absenceRecord.createMany({
     data: [
-      // Sick leave for Anna
+      // Sick leave for Anna (NBV index 1)
       {
         employeeId: nbvEmployeesList[1].id,
         startDate: subDays(today, 10),
         endDate: subDays(today, 8),
-        absenceType: AbsenceType.SICK,
+        absenceTypeId: absenceIdsNBV['SICK'],
       },
-      // Home day for Peter
+      // Home day for Peter (NBV index 2)
       {
         employeeId: nbvEmployeesList[2].id,
         startDate: subDays(today, 3),
         endDate: subDays(today, 3),
-        absenceType: AbsenceType.HOMEDAY,
+        absenceTypeId: absenceIdsNBV['HOMEDAY'],
       },
-      // Public holiday for everyone in NBV
+      // Public holiday for NBV folks (3 entries)
       {
         employeeId: nbvEmployeesList[0].id,
         startDate: subMonths(today, 1),
         endDate: subMonths(today, 1),
-        absenceType: AbsenceType.PUBLIC_HOLIDAY,
+        absenceTypeId: absenceIdsNBV['PUBLIC_HOLIDAY'],
       },
       {
         employeeId: nbvEmployeesList[1].id,
         startDate: subMonths(today, 1),
         endDate: subMonths(today, 1),
-        absenceType: AbsenceType.PUBLIC_HOLIDAY,
+        absenceTypeId: absenceIdsNBV['PUBLIC_HOLIDAY'],
       },
       {
         employeeId: nbvEmployeesList[2].id,
         startDate: subMonths(today, 1),
         endDate: subMonths(today, 1),
-        absenceType: AbsenceType.PUBLIC_HOLIDAY,
+        absenceTypeId: absenceIdsNBV['PUBLIC_HOLIDAY'],
       },
-      // Upcoming vacation for Mette
+      // Upcoming vacation for Mette (NBV index 3)
       {
         employeeId: nbvEmployeesList[3].id,
         startDate: addDays(today, 5),
         endDate: addDays(today, 15),
-        absenceType: AbsenceType.VACATION,
+        absenceTypeId: absenceIdsNBV['VACATION'],
       },
-      // Home day for Lars
+      // Home day for Lars (NBV index 4)
       {
         employeeId: nbvEmployeesList[4].id,
         startDate: subDays(today, 5),
         endDate: subDays(today, 5),
-        absenceType: AbsenceType.HOMEDAY,
+        absenceTypeId: absenceIdsNBV['HOMEDAY'],
       },
-      // Vacation for Nikolaj at ARK
+      // Vacation for Nikolaj at ARK (ARK index 1)
       {
         employeeId: arkEmployeesList[1].id,
         startDate: addDays(today, 10),
         endDate: addDays(today, 20),
-        absenceType: AbsenceType.VACATION,
+        absenceTypeId: absenceIdsARK['VACATION'],
       },
-      // Sick leave for Maria at ARK
+      // Sick leave for Maria at ARK (ARK index 2)
       {
         employeeId: arkEmployeesList[2].id,
         startDate: subDays(today, 2),
         endDate: today,
-        absenceType: AbsenceType.SICK,
+        absenceTypeId: absenceIdsARK['SICK'],
       },
     ],
   })
