@@ -37,7 +37,7 @@ export interface AuthContextType extends AuthState {
 const initialState: AuthState = {
   user: null,
   role: null,
-  isLoading: false,
+  isLoading: true,
   companyId: undefined,
   error: null,
 }

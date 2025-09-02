@@ -5,8 +5,7 @@ import DataTable, { Column } from '../components/common/DataTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
-
-type ApiError = { status?: number; message?: string }
+import { ApiError } from '../utils/errorUtils'
 
 const ManagerTablePage = () => {
   const { companyId } = useAuth()

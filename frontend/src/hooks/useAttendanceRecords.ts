@@ -3,8 +3,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { employeeService } from '../services/employeeService'
 import { AttendanceRecord } from 'shared'
 import { qk } from './queryKeys'
-
-type ApiError = { status?: number; message?: string }
+import { ApiError } from '../utils/errorUtils'
 
 export function useAttendanceRecords(employeeId: number | undefined) {
   return useQuery<AttendanceRecord[], ApiError>({

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useCompany } from '../contexts/CompanyContext'
 import { Employee, SimpleEmployee } from 'shared'
 import { employeeService } from '../services/employeeService'
@@ -10,21 +10,16 @@ import DataTable, { Column } from '../components/common/DataTable'
 import { toast } from 'react-toastify'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAuth } from '../contexts/AuthContext'
-import LoadingSpinner from '../components/common/LoadingSpinner'
 
 const EmployeeTablePage = () => {
   const { companyId } = useAuth()
-  const { currentDepartment, setCurrentDepartment, departments } = useCompany()
+  const { departments } = useCompany()
 
-  const { data: employees = [], isLoading, isFetching, error, refetch } = useEmployees(companyId, currentDepartment?.id)
+  const { data: employees = [], isLoading, error, refetch } = useEmployees(companyId, { live: false })
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
-
-  useEffect(() => {
-    setCurrentDepartment(undefined)
-  }, [setCurrentDepartment])
 
   const openEditModal = async (id: number) => {
     try {
@@ -108,13 +103,6 @@ const EmployeeTablePage = () => {
             Ny medarbejder
           </button>
         </div>
-
-        {isFetching && employees.length > 0 && (
-          <div className="mb-2 flex items-center gap-2 text-xs text-gray-500">
-            <LoadingSpinner size="small" />
-            Opdaterer...
-          </div>
-        )}
 
         <DataTable
           columns={columns}

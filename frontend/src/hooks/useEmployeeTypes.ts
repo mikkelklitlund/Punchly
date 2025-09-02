@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { companyService } from '../services/companyService'
 import { EmployeeType } from 'shared'
 import { qk } from './queryKeys'
-
-type ApiError = { status?: number; message?: string }
+import { ApiError } from '../utils/errorUtils'
 
 export function useEmployeeTypes(companyId: number | undefined) {
   return useQuery<{ employeeTypes: EmployeeType[] }, ApiError, EmployeeType[]>({

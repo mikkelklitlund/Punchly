@@ -14,7 +14,16 @@ const Home = () => {
   const { companyId } = useAuth()
   const { currentDepartment } = useCompany()
 
-  const { data: employees = [], isLoading, isFetching, error, refetch } = useEmployees(companyId, currentDepartment?.id)
+  const {
+    data: employees = [],
+    isFetching,
+    refetch,
+    isLoading,
+    error,
+  } = useEmployees(companyId, {
+    live: true,
+    departmentId: currentDepartment?.id,
+  })
 
   const handleCheckAction = useCallback(
     async (employeeId: number, checkIn: boolean) => {

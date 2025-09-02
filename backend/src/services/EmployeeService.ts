@@ -6,6 +6,8 @@ import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRep
 import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository.js'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
+import { startOfDayUTC, endOfDayUTC, toDateOnlyUTC } from '../utils/date.js'
+import { DateInput } from '../types/index.js'
 
 export class EmployeeService implements IEmployeeService {
   constructor(
@@ -14,6 +16,24 @@ export class EmployeeService implements IEmployeeService {
     private readonly departmentRepository: IDepartmentRepository,
     private readonly employeeTypeRepository: IEmployeeTypeRepository
   ) {}
+
+  private ageOnTodayUTC(birthdate: Date): number {
+    const today = startOfDayUTC(new Date())
+    const b = startOfDayUTC(birthdate)
+    let age = today.getUTCFullYear() - b.getUTCFullYear()
+    const m = today.getUTCMonth() - b.getUTCMonth()
+    if (m < 0 || (m === 0 && today.getUTCDate() < b.getUTCDate())) age--
+    return age
+  }
+
+  private todayBoundsUTC() {
+    const now = new Date()
+    const start = startOfDayUTC(now)
+    const end = endOfDayUTC(now)
+    return { start, end }
+  }
+
+  // ---- CRUD ----
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
     if (!data.name || data.name.trim().length === 0) {
@@ -38,23 +58,24 @@ export class EmployeeService implements IEmployeeService {
     if (data.monthlySalary && data.hourlySalary) {
       return failure(new ValidationError('Both monthly and hourly salary are filled', 'salary'))
     }
-
     if (data.monthlySalary && data.monthlySalary < 0) {
       return failure(new ValidationError('Monthly salary must be positive', 'monthlySalary'))
     }
-
     if (data.hourlySalary && data.hourlySalary < 0) {
       return failure(new ValidationError('Hourly salary must be positive', 'hourlySalary'))
     }
 
-    const currentDate = new Date()
-    const age = currentDate.getFullYear() - data.birthdate.getFullYear()
+    const birthdateUTC = toDateOnlyUTC(data.birthdate)
+    const age = this.ageOnTodayUTC(birthdateUTC)
     if (age < 13) {
       return failure(new ValidationError('Must be over the age of 13 to be employed', 'birthday'))
     }
 
     try {
-      const employee = await this.employeeRepository.createEmployee(data)
+      const employee = await this.employeeRepository.createEmployee({
+        ...data,
+        birthdate: birthdateUTC,
+      })
       return success(employee)
     } catch (error) {
       console.error('Error creating employee:', error)
@@ -132,24 +153,25 @@ export class EmployeeService implements IEmployeeService {
           new ValidationError('Both monthly and hourly salary cannot be filled at the same time', 'salary')
         )
       }
-
       if (data.monthlySalary && data.monthlySalary < 0) {
         return failure(new ValidationError('Monthly salary must be a positive number', 'monthlySalary'))
       }
-
       if (data.hourlySalary && data.hourlySalary < 0) {
         return failure(new ValidationError('Hourly salary must be a positive number', 'hourlySalary'))
       }
 
+      const patch: Partial<Employee> = { ...data }
+
       if (data.birthdate) {
-        const currentDate = new Date()
-        const age = currentDate.getFullYear() - new Date(data.birthdate).getFullYear()
+        const birthdateUTC = toDateOnlyUTC(data.birthdate as DateInput)
+        const age = this.ageOnTodayUTC(birthdateUTC)
         if (age < 13) {
           return failure(new ValidationError('Employee must be at least 13 years old', 'birthday'))
         }
+        patch.birthdate = birthdateUTC
       }
 
-      const updatedEmployee = await this.employeeRepository.updateEmployee(id, data)
+      const updatedEmployee = await this.employeeRepository.updateEmployee(id, patch)
       return success(updatedEmployee)
     } catch (error) {
       console.error(`Error updating employee with ID ${id}:`, error)
@@ -201,7 +223,7 @@ export class EmployeeService implements IEmployeeService {
 
   async getSimpleEmployees(companyId: number): Promise<Result<SimpleEmployee[], Error>> {
     try {
-      const { start, end } = todayBounds()
+      const { start, end } = this.todayBoundsUTC()
       const emps = await this.employeeRepository.getSimpleEmployeesByCompanyIdWithTodayAbsence(companyId, start, end)
       return success(emps)
     } catch (error) {
@@ -215,7 +237,7 @@ export class EmployeeService implements IEmployeeService {
     departmentId: number
   ): Promise<Result<SimpleEmployee[], Error>> {
     try {
-      const { start, end } = todayBounds()
+      const { start, end } = this.todayBoundsUTC()
       const emps = await this.employeeRepository.getSimpleEmployeesByCompanyAndDepartmentWithTodayAbsence(
         companyId,
         departmentId,
@@ -228,12 +250,4 @@ export class EmployeeService implements IEmployeeService {
       return failure(new DatabaseError('Database error while fetching simple employees by department'))
     }
   }
-}
-
-function todayBounds() {
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  const end = new Date()
-  end.setHours(23, 59, 59, 999)
-  return { start, end }
 }

@@ -4,8 +4,7 @@ import { Department, EmployeeType, SimpleEmployee } from 'shared'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
 import { employeeService } from '../services/employeeService'
-
-type ApiError = { status?: number; message?: string }
+import { ApiError } from '../utils/errorUtils'
 
 interface CompanyContextType {
   departments: Department[]

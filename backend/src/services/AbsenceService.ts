@@ -1,9 +1,10 @@
 import { AbsenceRecord, CreateAbsenceRecord } from 'shared'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { failure, Result, success } from '../utils/Result.js'
-import { isBefore } from 'date-fns'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
+import { toUTC, startOfDayUTC, endOfDayUTC } from '../utils/date.js'
+import { DateInput } from '../types/index.js'
 
 export class AbsenceService implements IAbsenceService {
   constructor(private readonly absenceRecordRepository: IAbsenceRecordRepository) {}
@@ -12,30 +13,21 @@ export class AbsenceService implements IAbsenceService {
     return aStart <= bEnd && aEnd >= bStart
   }
 
-  private validateRange(start: Date, end: Date): ValidationError | null {
-    if (!start || !end) return new ValidationError('startDate and endDate are required')
-    if (end < start) return new ValidationError('endDate cannot be before startDate')
-    return null
-  }
-
-  // Optional: treat absences as full-day windows
-  private asWholeDayRange(start: Date, end: Date) {
-    const s = new Date(start)
-    s.setHours(0, 0, 0, 0)
-    const e = new Date(end)
-    e.setHours(23, 59, 59, 999)
-    return [s, e] as const
+  private validateRange(start: DateInput, end: DateInput): { s: Date; e: Date } {
+    if (start == null || end == null) throw new ValidationError('startDate and endDate are required')
+    const s = toUTC(start)
+    const e = toUTC(end)
+    if (e < s) throw new ValidationError('endDate cannot be before startDate')
+    return { s, e }
   }
 
   async createAbsenceRecord(data: CreateAbsenceRecord): Promise<Result<AbsenceRecord, Error>> {
-    const err = this.validateRange(data.startDate, data.endDate)
-    if (err) return failure(err)
-
-    // const [s, e] = this.asWholeDayRange(data.startDate, data.endDate)
-    const s = data.startDate
-    const e = data.endDate
-
     try {
+      let { s, e } = this.validateRange(data.startDate, data.endDate)
+
+      s = startOfDayUTC(s)
+      e = endOfDayUTC(e)
+
       const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(data.employeeId, s, e)
       if (overlaps.length > 0) {
         return failure(new ValidationError('Employee already has an absence overlapping this period.'))
@@ -47,8 +39,9 @@ export class AbsenceService implements IAbsenceService {
         endDate: e,
       })
       return success(created)
-    } catch (e) {
-      console.error('Error creating absence record:', e)
+    } catch (err) {
+      if (err instanceof ValidationError) return failure(err)
+      console.error('Error creating absence record:', err)
       return failure(new DatabaseError('Database error occurred while creating the absence record.'))
     }
   }
@@ -56,9 +49,7 @@ export class AbsenceService implements IAbsenceService {
   async getAbsenceRecordById(id: number): Promise<Result<AbsenceRecord, Error>> {
     try {
       const absence = await this.absenceRecordRepository.getAbsenceRecordById(id)
-      if (!absence) {
-        return failure(new EntityNotFoundError(`Absence record with ID ${id} not found.`))
-      }
+      if (!absence) return failure(new EntityNotFoundError(`Absence record with ID ${id} not found.`))
       return success(absence)
     } catch (error) {
       console.error('Error fetching absence record by ID:', error)
@@ -78,17 +69,19 @@ export class AbsenceService implements IAbsenceService {
 
   async getAbsenceRecordsByEmployeeIdAndRange(
     employeeId: number,
-    start: Date,
-    end: Date
+    start: DateInput,
+    end: DateInput
   ): Promise<Result<AbsenceRecord[], Error>> {
-    if (isBefore(end, start)) {
-      return failure(new ValidationError('End date cannot be before start date.'))
-    }
-
     try {
-      const absences = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(employeeId, start, end)
+      let { s, e } = this.validateRange(start, end)
+      // If whole-day absences, keep ranges aligned to UTC days for searching
+      s = startOfDayUTC(s)
+      e = endOfDayUTC(e)
+
+      const absences = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(employeeId, s, e)
       return success(absences)
     } catch (error) {
+      if (error instanceof ValidationError) return failure(error)
       console.error('Error fetching absence records by date range:', error)
       return failure(new DatabaseError('Database error occurred while fetching absence records.'))
     }
@@ -102,17 +95,14 @@ export class AbsenceService implements IAbsenceService {
       const existing = await this.absenceRecordRepository.getAbsenceRecordById(id)
       if (!existing) return failure(new EntityNotFoundError('Absence record not found'))
 
-      // Disallow moving to another employee
       if (patch.employeeId && patch.employeeId !== existing.employeeId) {
         return failure(new ValidationError('Cannot change employee on an existing absence record.', 'employeeId'))
       }
 
-      // const [s, e] = this.asWholeDayRange(patch.startDate ?? existing.startDate, patch.endDate ?? existing.endDate)
-      const s = patch.startDate ?? existing.startDate
-      const e = patch.endDate ?? existing.endDate
+      let { s, e } = this.validateRange(patch.startDate ?? existing.startDate, patch.endDate ?? existing.endDate)
 
-      const err = this.validateRange(s, e)
-      if (err) return failure(err)
+      s = startOfDayUTC(s)
+      e = endOfDayUTC(e)
 
       const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(
         existing.employeeId,
@@ -130,8 +120,9 @@ export class AbsenceService implements IAbsenceService {
         endDate: e,
       })
       return success(updated)
-    } catch (e) {
-      console.error('Error updating absence record:', e)
+    } catch (err) {
+      if (err instanceof ValidationError) return failure(err)
+      console.error('Error updating absence record:', err)
       return failure(new DatabaseError('Database error occurred while updating the absence record.'))
     }
   }

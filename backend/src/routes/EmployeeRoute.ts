@@ -8,6 +8,7 @@ import { IUserService } from '../interfaces/services/IUserService.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
+import { toUTC } from '../utils/date.js'
 
 export class EmployeeRoutes {
   public router: Router
@@ -119,7 +120,10 @@ export class EmployeeRoutes {
           .notEmpty()
           .isISO8601()
           .withMessage('birthdate must be an ISO date')
-          .customSanitizer((v: string) => (v.length === 10 ? new Date(v + 'T00:00:00Z') : new Date(v))),
+          .customSanitizer((v: string) => {
+            const val = v.length === 10 ? v + 'T00:00:00Z' : v
+            return toUTC(val)
+          }),
         body('checkedIn').optional({ nullable: true }).isBoolean().toBoolean(),
         body().custom((value) => {
           const hasMonthly = typeof value.monthlySalary === 'number' && value.monthlySalary > 0
@@ -356,7 +360,7 @@ export class EmployeeRoutes {
       this.deleteAttendanceRecord.bind(this)
     )
 
-    // ---------------------- ABSENCES (NEW) ----------------------
+    // ---------------------- ABSENCES ----------------------
 
     /**
      * @swagger
@@ -390,10 +394,19 @@ export class EmployeeRoutes {
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
-        body('startDate').notEmpty().isISO8601().withMessage('startDate must be an ISO date'),
-        body('endDate').notEmpty().isISO8601().withMessage('endDate must be an ISO date'),
+        body('startDate')
+          .notEmpty()
+          .isISO8601()
+          .withMessage('startDate must be an ISO date')
+          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
+        body('endDate')
+          .notEmpty()
+          .isISO8601()
+          .withMessage('endDate must be an ISO date')
+          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
         body('absenceTypeId').isInt().toInt().withMessage('Valid absenceTypeId is required'),
       ],
+
       this.createAbsenceForEmployee.bind(this)
     )
 
@@ -429,8 +442,16 @@ export class EmployeeRoutes {
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
-        body('startDate').optional().isISO8601().withMessage('startDate must be an ISO date'),
-        body('endDate').optional().isISO8601().withMessage('endDate must be an ISO date'),
+        body('startDate')
+          .optional()
+          .isISO8601()
+          .withMessage('startDate must be an ISO date')
+          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
+        body('endDate')
+          .optional()
+          .isISO8601()
+          .withMessage('endDate must be an ISO date')
+          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
         body('absenceTypeId').optional().isInt().toInt(),
       ],
       this.updateAbsence.bind(this)
@@ -624,8 +645,8 @@ export class EmployeeRoutes {
     const { checkIn, checkOut, autoClosed } = req.body
 
     const result = await this.attendanceService.updateAttendanceRecord(id, {
-      checkIn: checkIn ? new Date(checkIn) : undefined,
-      checkOut: checkOut ? new Date(checkOut) : undefined,
+      checkIn: checkIn ? toUTC(checkIn) : undefined,
+      checkOut: checkOut ? toUTC(checkOut) : undefined,
       autoClosed,
     })
 
@@ -663,8 +684,13 @@ export class EmployeeRoutes {
       return
     }
 
-    const start = new Date(startDate as string)
-    const end = new Date(endDate as string)
+    const start = toUTC(
+      typeof startDate === 'string' && startDate.length === 10 ? startDate + 'T00:00:00Z' : (startDate as string)
+    )
+    const end = toUTC(
+      typeof endDate === 'string' && endDate.length === 10 ? endDate + 'T00:00:00Z' : (endDate as string)
+    )
+
     const deptId = departmentId ? parseInt(departmentId as string, 10) : undefined
 
     const result = await this.attendanceService.generateEmployeeAttendanceReport(start, end, companyId, deptId)
@@ -690,15 +716,15 @@ export class EmployeeRoutes {
 
     const employeeId = parseInt(req.params.employeeId, 10)
     const { startDate, endDate, absenceTypeId } = req.body as {
-      startDate: string
-      endDate: string
+      startDate: Date
+      endDate: Date
       absenceTypeId: number
     }
 
     const result = await this.absenceService.createAbsenceRecord({
       employeeId,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate,
+      endDate,
       absenceTypeId,
     })
 
@@ -719,14 +745,14 @@ export class EmployeeRoutes {
 
     const id = parseInt(req.params.id, 10)
     const { startDate, endDate, absenceTypeId } = req.body as {
-      startDate?: string
-      endDate?: string
+      startDate?: Date
+      endDate?: Date
       absenceTypeId?: number
     }
 
     const result = await this.absenceService.updateAbsenceRecord(id, {
-      ...(startDate ? { startDate: new Date(startDate) } : {}),
-      ...(endDate ? { endDate: new Date(endDate) } : {}),
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
       ...(typeof absenceTypeId === 'number' ? { absenceTypeId } : {}),
     })
 
@@ -757,11 +783,9 @@ export class EmployeeRoutes {
 
     let result
     if (startDate && endDate) {
-      result = await this.absenceService.getAbsenceRecordsByEmployeeIdAndRange(
-        employeeId,
-        new Date(startDate),
-        new Date(endDate)
-      )
+      const s = toUTC(startDate.length === 'YYYY-MM-DD'.length ? startDate + 'T00:00:00Z' : startDate)
+      const e = toUTC(endDate.length === 'YYYY-MM-DD'.length ? endDate + 'T00:00:00Z' : endDate)
+      result = await this.absenceService.getAbsenceRecordsByEmployeeIdAndRange(employeeId, s, e)
     } else {
       result = await this.absenceService.getAbsenceRecordsByEmployeeId(employeeId)
     }

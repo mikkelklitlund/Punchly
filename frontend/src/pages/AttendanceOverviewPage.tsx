@@ -16,12 +16,7 @@ dayjs.extend(duration)
 const AttendanceOverviewPage = () => {
   const { companyId } = useAuth()
 
-  const {
-    data: employees = [],
-    isLoading: empLoading,
-    isFetching: empFetching,
-    error: empError,
-  } = useEmployees(companyId)
+  const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
   const [editRecord, setEditRecord] = useState<AttendanceRecord | null>(null)
@@ -99,10 +94,10 @@ const AttendanceOverviewPage = () => {
           ))}
         </select>
 
-        {(empLoading || empFetching) && (
+        {empLoading && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <LoadingSpinner size="small" />
-            Indlæser medarbejdere…
+            Indlæser medarbejdere...
           </div>
         )}
         {empError && <p className="text-red-500">{empError.message || 'Kunne ikke hente medarbejdere'}</p>}
@@ -119,7 +114,7 @@ const AttendanceOverviewPage = () => {
           onRowClick={(rec) => {
             setEditRecord(rec)
           }}
-          emptyMessage="Ingen registreringer fundet for denne medarbejder"
+          emptyMessage="Ingen registreringer fundet for denne medarbejder de sidste 30 dage"
         />
       )}
 

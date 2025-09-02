@@ -6,7 +6,7 @@ import Modal from '../common/Modal'
 
 export type EmployeeFormValues = {
   name: string
-  birthdate?: string // 'YYYY-MM-DD'
+  birthdate?: string
   address: string
   city: string
   departmentId?: number | ''
@@ -56,10 +56,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
     e.preventDefault()
 
     if (!departmentId || !employeeTypeId) return
-    if ((monthlySalary ?? 0) > 0 && (hourlySalary ?? 0) > 0) {
-      // Let parent show a toast if you prefer; early return keeps form simple.
-      return
-    }
+    if ((monthlySalary ?? 0) > 0 && (hourlySalary ?? 0) > 0) return
 
     setIsSaving(true)
     try {
@@ -176,7 +173,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
               required
             >
               <option value="" disabled>
-                Vælg afdeling…
+                Vælg afdeling...
               </option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -196,7 +193,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
               required
             >
               <option value="" disabled>
-                Vælg type…
+                Vælg type...
               </option>
               {employeeTypes.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -262,7 +259,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
             className="inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
           >
             {isSaving && <LoadingSpinner size="small" />}
-            {isSaving ? 'Gemmer…' : submitLabel}
+            {isSaving ? 'Gemmer...' : submitLabel}
           </button>
         </div>
       </form>

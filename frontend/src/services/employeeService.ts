@@ -72,8 +72,8 @@ export const employeeService = {
   getAttendanceReport: async (startDate: Date, endDate: Date, departmentId?: number): Promise<Blob> => {
     const response = await axiosInstance.get<Blob>('/employees/attendance-report', {
       params: {
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         departmentId,
       },
       responseType: 'blob' as const,
@@ -95,25 +95,28 @@ export const employeeService = {
 
   async getAbsences(employeeId: number, startDate?: Date, endDate?: Date): Promise<AbsenceRecord[]> {
     const params: Record<string, string> = {}
-    if (startDate) params.startDate = startDate.toISOString().split('T')[0]
-    if (endDate) params.endDate = endDate.toISOString().split('T')[0]
+    if (startDate) params.startDate = startDate.toISOString()
+    if (endDate) params.endDate = endDate.toISOString()
     const res = await axiosInstance.get<{ absences: AbsenceRecord[] }>(`/employees/${employeeId}/absences`, { params })
     return res.data.absences
   },
 
   async createAbsence(payload: CreateAbsenceRecord): Promise<AbsenceRecord> {
-    const { employeeId, startDate, endDate, absenceTypeId } = payload
-    const res = await axiosInstance.post<{ absenceRecord: AbsenceRecord }>(`/employees/${employeeId}/absences`, {
-      startDate,
-      endDate,
-      absenceTypeId,
+    const params = {
+      employeeId: payload.employeeId,
+      absenceTypeId: payload.absenceTypeId,
+      startDate: payload.startDate.toISOString(),
+      endDate: payload.endDate.toISOString(),
+    }
+    const res = await axiosInstance.post<{ absenceRecord: AbsenceRecord }>(`/employees/${params.employeeId}/absences`, {
+      params,
     })
     return res.data.absenceRecord
   },
 
   async updateAbsence(
     id: number,
-    data: Partial<Pick<AbsenceRecord, 'startDate' | 'endDate'>> & { absenceTypeId?: number }
+    data: Partial<Pick<AbsenceRecord, 'startDate' | 'endDate' | 'absenceTypeId'>> & { absenceTypeId?: number }
   ): Promise<AbsenceRecord> {
     const res = await axiosInstance.put<{ absenceRecord: AbsenceRecord }>(`/employees/absences/${id}`, data)
     return res.data.absenceRecord
