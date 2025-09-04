@@ -1,8 +1,8 @@
-import { AbsenceType } from 'shared'
 import { DatabaseError, ValidationError } from '../utils/Errors.js'
 import { failure, Result, success } from '../utils/Result.js'
 import { IAbsenceTypeService } from '../interfaces/services/IAbsenceTypeService.js'
 import { IAbsenceTypeRepository } from '../interfaces/repositories/IAbsenceTypeRepository.js'
+import { AbsenceType } from '../types/index.js'
 
 export class AbsenceTypeService implements IAbsenceTypeService {
   constructor(private readonly absenceTypeRepository: IAbsenceTypeRepository) {}

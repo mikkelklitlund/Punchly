@@ -1,4 +1,5 @@
-import { Company, Role, User, UserCompanyAccess, UserRefreshToken } from 'shared'
+import { Role } from 'shared'
+import { Company, User, UserCompanyAccess, UserRefreshToken } from '../../types/index.js'
 
 export interface IUserRepository {
   createUser(email: string, password: string, username: string): Promise<User>

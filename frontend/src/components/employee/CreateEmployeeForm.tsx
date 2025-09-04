@@ -44,7 +44,7 @@ const CreateEmployeeForm = ({ onSuccess }: { onSuccess: () => void }) => {
         employeeTypeId: Number(v.employeeTypeId),
         monthlySalary: (v.monthlySalary ?? 0) > 0 ? v.monthlySalary : undefined,
         hourlySalary: (v.hourlySalary ?? 0) > 0 ? v.hourlySalary : undefined,
-        birthdate: new Date(v.birthdate),
+        birthdate: v.birthdate,
         companyId,
       }),
       { pending: 'Opretter…', success: 'Medarbejder oprettet', error: 'Fejl ved oprettelse af medarbejder' }
@@ -61,14 +61,7 @@ const CreateEmployeeForm = ({ onSuccess }: { onSuccess: () => void }) => {
     onSuccess()
   }
 
-  return (
-    <EmployeeForm
-      initialValues={initial}
-      onSubmit={handleSubmit}
-      submitLabel="Opret"
-      onCancel={onSuccess} // closes the modal
-    />
-  )
+  return <EmployeeForm initialValues={initial} onSubmit={handleSubmit} submitLabel="Opret" onCancel={onSuccess} />
 }
 
 export default CreateEmployeeForm

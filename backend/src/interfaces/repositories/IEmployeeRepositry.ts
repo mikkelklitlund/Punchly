@@ -1,4 +1,4 @@
-import { CreateEmployee, Employee, EmployeeWithRecords, SimpleEmployee } from 'shared'
+import { CreateEmployee, Employee, EmployeeWithRecords, SimpleEmployee } from '../../types/index.js'
 
 export interface IEmployeeRepository {
   createEmployee(data: CreateEmployee): Promise<Employee>

@@ -1,9 +1,9 @@
-import { SimpleEmployee } from 'shared'
+import { SimpleEmployeeDTO } from 'shared'
 import EmployeeCard from './EmployeeCard'
 
 interface EmployeeListProps {
-  employees: SimpleEmployee[]
-  onEmployeeClick: (employee: SimpleEmployee) => void
+  employees: SimpleEmployeeDTO[]
+  onEmployeeClick: (employee: SimpleEmployeeDTO) => void
 }
 
 const EmployeeList = ({ employees, onEmployeeClick }: EmployeeListProps) => {

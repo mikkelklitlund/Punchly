@@ -1,4 +1,4 @@
-import { EmployeeType } from 'shared'
+import { EmployeeType } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IEmployeeTypeService {

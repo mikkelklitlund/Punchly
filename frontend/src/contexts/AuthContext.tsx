@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => clearAuthContextUpdater()
   }, [updateAuthContext, forceLogout])
 
-  const login = useCallback(async (username: string, password: string, companyId?: number) => {
+  const login = useCallback(async (username: string, password: string, companyId: number) => {
     dispatch({ type: 'AUTH_START' })
     try {
       const data = await authService.login(username, password, companyId)

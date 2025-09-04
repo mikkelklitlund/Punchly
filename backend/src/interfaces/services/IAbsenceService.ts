@@ -1,4 +1,4 @@
-import { CreateAbsenceRecord, AbsenceRecord } from 'shared'
+import { CreateAbsenceRecord, AbsenceRecord } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IAbsenceService {

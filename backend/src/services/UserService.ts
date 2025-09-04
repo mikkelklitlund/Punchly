@@ -1,17 +1,13 @@
 import argon2 from 'argon2'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { Company, Role, User, UserRefreshToken } from 'shared'
 import { Result, success, failure, Failure } from '../utils/Result.js'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
-
-const nowUTC = () => new Date()
-const addDaysUTC = (d: Date, days: number) => {
-  const n = new Date(d.getTime())
-  n.setUTCDate(n.getUTCDate() + days)
-  return n
-}
+import { Company, User, UserRefreshToken } from '../types/index.js'
+import { Role } from 'shared'
+import { UTCDateMini } from '@date-fns/utc'
+import { addDays } from 'date-fns'
 
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
@@ -70,7 +66,7 @@ export class UserService implements IUserService {
         { expiresIn: '30d' }
       )
 
-      const expiryDate = addDaysUTC(nowUTC(), 1)
+      const expiryDate = addDays(new UTCDateMini(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
       return success({ accessToken, refreshToken, username: user.username, role: userRole, companyId })
@@ -147,7 +143,7 @@ export class UserService implements IUserService {
       const userRole = accessRecord.role
 
       const storedToken = await this.userRepository.getRefreshToken(refreshToken)
-      const now = nowUTC()
+      const now = new UTCDateMini()
       if (!storedToken || storedToken.revoked || storedToken.expiryDate < now) {
         return failure(new Error('Invalid or expired refresh token'))
       }
@@ -170,7 +166,7 @@ export class UserService implements IUserService {
           { expiresIn: '30d' }
         )
 
-        const expiryDate = addDaysUTC(nowUTC(), 1)
+        const expiryDate = addDays(new UTCDateMini(), 1)
         await this.userRepository.createRefreshToken(user.id, newRefreshToken, expiryDate)
       }
 

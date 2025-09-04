@@ -1,15 +1,14 @@
-import { AbsenceRecord } from 'shared'
+import { AbsenceRecordDTO } from 'shared'
 import AbsenceForm, { AbsenceFormValues } from './AbsenceForm'
 import { toast } from 'react-toastify'
 import { employeeService } from '../../services/employeeService'
-import dayjs from 'dayjs'
 
-const EditAbsenceForm = ({ absenceRec, onSuccess }: { absenceRec: AbsenceRecord; onSuccess: () => void }) => {
+const EditAbsenceForm = ({ absenceRec, onSuccess }: { absenceRec: AbsenceRecordDTO; onSuccess: () => void }) => {
   const iniValues: AbsenceFormValues = {
     employeeId: absenceRec.employeeId,
     absenceTypeId: absenceRec.absenceTypeId,
-    startDate: dayjs(absenceRec.startDate).format('YYYY-MM-DD'),
-    endDate: dayjs(absenceRec.endDate).format('YYYY-MM-DD'),
+    startDate: absenceRec.startDate,
+    endDate: absenceRec.endDate,
   }
 
   const submit = async (v: AbsenceFormValues) => {

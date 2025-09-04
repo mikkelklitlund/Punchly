@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useEmployeeAbsences } from '../hooks/useEmployeeAbsences'
-import { AbsenceRecord } from 'shared'
+import { AbsenceRecordDTO } from 'shared'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAuth } from '../contexts/AuthContext'
 import DataTable, { Column } from '../components/common/DataTable'
@@ -12,12 +12,19 @@ import EditAbsenceForm from '../components/absence/EditAbsenceForm'
 const AbsenceOverviewPage = () => {
   const { companyId } = useAuth()
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
-  const [editRecord, setEditRecord] = useState<AbsenceRecord | null>(null)
+  const [editRecord, setEditRecord] = useState<AbsenceRecordDTO | null>(null)
+  const [selectedStartDate, setSelectedStartDate] = useState<string>(dayjs().subtract(30, 'days').format('YYYY-MM-DD'))
+  const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
-  const { data: records = [], isLoading, error, refetch } = useEmployeeAbsences(selectedEmployeeId || undefined)
+  const {
+    data: records = [],
+    isLoading,
+    error,
+    refetch,
+  } = useEmployeeAbsences(selectedStartDate, selectedEndDate, selectedEmployeeId || undefined)
 
-  const columns: Column<AbsenceRecord>[] = [
+  const columns: Column<AbsenceRecordDTO>[] = [
     {
       header: 'Første fraværs dag',
       accessor: (rec) => {
@@ -68,6 +75,28 @@ const AbsenceOverviewPage = () => {
             </option>
           ))}
         </select>
+        <div className="flex gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Start dato</label>
+            <input
+              type="date"
+              value={dayjs(selectedStartDate).format('YYYY-MM-DD')}
+              onChange={(e) => setSelectedStartDate(e.target.value)}
+              className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Slut dato</label>
+            <input
+              type="date"
+              value={dayjs(selectedEndDate).format('YYYY-MM-DD')}
+              onChange={(e) => setSelectedEndDate(e.target.value)}
+              className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
+              disabled={isLoading}
+            />
+          </div>
+        </div>
 
         {empLoading && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -89,7 +118,7 @@ const AbsenceOverviewPage = () => {
           onRowClick={(rec) => {
             setEditRecord(rec)
           }}
-          emptyMessage="Ingen fravær fundet for denne medarbejder de sidste 30 dage"
+          emptyMessage="Ingen fravær fundet for denne medarbejder i valgte tidsperiode"
         />
       )}
 

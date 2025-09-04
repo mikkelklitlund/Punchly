@@ -1,4 +1,4 @@
-import { AbsenceType } from 'shared'
+import { AbsenceType } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IAbsenceTypeService {

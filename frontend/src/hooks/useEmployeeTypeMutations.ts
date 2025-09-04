@@ -3,7 +3,7 @@ import { companyService } from '../services/companyService'
 import { qk } from './queryKeys'
 import { toast } from 'react-toastify'
 
-export function useEmployeeTypeMutations(companyId?: number) {
+export function useEmployeeTypeMutations(companyId: number | undefined) {
   const qc = useQueryClient()
 
   const create = useMutation({

@@ -1,4 +1,4 @@
-import { AbsenceType } from 'shared'
+import { AbsenceType } from '../../types/index.js'
 
 export interface IAbsenceTypeRepository {
   createAbsenceType(name: string, companyId: number): Promise<AbsenceType>

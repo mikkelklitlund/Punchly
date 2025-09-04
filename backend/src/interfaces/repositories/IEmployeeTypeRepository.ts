@@ -1,4 +1,4 @@
-import { EmployeeType } from 'shared'
+import { EmployeeType } from '../../types/index.js'
 
 export interface IEmployeeTypeRepository {
   createEmployeeType(name: string, companyId: number): Promise<EmployeeType>

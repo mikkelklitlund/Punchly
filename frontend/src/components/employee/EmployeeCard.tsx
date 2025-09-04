@@ -1,9 +1,9 @@
 import React from 'react'
-import { SimpleEmployee } from 'shared'
+import { SimpleEmployeeDTO } from 'shared'
 import { getProfilePictureUrl } from '../../utils/imageUtils'
 
 interface EmployeeCardProps {
-  employee: SimpleEmployee
+  employee: SimpleEmployeeDTO
 }
 
 const EmployeeCard = React.memo(({ employee }: EmployeeCardProps) => {

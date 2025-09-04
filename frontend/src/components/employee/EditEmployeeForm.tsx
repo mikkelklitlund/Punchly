@@ -1,10 +1,10 @@
 import dayjs from 'dayjs'
 import EmployeeForm, { EmployeeFormValues } from './EmployeeForm'
-import { Employee } from 'shared'
+import { EmployeeDTO } from 'shared'
 import { employeeService } from '../../services/employeeService'
 import { toast } from 'react-toastify'
 
-const EditEmployeeForm = ({ employee, onSuccess }: { employee: Employee; onSuccess: () => void }) => {
+const EditEmployeeForm = ({ employee, onSuccess }: { employee: EmployeeDTO; onSuccess: () => void }) => {
   const initial: EmployeeFormValues = {
     name: employee.name,
     birthdate: employee.birthdate ? dayjs(employee.birthdate).format('YYYY-MM-DD') : '',
@@ -39,7 +39,7 @@ const EditEmployeeForm = ({ employee, onSuccess }: { employee: Employee; onSucce
         employeeTypeId: Number(v.employeeTypeId),
         monthlySalary: (v.monthlySalary ?? 0) > 0 ? v.monthlySalary : undefined,
         hourlySalary: (v.hourlySalary ?? 0) > 0 ? v.hourlySalary : undefined,
-        ...(v.birthdate ? { birthdate: new Date(v.birthdate) } : {}),
+        birthdate: v.birthdate,
       }),
       { success: 'Medarbejder opdateret', error: 'Fejl under opdatering' }
     )

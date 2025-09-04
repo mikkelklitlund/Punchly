@@ -5,12 +5,13 @@ import { useEmployees } from '../../hooks/useEmployees'
 import LoadingSpinner from '../common/LoadingSpinner'
 import Modal from '../common/Modal'
 import { useAuth } from '../../contexts/AuthContext'
+import { CalendarDate } from 'shared'
 
 export type AbsenceFormValues = {
   employeeId: number | null
-  startDate: string
-  endDate: string
-  absenceTypeId: number
+  startDate?: CalendarDate
+  endDate?: CalendarDate
+  absenceTypeId?: number
 }
 
 interface Props {
@@ -27,9 +28,9 @@ const AbsenceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, o
   const { data: employees = [], isLoading: empLoading } = useEmployees(companyId)
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(initialValues.employeeId ?? null)
-  const [startDate, setStartDate] = useState(initialValues.startDate)
-  const [endDate, setEndDate] = useState(initialValues.endDate)
-  const [absenceTypeId, setAbsenceTypeId] = useState<number>(initialValues.absenceTypeId)
+  const [startDate, setStartDate] = useState<CalendarDate>(initialValues.startDate ?? dayjs().format('YYYY-MM-DD'))
+  const [endDate, setEndDate] = useState<CalendarDate>(initialValues.endDate ?? dayjs().format('YYYY-MM-DD'))
+  const [absenceTypeId, setAbsenceTypeId] = useState<number>(initialValues.absenceTypeId ?? 0)
 
   const [isSaving, setIsSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -100,24 +101,26 @@ const AbsenceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, o
           />
         </div>
 
-        <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-          Vælg fraværsårsag
-        </label>
-        <select
-          id="absenceReason"
-          className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          onChange={(e) => setAbsenceTypeId(parseInt(e.target.value))}
-          value={absenceTypeId.toString() || ''}
-        >
-          <option value="" hidden>
-            -- Vælg en fraværsårsag --
-          </option>
-          {absenceTypes.map((ab) => (
-            <option key={ab.id} value={ab.id}>
-              {ab.name}
+        <div>
+          <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+            Vælg fraværsårsag
+          </label>
+          <select
+            id="absenceReason"
+            className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+            onChange={(e) => setAbsenceTypeId(parseInt(e.target.value))}
+            value={absenceTypeId.toString() || ''}
+          >
+            <option value="" hidden>
+              -- Vælg en fraværsårsag --
             </option>
-          ))}
-        </select>
+            {absenceTypes.map((ab) => (
+              <option key={ab.id} value={ab.id}>
+                {ab.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {onDelete ? (
           <button

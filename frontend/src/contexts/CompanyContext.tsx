@@ -1,17 +1,17 @@
 import { createContext, useContext, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
-import { Department, EmployeeType, SimpleEmployee } from 'shared'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
 import { employeeService } from '../services/employeeService'
 import { ApiError } from '../utils/errorUtils'
+import { DepartmentDTO, SimpleEmployeeDTO, EmployeeTypeDTO } from 'shared'
 
 interface CompanyContextType {
-  departments: Department[]
-  currentDepartment: Department | undefined
-  setCurrentDepartment: (dep: Department | undefined) => void
-  employees: SimpleEmployee[]
-  employeeTypes: EmployeeType[]
+  departments: DepartmentDTO[]
+  currentDepartment: DepartmentDTO | undefined
+  setCurrentDepartment: (dep: DepartmentDTO | undefined) => void
+  employees: SimpleEmployeeDTO[]
+  employeeTypes: EmployeeTypeDTO[]
   isLoading: boolean
   error: string | null
   refreshEmployees: () => void
@@ -21,14 +21,14 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined)
 
 export const CompanyProvider = ({ children }: { children: React.ReactNode }) => {
   const { companyId } = useAuth()
-  const [currentDepartment, setCurrentDepartment] = useState<Department | undefined>(undefined)
+  const [currentDepartment, setCurrentDepartment] = useState<DepartmentDTO | undefined>(undefined)
   const departmentId = currentDepartment?.id
 
   const {
     data: departments = [],
     isLoading: deptLoading,
     error: deptError,
-  } = useQuery<{ departments: Department[] }, ApiError, Department[]>({
+  } = useQuery<{ departments: DepartmentDTO[] }, ApiError, DepartmentDTO[]>({
     queryKey: ['departments', { companyId }],
     enabled: !!companyId,
     queryFn: () => companyService.getDepartments(companyId!),
@@ -42,7 +42,7 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
     data: employeeTypes = [],
     isLoading: typeLoading,
     error: typeError,
-  } = useQuery<{ employeeTypes: EmployeeType[] }, ApiError, EmployeeType[]>({
+  } = useQuery<{ employeeTypes: EmployeeTypeDTO[] }, ApiError, EmployeeTypeDTO[]>({
     queryKey: ['employeeTypes', { companyId }],
     enabled: !!companyId,
     queryFn: () => companyService.getEmployeeTypes(companyId!),
@@ -59,7 +59,7 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
     isLoading: empLoading,
     error: empError,
     refetch: refreshEmployees,
-  } = useQuery<{ employees: SimpleEmployee[]; total: number }, ApiError, SimpleEmployee[]>({
+  } = useQuery<{ employees: SimpleEmployeeDTO[]; total: number }, ApiError, SimpleEmployeeDTO[]>({
     queryKey: ['employees', { companyId, departmentId }],
     enabled: !!companyId,
     queryFn: () => employeeService.getEmployees(companyId!, departmentId),

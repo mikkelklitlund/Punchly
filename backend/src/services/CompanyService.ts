@@ -1,8 +1,8 @@
-import { Company } from 'shared'
 import { DatabaseError } from '../utils/Errors.js'
 import { failure, Result, success } from '../utils/Result.js'
 import { ICompanyService } from '../interfaces/services/ICompanyService.js'
 import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
+import { Company } from '../types/index.js'
 
 export class CompanyService implements ICompanyService {
   constructor(private readonly companyRepository: ICompanyRepository) {}

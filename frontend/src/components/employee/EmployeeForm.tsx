@@ -3,10 +3,11 @@ import { useCompany } from '../../contexts/CompanyContext'
 import LoadingSpinner from '../common/LoadingSpinner'
 import { getProfilePictureUrl } from '../../utils/imageUtils'
 import Modal from '../common/Modal'
+import { CalendarDate } from 'shared'
 
 export type EmployeeFormValues = {
   name: string
-  birthdate?: string
+  birthdate?: CalendarDate
   address: string
   city: string
   departmentId?: number | ''

@@ -1,7 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
 
-const FIVE_MIN = 5 * 60 * 1000
-
 function getHttpStatus(error: unknown): number | undefined {
   if (typeof error === 'object' && error !== null) {
     if ('status' in error) {
@@ -20,13 +18,6 @@ function getHttpStatus(error: unknown): number | undefined {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: FIVE_MIN,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-
-      gcTime: 15 * 60 * 1000,
-
       retry(failureCount, error) {
         const status = getHttpStatus(error)
         return typeof status === 'number' && status >= 500 ? failureCount < 2 : false

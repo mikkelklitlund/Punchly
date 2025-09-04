@@ -10,6 +10,16 @@ import { Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
 import { IAbsenceTypeService } from '../interfaces/services/IAbsenceTypeService.js'
+import {
+  fromCompanyDTO,
+  toAbsenceTypeDTO,
+  toCompanyDTO,
+  toDepartmentDTO,
+  toEmployeeDTO,
+  toEmployeeTypeDTO,
+  toSimpleEmployeeDTO,
+  toUserDTO,
+} from '../utils/mappers.js'
 
 export class CompanyRoutes {
   public router: Router
@@ -27,102 +37,20 @@ export class CompanyRoutes {
   }
 
   private initializeRoutes() {
-    /**
-     * @swagger
-     * /companies/{companyId}/employees:
-     *   get:
-     *     summary: Get all employees by company ID
-     *     tags:
-     *       - Companies
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of employees
-     */
     this.router.get('/:companyId/employees', authMiddleware, this.getAllEmployeesByCompany.bind(this))
 
-    /**
-     * @swagger
-     * /companies/{companyId}/{departmentId}/employees:
-     *   get:
-     *     summary: Get all employees by company and department ID
-     *     tags:
-     *       - Companies
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *       - in: path
-     *         name: departmentId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of employees
-     */
     this.router.get(
       '/:companyId/:departmentId/employees',
       authMiddleware,
       this.getAllEmployeesByCompanyAndDepartment.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/{departmentId}/simple-employees:
-     *   get:
-     *     summary: Get simplified employee list for a company and department
-     *     tags:
-     *       - Companies
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *       - in: path
-     *         name: departmentId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of simplified employees
-     */
     this.router.get(
       '/:companyId/:departmentId/simple-employees',
       authMiddleware,
       this.getAllSimpleEmployeesByCompanyAndDepartment.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/managers:
-     *   get:
-     *     summary: Get all managers for a company (Admin only)
-     *     tags:
-     *       - Companies
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of managers
-     *       403:
-     *         description: Unauthorized
-     */
     this.router.get(
       '/:companyId/managers',
       authMiddleware,
@@ -130,88 +58,12 @@ export class CompanyRoutes {
       this.getAllManagers.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/departments:
-     *   get:
-     *     summary: Get departments by company ID
-     *     tags:
-     *       - Companies
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of departments
-     */
     this.router.get('/:companyId/departments', authMiddleware, this.getDepartmentsByCompanyId.bind(this))
 
-    /**
-     * @swagger
-     * /companies/{companyId}/simple-employees:
-     *   get:
-     *     summary: Get simplified employee list for a company
-     *     tags:
-     *       - Companies
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of simplified employees
-     */
     this.router.get('/:companyId/simple-employees', authMiddleware, this.getSimpleEmployees.bind(this))
 
-    /**
-     * @swagger
-     * /companies/all:
-     *   get:
-     *     summary: Get all companies
-     *     tags:
-     *       - Companies
-     *     responses:
-     *       200:
-     *         description: A list of companies
-     */
     this.router.get('/all', this.getAllCompanies.bind(this))
 
-    /**
-     * @swagger
-     * /companies:
-     *   post:
-     *     summary: Create a new company
-     *     tags:
-     *       - Companies
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required:
-     *               - name
-     *               - address
-     *             properties:
-     *               name:
-     *                 type: string
-     *               address:
-     *                 type: string
-     *     responses:
-     *       201:
-     *         description: Company created successfully
-     *       400:
-     *         description: Validation error
-     *       500:
-     *         description: Server error
-     */
     this.router.post(
       '/',
       authMiddleware,
@@ -223,51 +75,8 @@ export class CompanyRoutes {
       this.createCompany.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/employee-types:
-     *   get:
-     *     summary: Get employee types by company ID
-     *     tags:
-     *       - Companies
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: A list of employee types
-     */
     this.router.get('/:companyId/employee-types', authMiddleware, this.getEmployeeTypesByCompany.bind(this))
 
-    /**
-     * @swagger
-     * /companies/{companyId}/departments:
-     *   post:
-     *     summary: Create department (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name]
-     *             properties:
-     *               name: { type: string, maxLength: 100 }
-     *     responses:
-     *       201: { description: Created }
-     *       400: { description: Validation error }
-     *       409: { description: Already exists }
-     */
     this.router.post(
       '/:companyId/departments',
       authMiddleware,
@@ -276,37 +85,6 @@ export class CompanyRoutes {
       this.createDepartment.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/departments/{id}:
-     *   patch:
-     *     summary: Rename department (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name]
-     *             properties:
-     *               name: { type: string, maxLength: 100 }
-     *     responses:
-     *       200: { description: Updated }
-     *       400: { description: Validation error }
-     *       404: { description: Not found }
-     *       409: { description: Name already exists }
-     */
     this.router.patch(
       '/:companyId/departments/:id',
       authMiddleware,
@@ -315,27 +93,6 @@ export class CompanyRoutes {
       this.renameDepartment.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/departments/{id}:
-     *   delete:
-     *     summary: Delete department (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       204: { description: Deleted }
-     *       404: { description: Not found }
-     *       409: { description: Cannot delete: in use }
-     */
     this.router.delete(
       '/:companyId/departments/:id',
       authMiddleware,
@@ -344,31 +101,6 @@ export class CompanyRoutes {
       this.deleteDepartment.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/employee-types:
-     *   post:
-     *     summary: Create employee type (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name]
-     *             properties:
-     *               name: { type: string, maxLength: 100 }
-     *     responses:
-     *       201: { description: Created }
-     *       400: { description: Validation error }
-     */
     this.router.post(
       '/:companyId/employee-types',
       authMiddleware,
@@ -377,36 +109,6 @@ export class CompanyRoutes {
       this.createEmployeeType.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/employee-types/{id}:
-     *   patch:
-     *     summary: Rename employee type (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name]
-     *             properties:
-     *               name: { type: string, maxLength: 100 }
-     *     responses:
-     *       200: { description: Updated }
-     *       400: { description: Validation error }
-     *       404: { description: Not found }
-     */
     this.router.patch(
       '/:companyId/employee-types/:id',
       authMiddleware,
@@ -415,26 +117,6 @@ export class CompanyRoutes {
       this.renameEmployeeType.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/employee-types/{id}:
-     *   delete:
-     *     summary: Delete employee type (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       204: { description: Deleted }
-     *       404: { description: Not found }
-     */
     this.router.delete(
       '/:companyId/employee-types/:id',
       authMiddleware,
@@ -442,48 +124,8 @@ export class CompanyRoutes {
       this.deleteEmployeeType.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/absence-types:
-     *   get:
-     *     summary: Get absence types by company ID
-     *     tags: [Companies]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       200: { description: A list of absence types }
-     */
     this.router.get('/:companyId/absence-types', authMiddleware, this.getAbsenceTypesByCompany.bind(this))
 
-    /**
-     * @swagger
-     * /companies/{companyId}/absence-types:
-     *   post:
-     *     summary: Create absence type (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name]
-     *             properties:
-     *               name: { type: string, maxLength: 100 }
-     *     responses:
-     *       201: { description: Created }
-     *       400: { description: Validation error }
-     *       409: { description: Already exists }
-     */
     this.router.post(
       '/:companyId/absence-types',
       authMiddleware,
@@ -492,36 +134,6 @@ export class CompanyRoutes {
       this.createAbsenceType.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/absence-types/{id}:
-     *   patch:
-     *     summary: Rename absence type (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name]
-     *             properties:
-     *               name: { type: string, maxLength: 100 }
-     *     responses:
-     *       200: { description: Updated }
-     *       400: { description: Validation error }
-     *       404: { description: Not found }
-     */
     this.router.patch(
       '/:companyId/absence-types/:id',
       authMiddleware,
@@ -530,27 +142,6 @@ export class CompanyRoutes {
       this.renameAbsenceType.bind(this)
     )
 
-    /**
-     * @swagger
-     * /companies/{companyId}/absence-types/{id}:
-     *   delete:
-     *     summary: Delete absence type (ADMIN)
-     *     tags: [Companies]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: companyId
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       204: { description: Deleted }
-     *       404: { description: Not found }
-     *       409: { description: Cannot delete: in use }
-     */
     this.router.delete(
       '/:companyId/absence-types/:id',
       authMiddleware,
@@ -569,7 +160,7 @@ export class CompanyRoutes {
       return
     }
     res.status(200).json({
-      managers: result.value,
+      managers: result.value.map(toUserDTO),
     })
   }
 
@@ -582,7 +173,7 @@ export class CompanyRoutes {
       res.status(500).json({ message: result.error.message })
       return
     }
-    res.status(200).json({ employees: result.value })
+    res.status(200).json({ employees: result.value.map(toSimpleEmployeeDTO) })
   }
 
   private async getSimpleEmployees(req: Request, res: Response) {
@@ -593,7 +184,7 @@ export class CompanyRoutes {
       res.status(500).json({ message: result.error.message })
       return
     }
-    res.status(200).json({ employees: result.value })
+    res.status(200).json({ employees: result.value.map(toSimpleEmployeeDTO) })
   }
 
   private async getAllEmployeesByCompanyAndDepartment(req: Request, res: Response) {
@@ -606,7 +197,7 @@ export class CompanyRoutes {
       return
     }
 
-    res.status(200).json({ employees: result.value })
+    res.status(200).json({ employees: result.value.map(toEmployeeDTO) })
   }
 
   private async getDepartmentsByCompanyId(req: Request, res: Response) {
@@ -618,7 +209,7 @@ export class CompanyRoutes {
       return
     }
 
-    res.status(200).json({ departments: result.value })
+    res.status(200).json({ departments: result.value.map(toDepartmentDTO) })
   }
 
   private async createCompany(req: Request, res: Response) {
@@ -628,7 +219,7 @@ export class CompanyRoutes {
       return
     }
 
-    const { name, address } = req.body
+    const { name, address } = fromCompanyDTO(req.body)
     const result = await this.companyService.createCompany(name, address)
 
     if (result instanceof Failure) {
@@ -636,7 +227,7 @@ export class CompanyRoutes {
       return
     }
 
-    res.status(201).json({ company: result.value })
+    res.status(201).json({ company: toCompanyDTO(result.value) })
   }
 
   private async getAllCompanies(req: Request, res: Response) {
@@ -645,7 +236,7 @@ export class CompanyRoutes {
       res.status(500).json({ message: result.error.message })
       return
     }
-    res.status(200).json({ companies: result.value })
+    res.status(200).json({ companies: result.value.map(toCompanyDTO) })
   }
 
   private async getAllEmployeesByCompany(req: Request, res: Response) {
@@ -656,7 +247,7 @@ export class CompanyRoutes {
       res.status(500).json({ message: result.error.message })
       return
     }
-    res.status(200).json({ employees: result.value })
+    res.status(200).json({ employees: result.value.map(toEmployeeDTO) })
   }
 
   private async getEmployeeTypesByCompany(req: Request, res: Response) {
@@ -669,7 +260,7 @@ export class CompanyRoutes {
       return
     }
 
-    res.status(200).json({ employeeTypes: result.value })
+    res.status(200).json({ employeeTypes: result.value.map(toEmployeeTypeDTO) })
   }
 
   private async createDepartment(req: Request, res: Response) {
@@ -688,7 +279,7 @@ export class CompanyRoutes {
       return
     }
 
-    return res.status(201).json({ department: result.value })
+    return res.status(201).json({ department: toDepartmentDTO(result.value) })
   }
 
   private async renameDepartment(req: Request, res: Response) {
@@ -706,7 +297,7 @@ export class CompanyRoutes {
       return
     }
 
-    return res.status(200).json({ department: result.value })
+    return res.status(200).json({ department: toDepartmentDTO(result.value) })
   }
 
   private async deleteDepartment(req: Request, res: Response) {
@@ -735,7 +326,7 @@ export class CompanyRoutes {
       return res.status(500).json({ message: result.error.message })
     }
 
-    return res.status(201).json({ employeeType: result.value })
+    return res.status(201).json({ employeeType: toEmployeeTypeDTO(result.value) })
   }
 
   private async renameEmployeeType(req: Request, res: Response) {
@@ -752,7 +343,7 @@ export class CompanyRoutes {
       return res.status(500).json({ message: result.error.message })
     }
 
-    return res.status(200).json({ employeeType: result.value })
+    return res.status(200).json({ employeeType: toEmployeeTypeDTO(result.value) })
   }
 
   private async deleteEmployeeType(req: Request, res: Response) {
@@ -775,7 +366,7 @@ export class CompanyRoutes {
       return res.status(500).json({ message: result.error.message })
     }
 
-    return res.status(200).json({ absenceTypes: result.value })
+    return res.status(200).json({ absenceTypes: result.value.map(toAbsenceTypeDTO) })
   }
 
   private async createAbsenceType(req: Request, res: Response) {
@@ -793,7 +384,7 @@ export class CompanyRoutes {
     if (result instanceof Failure) {
       return res.status(500).json({ message: result.error.message })
     }
-    return res.status(201).json({ absenceType: result.value })
+    return res.status(201).json({ absenceType: toAbsenceTypeDTO(result.value) })
   }
 
   private async renameAbsenceType(req: Request, res: Response) {
@@ -808,7 +399,7 @@ export class CompanyRoutes {
       return res.status(500).json({ message: result.error.message })
     }
 
-    return res.status(200).json({ absenceType: result.value })
+    return res.status(200).json({ absenceType: toAbsenceTypeDTO(result.value) })
   }
 
   private async deleteAbsenceType(req: Request, res: Response) {

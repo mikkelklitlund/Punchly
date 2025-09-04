@@ -1,4 +1,4 @@
-import { Department } from 'shared'
+import { Department } from '../../types/index.js'
 
 export interface IDepartmentRepository {
   createDepartment(name: string, companyId: number): Promise<Department>

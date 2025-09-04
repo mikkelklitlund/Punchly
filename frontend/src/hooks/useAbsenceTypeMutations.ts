@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { companyService } from '../services/companyService'
 
-export function useAbsenceTypeMutations(companyId?: number | null) {
+export function useAbsenceTypeMutations(companyId: number | undefined) {
   const qc = useQueryClient()
   const key = ['absenceTypes', companyId]
 

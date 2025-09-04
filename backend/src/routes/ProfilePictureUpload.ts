@@ -19,51 +19,6 @@ export class EmployeePictureRoutes {
   }
 
   private initializeRoutes() {
-    /**
-     * @swagger
-     * /employees/upload-profile-picture/{id}:
-     *   post:
-     *     summary: Upload or update an employee's profile picture
-     *     tags:
-     *       - Employees
-     *     security:
-     *       - bearerAuth: []
-     *     consumes:
-     *       - multipart/form-data
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: integer
-     *       - in: formData
-     *         name: profilePicture
-     *         type: file
-     *         required: true
-     *         description: The image file to upload
-     *     responses:
-     *       200:
-     *         description: Profile picture updated successfully
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 message:
-     *                   type: string
-     *                 profilePictureUrl:
-     *                   type: string
-     *                 employee:
-     *                   type: object
-     *       400:
-     *         description: Invalid request or missing image
-     *       401:
-     *         description: Unauthorized
-     *       403:
-     *         description: Forbidden
-     *       500:
-     *         description: Server error
-     */
     this.router.post(
       '/upload-profile-picture/:id',
       authMiddleware,

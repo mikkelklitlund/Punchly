@@ -1,4 +1,5 @@
-import { Company, Role, User, UserRefreshToken } from 'shared'
+import { Role } from 'shared'
+import { Company, User, UserRefreshToken } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IUserService {

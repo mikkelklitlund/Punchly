@@ -1,4 +1,4 @@
-import { Department } from 'shared'
+import { Department } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IDepartmentService {

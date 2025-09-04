@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { companyService } from '../services/companyService'
-import { Department } from 'shared'
+import { DepartmentDTO } from 'shared'
 import { qk } from './queryKeys'
 import { ApiError } from '../utils/errorUtils'
 
 export function useDepartments(companyId: number | undefined) {
-  return useQuery<{ departments: Department[] }, ApiError, Department[]>({
+  return useQuery<{ departments: DepartmentDTO[] }, ApiError, DepartmentDTO[]>({
     queryKey: qk.departments(companyId),
     enabled: !!companyId,
     queryFn: () => companyService.getDepartments(companyId!),

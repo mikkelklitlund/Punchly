@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { CheckCircle, XCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
-import { AttendanceRecord } from 'shared'
 import DataTable, { Column } from '../components/common/DataTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
@@ -10,6 +9,7 @@ import EditAttendanceForm from '../components/attendance/EditAttendanceForm'
 import { useAuth } from '../contexts/AuthContext'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAttendanceRecords } from '../hooks/useAttendanceRecords'
+import { AttendanceRecordDTO } from 'shared'
 
 dayjs.extend(duration)
 
@@ -19,7 +19,7 @@ const AttendanceOverviewPage = () => {
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
-  const [editRecord, setEditRecord] = useState<AttendanceRecord | null>(null)
+  const [editRecord, setEditRecord] = useState<AttendanceRecordDTO | null>(null)
   const { data: records = [], isLoading, error, refetch } = useAttendanceRecords(selectedEmployeeId || undefined)
 
   const selectedEmployee = useMemo(
@@ -27,10 +27,10 @@ const AttendanceOverviewPage = () => {
     [employees, selectedEmployeeId]
   )
 
-  const columns: Column<AttendanceRecord>[] = [
+  const columns: Column<AttendanceRecordDTO>[] = [
     {
       header: 'Dato',
-      accessor: (rec: AttendanceRecord) => {
+      accessor: (rec: AttendanceRecordDTO) => {
         const inD = dayjs(rec.checkIn)
         if (!rec.checkOut) return inD.format('DD/MM/YYYY')
         const outD = dayjs(rec.checkOut)
@@ -41,15 +41,15 @@ const AttendanceOverviewPage = () => {
     },
     {
       header: 'Check ind',
-      accessor: (rec: AttendanceRecord) => dayjs(rec.checkIn).format('HH:mm'),
+      accessor: (rec: AttendanceRecordDTO) => dayjs(rec.checkIn).format('HH:mm'),
     },
     {
       header: 'Check ud',
-      accessor: (rec: AttendanceRecord) => (rec.checkOut ? dayjs(rec.checkOut).format('HH:mm') : '-'),
+      accessor: (rec: AttendanceRecordDTO) => (rec.checkOut ? dayjs(rec.checkOut).format('HH:mm') : '-'),
     },
     {
       header: 'Varighed',
-      accessor: (rec: AttendanceRecord) => {
+      accessor: (rec: AttendanceRecordDTO) => {
         if (!rec.checkOut) return '-'
         const minutes = dayjs(rec.checkOut).diff(dayjs(rec.checkIn), 'minute')
         const h = Math.floor(minutes / 60)
@@ -59,7 +59,7 @@ const AttendanceOverviewPage = () => {
     },
     {
       header: 'Skal gennemgås',
-      accessor: (rec: AttendanceRecord) =>
+      accessor: (rec: AttendanceRecordDTO) =>
         rec.autoClosed ? (
           <CheckCircle className="inline-block text-orange-500" size={18} />
         ) : (

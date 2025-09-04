@@ -1,10 +1,8 @@
-import { AbsenceRecord, CreateAbsenceRecord } from 'shared'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { failure, Result, success } from '../utils/Result.js'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
-import { toUTC, startOfDayUTC, endOfDayUTC } from '../utils/date.js'
-import { DateInput } from '../types/index.js'
+import { AbsenceRecord, CreateAbsenceRecord } from '../types/index.js'
 
 export class AbsenceService implements IAbsenceService {
   constructor(private readonly absenceRecordRepository: IAbsenceRecordRepository) {}
@@ -13,37 +11,23 @@ export class AbsenceService implements IAbsenceService {
     return aStart <= bEnd && aEnd >= bStart
   }
 
-  private validateRange(start: DateInput, end: DateInput): { s: Date; e: Date } {
-    if (start == null || end == null) throw new ValidationError('startDate and endDate are required')
-    const s = toUTC(start)
-    const e = toUTC(end)
-    if (e < s) throw new ValidationError('endDate cannot be before startDate')
-    return { s, e }
-  }
-
   async createAbsenceRecord(data: CreateAbsenceRecord): Promise<Result<AbsenceRecord, Error>> {
-    try {
-      let { s, e } = this.validateRange(data.startDate, data.endDate)
-
-      s = startOfDayUTC(s)
-      e = endOfDayUTC(e)
-
-      const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(data.employeeId, s, e)
-      if (overlaps.length > 0) {
-        return failure(new ValidationError('Employee already has an absence overlapping this period.'))
-      }
-
-      const created = await this.absenceRecordRepository.createAbsenceRecord({
-        ...data,
-        startDate: s,
-        endDate: e,
-      })
-      return success(created)
-    } catch (err) {
-      if (err instanceof ValidationError) return failure(err)
-      console.error('Error creating absence record:', err)
-      return failure(new DatabaseError('Database error occurred while creating the absence record.'))
+    if (data.endDate < data.startDate) {
+      return failure(new ValidationError('endDate cannot be before startDate'))
     }
+
+    const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(
+      data.employeeId,
+      data.startDate,
+      data.endDate
+    )
+
+    if (overlaps.length > 0) {
+      return failure(new ValidationError('Employee already has an absence overlapping this period.'))
+    }
+
+    const created = await this.absenceRecordRepository.createAbsenceRecord(data)
+    return success(created)
   }
 
   async getAbsenceRecordById(id: number): Promise<Result<AbsenceRecord, Error>> {
@@ -69,16 +53,11 @@ export class AbsenceService implements IAbsenceService {
 
   async getAbsenceRecordsByEmployeeIdAndRange(
     employeeId: number,
-    start: DateInput,
-    end: DateInput
+    start: Date,
+    end: Date
   ): Promise<Result<AbsenceRecord[], Error>> {
     try {
-      let { s, e } = this.validateRange(start, end)
-      // If whole-day absences, keep ranges aligned to UTC days for searching
-      s = startOfDayUTC(s)
-      e = endOfDayUTC(e)
-
-      const absences = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(employeeId, s, e)
+      const absences = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(employeeId, start, end)
       return success(absences)
     } catch (error) {
       if (error instanceof ValidationError) return failure(error)
@@ -99,25 +78,29 @@ export class AbsenceService implements IAbsenceService {
         return failure(new ValidationError('Cannot change employee on an existing absence record.', 'employeeId'))
       }
 
-      let { s, e } = this.validateRange(patch.startDate ?? existing.startDate, patch.endDate ?? existing.endDate)
+      const startDate = patch.startDate ?? existing.startDate
+      const endDate = patch.endDate ?? existing.endDate
 
-      s = startOfDayUTC(s)
-      e = endOfDayUTC(e)
+      if (endDate < startDate) {
+        return failure(new ValidationError('endDate cannot be before startDate'))
+      }
 
       const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(
         existing.employeeId,
-        s,
-        e
+        startDate,
+        endDate
       )
-      const hasOther = overlaps.some((r) => r.id !== id && this.overlaps(s, e, r.startDate, r.endDate))
+
+      const hasOther = overlaps.some((r) => r.id !== id && this.overlaps(startDate, endDate, r.startDate, r.endDate))
+
       if (hasOther) {
         return failure(new ValidationError('Employee already has an absence overlapping this period.'))
       }
 
       const updated = await this.absenceRecordRepository.updateAbsenceRecord(id, {
         ...patch,
-        startDate: s,
-        endDate: e,
+        startDate,
+        endDate,
       })
       return success(updated)
     } catch (err) {

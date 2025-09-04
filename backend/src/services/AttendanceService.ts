@@ -1,14 +1,13 @@
 import { Result, success, failure } from '../utils/Result.js'
 import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors.js'
-import { CreateAttendanceRecord, AttendanceRecord, EmployeeWithRecords } from 'shared'
 import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository.js'
 import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import ExcelJS from 'exceljs'
-import { differenceInMinutes } from 'date-fns'
+import { differenceInMinutes, endOfDay, startOfDay } from 'date-fns'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
-import { toUTC, startOfDayUTC, endOfDayUTC } from '../utils/date.js'
-import { DateInput } from '../types/index.js'
+import { AttendanceRecord, CreateAttendanceRecord, EmployeeWithRecords } from '../types/index.js'
+import { UTCDateMini } from '@date-fns/utc'
 
 export class AttendanceService implements IAttendanceService {
   constructor(
@@ -17,29 +16,11 @@ export class AttendanceService implements IAttendanceService {
     private readonly absenceRecordRepository: IAbsenceRecordRepository
   ) {}
 
-  // ---------------------- UTC helpers --------------------------
-
-  private validateRange(start: DateInput, end: DateInput): { s: Date; e: Date } {
-    if (start == null || end == null) throw new ValidationError('startDate and endDate are required')
-    const s = toUTC(start)
-    const e = toUTC(end)
-    if (e < s) throw new ValidationError('endDate cannot be before startDate')
-    return { s, e }
-  }
-
-  private async hasAbsenceOnDate(employeeId: number, date: DateInput): Promise<boolean> {
-    const d = toUTC(date)
-    const s = startOfDayUTC(d)
-    const e = endOfDayUTC(d)
-    const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(employeeId, s, e)
+  private async hasAbsenceOnDate(employeeId: number, date: Date): Promise<boolean> {
+    const start = startOfDay(date)
+    const end = endOfDay(date)
+    const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(employeeId, start, end)
     return overlaps.length > 0
-  }
-
-  // Use UTC formatting (backend stays UTC; frontend can localize if needed)
-  private formatTimeUTC(date: Date) {
-    const h = date.getUTCHours().toString().padStart(2, '0')
-    const m = date.getUTCMinutes().toString().padStart(2, '0')
-    return `${h}:${m}`
   }
 
   private calculateTotalMinutes(records: { checkIn: Date; checkOut?: Date }[]): number {
@@ -64,21 +45,25 @@ export class AttendanceService implements IAttendanceService {
     )
   }
 
-  // ---------------- MAIN CRUD ---------------- //
-
   async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {
-    try {
-      const checkInUTC = toUTC(newAttendance.checkIn)
+    if (!newAttendance.checkIn || !newAttendance.checkOut) {
+      return failure(new ValidationError('When creating a full attendance record, all params must be present'))
+    }
 
-      if (await this.hasAbsenceOnDate(newAttendance.employeeId, checkInUTC)) {
+    try {
+      if (await this.hasAbsenceOnDate(newAttendance.employeeId, newAttendance.checkIn)) {
         return failure(new ValidationError('Employee has an active absence on this date.'))
       }
 
       const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord({
         ...newAttendance,
-        checkIn: checkInUTC,
       })
-      await this.employeeRepository.updateEmployee(newAttendance.employeeId, { checkedIn: true })
+
+      const utcNow = new UTCDateMini()
+
+      if (newAttendance.checkIn <= utcNow && newAttendance.checkOut > utcNow) {
+        await this.employeeRepository.updateEmployee(newAttendance.employeeId, { checkedIn: true })
+      }
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error creating attendance record:', error)
@@ -88,7 +73,7 @@ export class AttendanceService implements IAttendanceService {
 
   async checkInEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
-      const now = toUTC(new Date())
+      const now = new UTCDateMini()
 
       if (await this.hasAbsenceOnDate(employeeId, now)) {
         return failure(new ValidationError('Employee has an active absence today and cannot check in.'))
@@ -97,14 +82,13 @@ export class AttendanceService implements IAttendanceService {
       const openRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId)
       if (openRecord) {
         await this.attendanceRecordRepository.updateAttendanceRecord(openRecord.id, {
-          checkOut: undefined,
+          checkOut: now,
           autoClosed: true,
         })
       }
 
       const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord({
         employeeId,
-        checkIn: now,
       })
 
       await this.employeeRepository.updateEmployee(employeeId, { checkedIn: true })
@@ -117,7 +101,7 @@ export class AttendanceService implements IAttendanceService {
 
   async checkOutEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
-      const now = toUTC(new Date())
+      const now = new UTCDateMini()
 
       if (await this.hasAbsenceOnDate(employeeId, now)) {
         return failure(new ValidationError('Employee has an active absence today and cannot check out.'))
@@ -155,16 +139,14 @@ export class AttendanceService implements IAttendanceService {
 
   async getAttendanceRecordsByEmployeeIdAndPeriod(
     employeeId: number,
-    periodStart: DateInput,
-    periodEnd: DateInput
+    periodStart: Date,
+    periodEnd: Date
   ): Promise<Result<AttendanceRecord[], Error>> {
     try {
-      // Normalize + validate, then pass UTC instants to repo
-      const { s, e } = this.validateRange(periodStart, periodEnd)
       const attendanceRecords = await this.attendanceRecordRepository.getAttendanceRecordsByEmployeeIdAndPeriod(
         employeeId,
-        s,
-        e
+        periodStart,
+        periodEnd
       )
       return success(attendanceRecords)
     } catch (error) {
@@ -178,14 +160,48 @@ export class AttendanceService implements IAttendanceService {
     id: number,
     data: Partial<Omit<AttendanceRecord, 'id'>>
   ): Promise<Result<AttendanceRecord, Error>> {
-    if (!data) return failure(new ValidationError('Update data is required.'))
+    if (!data) {
+      return failure(new ValidationError('Update data is required.'))
+    }
 
     try {
-      const patch: Partial<AttendanceRecord> = { ...data }
-      if (patch.checkIn) patch.checkIn = toUTC(patch.checkIn)
-      if (patch.checkOut) patch.checkOut = toUTC(patch.checkOut)
+      const attendanceRecord = await this.attendanceRecordRepository.getAttendanceRecordById(id)
 
-      const updatedAttendanceRecord = await this.attendanceRecordRepository.updateAttendanceRecord(id, patch)
+      if (!attendanceRecord) {
+        return failure(new ValidationError('Found no record with id'))
+      }
+
+      if (data.employeeId && data.employeeId !== attendanceRecord.employeeId) {
+        return failure(new ValidationError('Cannot change employee on existing attendance record'))
+      }
+
+      if (data.checkIn) {
+        attendanceRecord.checkIn = data.checkIn
+      }
+
+      if (data.checkOut) {
+        attendanceRecord.checkOut = data.checkOut
+        attendanceRecord.autoClosed = false
+      }
+
+      if (await this.hasAbsenceOnDate(attendanceRecord.employeeId, attendanceRecord.checkIn)) {
+        return failure(new ValidationError('Employee has an active absence on this date.'))
+      }
+
+      if (attendanceRecord.checkOut) {
+        if (attendanceRecord.checkIn >= attendanceRecord.checkOut) {
+          return failure(new ValidationError('Check in cannot be after checkout'))
+        }
+
+        if (await this.hasAbsenceOnDate(attendanceRecord.employeeId, attendanceRecord.checkOut)) {
+          return failure(new ValidationError('Employee has an active absence on this date.'))
+        }
+      }
+
+      const updatedAttendanceRecord = await this.attendanceRecordRepository.updateAttendanceRecord(id, {
+        ...(data.checkIn ? { checkIn: data.checkIn } : {}),
+        ...(data.checkOut ? { checkOut: data.checkOut, autoClosed: false } : {}),
+      })
       return success(updatedAttendanceRecord)
     } catch (error) {
       console.error('Error updating attendance record:', error)
@@ -304,16 +320,14 @@ export class AttendanceService implements IAttendanceService {
     const sheet = workbook.addWorksheet('Registrerede tider')
     const employeesList = data.map((e) => e.name)
 
-    // Build a set of all UTC dates (YYYY-MM-DD) present across attendance and absence
     const dates = Array.from(
       new Set(
         data.flatMap((e) => [
           ...e.attendanceRecords.map((r) => r.checkIn.toISOString().split('T')[0]),
           ...e.absenceRecords.flatMap((a) => {
             const days: string[] = []
-            // iterate day-by-day in UTC from start to end (inclusive)
-            const cur = startOfDayUTC(a.startDate)
-            const end = endOfDayUTC(a.endDate)
+            const cur = startOfDay(a.startDate)
+            const end = endOfDay(a.endDate)
             while (cur <= end) {
               days.push(cur.toISOString().split('T')[0])
               cur.setUTCDate(cur.getUTCDate() + 1)
@@ -351,8 +365,8 @@ export class AttendanceService implements IAttendanceService {
           checkOutRow.push(absence.absenceType.name)
         } else {
           const record = emp.attendanceRecords.find((r) => r.checkIn.toISOString().split('T')[0] === date)
-          checkInRow.push(record ? this.formatTimeUTC(record.checkIn) : '')
-          checkOutRow.push(record?.checkOut ? this.formatTimeUTC(record.checkOut) : '')
+          checkInRow.push(record ? `${record.checkIn.getHours()}:${record.checkIn.getMinutes()}` : '')
+          checkOutRow.push(record?.checkOut ? `${record.checkOut.getHours()}:${record.checkOut.getMinutes()}` : '')
         }
       }
 
@@ -431,22 +445,16 @@ export class AttendanceService implements IAttendanceService {
     return workbook
   }
 
-  // ---------------- MAIN ENTRY ---------------- //
-
   async generateEmployeeAttendanceReport(
-    startDate: DateInput,
-    endDate: DateInput,
+    startDate: Date,
+    endDate: Date,
     companyId: number,
     departmentId?: number
   ): Promise<Result<Buffer, Error>> {
     try {
-      const { s, e } = this.validateRange(startDate, endDate)
-      const sDay = startOfDayUTC(s)
-      const eDay = endOfDayUTC(e)
-
       const data = await this.employeeRepository.getEmployeesWithAttendanceAndAbsences(
-        sDay,
-        eDay,
+        startDate,
+        endDate,
         companyId,
         departmentId
       )

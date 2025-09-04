@@ -1,8 +1,16 @@
+import {
+  SimpleEmployeeDTO,
+  CreateEmployeeDTO,
+  EmployeeDTO,
+  AttendanceRecordDTO,
+  AbsenceRecordDTO,
+  CreateAbsenceRecordDTO,
+  CalendarDate,
+} from 'shared'
 import axiosInstance from '../api/axios'
-import { SimpleEmployee, Employee, AttendanceRecord, CreateEmployee, AbsenceRecord, CreateAbsenceRecord } from 'shared'
 
 export interface EmployeeResponse {
-  employees: SimpleEmployee[]
+  employees: SimpleEmployeeDTO[]
   total: number
 }
 
@@ -16,8 +24,8 @@ export const employeeService = {
     return response.data
   },
 
-  async createEmployee(payload: Omit<CreateEmployee, 'profilePicturePath'>): Promise<Employee> {
-    const res = await axiosInstance.post<{ employee: Employee }>('/employees', payload)
+  async createEmployee(payload: Omit<CreateEmployeeDTO, 'profilePicturePath'>): Promise<EmployeeDTO> {
+    const res = await axiosInstance.post<{ employee: EmployeeDTO }>('/employees', payload)
     return res.data.employee
   },
 
@@ -35,13 +43,13 @@ export const employeeService = {
     return response.data
   },
 
-  async getEmployeeById(id: number): Promise<Employee> {
-    const res = await axiosInstance.get<{ employee: Employee }>(`/employees/${id}`)
+  async getEmployeeById(id: number): Promise<EmployeeDTO> {
+    const res = await axiosInstance.get<{ employee: EmployeeDTO }>(`/employees/${id}`)
     return res.data.employee
   },
 
-  async updateEmployee(id: number, data: Partial<Employee>): Promise<Employee> {
-    const res = await axiosInstance.put<{ employee: Employee }>(`/employees/${id}`, data)
+  async updateEmployee(id: number, data: Partial<EmployeeDTO>): Promise<EmployeeDTO> {
+    const res = await axiosInstance.put<{ employee: EmployeeDTO }>(`/employees/${id}`, data)
     return res.data.employee
   },
 
@@ -62,18 +70,18 @@ export const employeeService = {
     return res.data.profilePictureUrl
   },
 
-  getAttendanceRecords: async (employeeId: number): Promise<AttendanceRecord[]> => {
-    const response = await axiosInstance.get<{ records: AttendanceRecord[] }>(
+  getAttendanceRecords: async (employeeId: number): Promise<AttendanceRecordDTO[]> => {
+    const response = await axiosInstance.get<{ records: AttendanceRecordDTO[] }>(
       `/employees/${employeeId}/attendance-records-last-30`
     )
     return response.data.records
   },
 
-  getAttendanceReport: async (startDate: Date, endDate: Date, departmentId?: number): Promise<Blob> => {
+  getAttendanceReport: async (startDate: CalendarDate, endDate: CalendarDate, departmentId?: number): Promise<Blob> => {
     const response = await axiosInstance.get<Blob>('/employees/attendance-report', {
       params: {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        startDate: startDate,
+        endDate: endDate,
         departmentId,
       },
       responseType: 'blob' as const,
@@ -83,8 +91,8 @@ export const employeeService = {
 
   updateAttendanceRecord: async (
     id: number,
-    data: Partial<Pick<AttendanceRecord, 'checkIn' | 'checkOut' | 'autoClosed'>>
-  ): Promise<AttendanceRecord> => {
+    data: Partial<Pick<AttendanceRecordDTO, 'checkIn' | 'checkOut' | 'autoClosed'>>
+  ): Promise<AttendanceRecordDTO> => {
     const res = await axiosInstance.put(`/employees/attendance-records/${id}`, data)
     return res.data.record
   },
@@ -93,32 +101,38 @@ export const employeeService = {
     await axiosInstance.delete(`/attendance/${id}`)
   },
 
-  async getAbsences(employeeId: number, startDate?: Date, endDate?: Date): Promise<AbsenceRecord[]> {
-    const params: Record<string, string> = {}
-    if (startDate) params.startDate = startDate.toISOString()
-    if (endDate) params.endDate = endDate.toISOString()
-    const res = await axiosInstance.get<{ absences: AbsenceRecord[] }>(`/employees/${employeeId}/absences`, { params })
+  async getAbsences(employeeId: number, startDate: string, endDate: string): Promise<AbsenceRecordDTO[]> {
+    const params: Record<string, string> = {
+      startDate,
+      endDate,
+    }
+    const res = await axiosInstance.get<{ absences: AbsenceRecordDTO[] }>(`/employees/${employeeId}/absences`, {
+      params,
+    })
     return res.data.absences
   },
 
-  async createAbsence(payload: CreateAbsenceRecord): Promise<AbsenceRecord> {
+  async createAbsence(payload: CreateAbsenceRecordDTO): Promise<AbsenceRecordDTO> {
     const params = {
       employeeId: payload.employeeId,
       absenceTypeId: payload.absenceTypeId,
-      startDate: payload.startDate.toISOString(),
-      endDate: payload.endDate.toISOString(),
+      startDate: payload.startDate,
+      endDate: payload.endDate,
     }
-    const res = await axiosInstance.post<{ absenceRecord: AbsenceRecord }>(`/employees/${params.employeeId}/absences`, {
-      params,
-    })
+    const res = await axiosInstance.post<{ absenceRecord: AbsenceRecordDTO }>(
+      `/employees/${params.employeeId}/absences`,
+      {
+        params,
+      }
+    )
     return res.data.absenceRecord
   },
 
   async updateAbsence(
     id: number,
-    data: Partial<Pick<AbsenceRecord, 'startDate' | 'endDate' | 'absenceTypeId'>> & { absenceTypeId?: number }
-  ): Promise<AbsenceRecord> {
-    const res = await axiosInstance.put<{ absenceRecord: AbsenceRecord }>(`/employees/absences/${id}`, data)
+    data: Partial<Pick<AbsenceRecordDTO, 'startDate' | 'endDate' | 'absenceTypeId'>> & { absenceTypeId?: number }
+  ): Promise<AbsenceRecordDTO> {
+    const res = await axiosInstance.put<{ absenceRecord: AbsenceRecordDTO }>(`/employees/absences/${id}`, data)
     return res.data.absenceRecord
   },
 

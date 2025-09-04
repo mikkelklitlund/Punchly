@@ -3,12 +3,29 @@ import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
 import { body, query, validationResult } from 'express-validator'
 import authMiddleware from '../middleware/Auth.js'
 import { Failure, Result } from '../utils/Result.js'
-import { CreateEmployee, Employee, Role } from 'shared'
+import { CreateAbsenceRecordDTO, CreateEmployeeDTO, EmployeeDTO, Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import authorizeRoles from '../middleware/authorizeRole.js'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
-import { toUTC } from '../utils/date.js'
+import { UTCDateMini } from '@date-fns/utc'
+import { isValid, parseISO } from 'date-fns'
+import {
+  fromCreateEmployeeDTO,
+  fromPartialEmployeeDTO,
+  toAbsenceRecordDTO,
+  toAttendanceRecordDTO,
+  toEmployeeDTO,
+} from '../utils/mappers.js'
+import { Employee } from '../types/index.js'
+
+function validateYYYYMMDD(value: string, field: string) {
+  const parsed = parseISO(value)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !isValid(parsed)) {
+    throw new Error(`${field} must be a valid YYYY-MM-DD date`)
+  }
+  return true
+}
 
 export class EmployeeRoutes {
   public router: Router
@@ -23,86 +40,26 @@ export class EmployeeRoutes {
   }
 
   private initializeRoutes() {
-    /**
-     * @swagger
-     * /employees/attendance-report:
-     *   get:
-     *     summary: Generate and download an employee attendance Excel report
-     *     tags:
-     *       - Employees
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: query
-     *         name: startDate
-     *         required: true
-     *         schema:
-     *           type: string
-     *           format: date
-     *       - in: query
-     *         name: endDate
-     *         required: true
-     *         schema:
-     *           type: string
-     *           format: date
-     *       - in: query
-     *         name: departmentId
-     *         required: false
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200:
-     *         description: Excel report generated successfully
-     *         content:
-     *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-     *             schema:
-     *               type: string
-     *               format: binary
-     *       400:
-     *         description: Validation error
-     *       500:
-     *         description: Server error
-     */
     this.router.get(
       '/attendance-report',
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        query('startDate')
+          .notEmpty()
+          .custom((v) => validateYYYYMMDD(v, 'startDate'))
+          .customSanitizer((v) => new UTCDateMini(v)),
+
+        query('endDate')
+          .notEmpty()
+          .custom((v) => validateYYYYMMDD(v, 'endDate'))
+          .customSanitizer((v) => new UTCDateMini(v)),
+
+        query('departmentId').optional().isInt().toInt(),
+      ],
       this.generateAttendanceReport.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees:
-     *   post:
-     *     summary: Create a new employee
-     *     tags: [Employees]
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [name, companyId, departmentId, employeeTypeId, address, city, birthdate]
-     *             properties:
-     *               name:            { type: string }
-     *               companyId:       { type: integer }
-     *               departmentId:    { type: integer }
-     *               employeeTypeId:  { type: integer }
-     *               address:         { type: string }
-     *               city:            { type: string }
-     *               birthdate:
-     *                 type: string
-     *                 format: date        # e.g. "2000-10-11"
-     *               monthlySalary:   { type: number, minimum: 0 }
-     *               hourlySalary:    { type: number, minimum: 0 }
-     *               checkedIn:       { type: boolean }
-     *     responses:
-     *       201: { description: Employee created successfully }
-     *       400: { description: Validation failed }
-     *       500: { description: Server error }
-     */
     this.router.post(
       '/',
       authMiddleware,
@@ -121,8 +78,7 @@ export class EmployeeRoutes {
           .isISO8601()
           .withMessage('birthdate must be an ISO date')
           .customSanitizer((v: string) => {
-            const val = v.length === 10 ? v + 'T00:00:00Z' : v
-            return toUTC(val)
+            return new UTCDateMini(v)
           }),
         body('checkedIn').optional({ nullable: true }).isBoolean().toBoolean(),
         body().custom((value) => {
@@ -135,24 +91,6 @@ export class EmployeeRoutes {
       this.createEmployee.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/{employeeId}/checkin:
-     *   post:
-     *     summary: Employee check-in
-     *     tags:
-     *       - Attendance
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: employeeId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200: { description: Check-in successful }
-     */
     this.router.post(
       '/:employeeId/checkin',
       authMiddleware,
@@ -160,24 +98,6 @@ export class EmployeeRoutes {
       this.employeeCheckin.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/{employeeId}/checkout:
-     *   post:
-     *     summary: Employee check-out
-     *     tags:
-     *       - Attendance
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: employeeId
-     *         required: true
-     *         schema:
-     *           type: integer
-     *     responses:
-     *       200: { description: Check-out successful }
-     */
     this.router.post(
       '/:employeeId/checkout',
       authMiddleware,
@@ -185,46 +105,8 @@ export class EmployeeRoutes {
       this.employeeCheckout.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/{id}:
-     *   get:
-     *     summary: Get an employee by ID
-     *     tags: [Employees]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       200: { description: Employee retrieved successfully }
-     *       404: { description: Employee not found }
-     */
     this.router.get('/:id', authMiddleware, this.getEmployeeById.bind(this))
 
-    /**
-     * @swagger
-     * /employees:
-     *   get:
-     *     summary: Get employees by company and optional department/type
-     *     tags: [Employees]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: query
-     *         name: company
-     *         required: true
-     *         schema: { type: integer }
-     *       - in: query
-     *         name: department
-     *         schema: { type: integer }
-     *       - in: query
-     *         name: type
-     *         schema: { type: integer }
-     *     responses:
-     *       200: { description: Employees retrieved successfully }
-     *       400: { description: Invalid query parameters }
-     */
     this.router.get(
       '/',
       authMiddleware,
@@ -236,22 +118,6 @@ export class EmployeeRoutes {
       this.getEmployeesByQueryParams.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/{id}:
-     *   put:
-     *     summary: Update an existing employee
-     *     tags: [Employees]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       200: { description: Employee updated successfully }
-     *       400: { description: Validation error }
-     */
     this.router.put(
       '/:id',
       authMiddleware,
@@ -264,21 +130,6 @@ export class EmployeeRoutes {
       this.updateEmployee.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/{id}:
-     *   delete:
-     *     summary: Delete an employee
-     *     tags: [Employees]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       204: { description: Employee deleted successfully }
-     */
     this.router.delete(
       '/:id',
       authMiddleware,
@@ -286,21 +137,6 @@ export class EmployeeRoutes {
       this.deleteEmployee.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/{employeeId}/attendance-records-last-30:
-     *   get:
-     *     summary: Get the last 30 attendance records for an employee
-     *     tags: [Attendance]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: employeeId
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       200: { description: Attendance records retrieved }
-     */
     this.router.get(
       '/:employeeId/attendance-records-last-30',
       authMiddleware,
@@ -308,23 +144,6 @@ export class EmployeeRoutes {
       this.getLast30AttendanceRecordsForEmployee.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/attendance-records/{id}:
-     *   put:
-     *     summary: Update an attendance record
-     *     tags: [Attendance]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       200: { description: Record updated successfully }
-     *       400: { description: Invalid input }
-     *       404: { description: Record not found }
-     */
     this.router.put(
       '/attendance-records/:id',
       authMiddleware,
@@ -337,22 +156,6 @@ export class EmployeeRoutes {
       this.updateAttendanceRecord.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/attendance-records/{id}:
-     *   delete:
-     *     summary: Delete an attendance record
-     *     tags: [Attendance]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       204: { description: Record deleted successfully }
-     *       404: { description: Record not found }
-     */
     this.router.delete(
       '/attendance-records/:id',
       authMiddleware,
@@ -360,35 +163,6 @@ export class EmployeeRoutes {
       this.deleteAttendanceRecord.bind(this)
     )
 
-    // ---------------------- ABSENCES ----------------------
-
-    /**
-     * @swagger
-     * /employees/{employeeId}/absences:
-     *   post:
-     *     summary: Create an absence record for an employee
-     *     tags: [Absences]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: employeeId
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [startDate, endDate, absenceTypeId]
-     *             properties:
-     *               startDate: { type: string, format: date }
-     *               endDate:   { type: string, format: date }
-     *               absenceTypeId: { type: integer }
-     *     responses:
-     *       201: { description: Absence created }
-     *       400: { description: Validation error }
-     */
     this.router.post(
       '/:employeeId/absences',
       authMiddleware,
@@ -396,47 +170,19 @@ export class EmployeeRoutes {
       [
         body('startDate')
           .notEmpty()
-          .isISO8601()
-          .withMessage('startDate must be an ISO date')
-          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
+          .custom((v) => validateYYYYMMDD(v, 'startDate'))
+          .customSanitizer((v) => new UTCDateMini(v)),
+
         body('endDate')
           .notEmpty()
-          .isISO8601()
-          .withMessage('endDate must be an ISO date')
-          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
+          .custom((v) => validateYYYYMMDD(v, 'endDate'))
+          .customSanitizer((v) => new UTCDateMini(v)),
         body('absenceTypeId').isInt().toInt().withMessage('Valid absenceTypeId is required'),
       ],
 
       this.createAbsenceForEmployee.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/absences/{id}:
-     *   put:
-     *     summary: Update an absence record
-     *     tags: [Absences]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               startDate: { type: string, format: date }
-     *               endDate:   { type: string, format: date }
-     *               absenceTypeId: { type: integer }
-     *     responses:
-     *       200: { description: Absence updated }
-     *       400: { description: Validation error }
-     *       404: { description: Not found }
-     */
     this.router.put(
       '/absences/:id',
       authMiddleware,
@@ -444,35 +190,18 @@ export class EmployeeRoutes {
       [
         body('startDate')
           .optional()
-          .isISO8601()
-          .withMessage('startDate must be an ISO date')
-          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
+          .custom((v) => validateYYYYMMDD(v, 'startDate'))
+          .customSanitizer((v) => new UTCDateMini(v)),
+
         body('endDate')
           .optional()
-          .isISO8601()
-          .withMessage('endDate must be an ISO date')
-          .customSanitizer((v: string) => toUTC(v.length === 10 ? v + 'T00:00:00Z' : v)),
+          .custom((v) => validateYYYYMMDD(v, 'endDate'))
+          .customSanitizer((v) => new UTCDateMini(v)),
         body('absenceTypeId').optional().isInt().toInt(),
       ],
       this.updateAbsence.bind(this)
     )
 
-    /**
-     * @swagger
-     * /employees/absences/{id}:
-     *   delete:
-     *     summary: Delete an absence record
-     *     tags: [Absences]
-     *     security: [ { bearerAuth: [] } ]
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: integer }
-     *     responses:
-     *       204: { description: Absence deleted }
-     *       404: { description: Not found }
-     */
     this.router.delete(
       '/absences/:id',
       authMiddleware,
@@ -492,20 +221,12 @@ export class EmployeeRoutes {
     )
   }
 
-  // ---------------- Handlers ----------------
-
   private async employeeCheckin(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
     const checkInResult = await this.attendanceService.checkInEmployee(employeeId)
 
     if (checkInResult instanceof Failure) {
       res.status(500).json({ message: checkInResult.error.message })
-      return
-    }
-
-    const employeeResult = await this.employeeService.getEmployeeById(employeeId)
-    if (employeeResult instanceof Failure) {
-      res.status(500).json({ message: employeeResult.error.message })
       return
     }
 
@@ -521,12 +242,6 @@ export class EmployeeRoutes {
       return
     }
 
-    const employeeResult = await this.employeeService.getEmployeeById(employeeId)
-    if (employeeResult instanceof Failure) {
-      res.status(500).json({ message: employeeResult.error.message })
-      return
-    }
-
     res.status(200).json({ success: true })
   }
 
@@ -537,15 +252,15 @@ export class EmployeeRoutes {
       return
     }
 
-    const newEmployee: CreateEmployee = req.body
-    const result = await this.employeeService.createEmployee(newEmployee)
+    const newEmployee: CreateEmployeeDTO = req.body
+    const result = await this.employeeService.createEmployee(fromCreateEmployeeDTO(newEmployee))
 
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })
       return
     }
 
-    res.status(201).json({ employee: result.value })
+    res.status(201).json({ employee: toEmployeeDTO(result.value) })
   }
 
   private async getEmployeesByQueryParams(req: Request, res: Response) {
@@ -575,7 +290,7 @@ export class EmployeeRoutes {
       result.value = result.value.filter((em) => em.employeeTypeId === employeeType)
     }
 
-    res.status(200).json({ employees: result.value })
+    res.status(200).json({ employees: result.value.map(toEmployeeDTO) })
   }
 
   private async getEmployeeById(req: Request, res: Response) {
@@ -587,7 +302,7 @@ export class EmployeeRoutes {
       return
     }
 
-    res.status(200).json({ employee: result.value })
+    res.status(200).json({ employee: toEmployeeDTO(result.value) })
   }
 
   private async updateEmployee(req: Request, res: Response) {
@@ -598,15 +313,15 @@ export class EmployeeRoutes {
     }
 
     const employeeId = parseInt(req.params.id)
-    const employee: Partial<Employee> = req.body
-    const result = await this.employeeService.updateEmployee(employeeId, employee)
+    const employee: Partial<EmployeeDTO> = req.body
+    const result = await this.employeeService.updateEmployee(employeeId, fromPartialEmployeeDTO(employee))
 
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })
       return
     }
 
-    res.status(200).json({ employee: result.value })
+    res.status(200).json({ employee: toEmployeeDTO(result.value) })
   }
 
   private async deleteEmployee(req: Request, res: Response) {
@@ -618,7 +333,7 @@ export class EmployeeRoutes {
       return
     }
 
-    res.status(204).send({ employeeDeleted: result.value })
+    res.status(204).send()
   }
 
   private async getLast30AttendanceRecordsForEmployee(req: Request, res: Response) {
@@ -631,7 +346,7 @@ export class EmployeeRoutes {
       return
     }
 
-    res.status(200).json({ records: result.value })
+    res.status(200).json({ records: result.value.map(toAttendanceRecordDTO) })
   }
 
   private async updateAttendanceRecord(req: Request, res: Response) {
@@ -642,12 +357,11 @@ export class EmployeeRoutes {
     }
 
     const id = parseInt(req.params.id)
-    const { checkIn, checkOut, autoClosed } = req.body
+    const { checkIn, checkOut } = req.body
 
     const result = await this.attendanceService.updateAttendanceRecord(id, {
-      checkIn: checkIn ? toUTC(checkIn) : undefined,
-      checkOut: checkOut ? toUTC(checkOut) : undefined,
-      autoClosed,
+      checkIn: checkIn ? new UTCDateMini(checkIn) : undefined,
+      checkOut: checkOut ? new UTCDateMini(checkOut) : undefined,
     })
 
     if (result instanceof Failure) {
@@ -655,7 +369,7 @@ export class EmployeeRoutes {
       return
     }
 
-    res.status(200).json({ record: result.value })
+    res.status(200).json({ record: toAttendanceRecordDTO(result.value) })
   }
 
   private async deleteAttendanceRecord(req: Request, res: Response) {
@@ -684,12 +398,8 @@ export class EmployeeRoutes {
       return
     }
 
-    const start = toUTC(
-      typeof startDate === 'string' && startDate.length === 10 ? startDate + 'T00:00:00Z' : (startDate as string)
-    )
-    const end = toUTC(
-      typeof endDate === 'string' && endDate.length === 10 ? endDate + 'T00:00:00Z' : (endDate as string)
-    )
+    const start = new UTCDateMini(startDate as string)
+    const end = new UTCDateMini(endDate as string)
 
     const deptId = departmentId ? parseInt(departmentId as string, 10) : undefined
 
@@ -705,63 +415,56 @@ export class EmployeeRoutes {
     res.send(result.value)
   }
 
-  // ---------------- Absence Handlers (NEW) ----------------
-
   private async createAbsenceForEmployee(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      res.status(400).json({ message: errors.array() })
-      return
+      return res.status(400).json({ message: errors.array() })
     }
 
     const employeeId = parseInt(req.params.employeeId, 10)
-    const { startDate, endDate, absenceTypeId } = req.body as {
-      startDate: Date
-      endDate: Date
-      absenceTypeId: number
-    }
+    const { startDate, endDate, absenceTypeId } = req.body as CreateAbsenceRecordDTO
+
+    const start = new UTCDateMini(startDate)
+    const end = new UTCDateMini(endDate)
 
     const result = await this.absenceService.createAbsenceRecord({
       employeeId,
-      startDate,
-      endDate,
+      startDate: start,
+      endDate: end,
       absenceTypeId,
     })
 
     if (result instanceof Failure) {
-      res.status(500).json({ message: result.error.message })
-      return
+      return res.status(500).json({ message: result.error.message })
     }
 
-    res.status(201).json({ absenceRecord: result.value })
+    res.status(201).json({ absenceRecord: toAbsenceRecordDTO(result.value) })
   }
 
   private async updateAbsence(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      res.status(400).json({ message: errors.array() })
-      return
+      return res.status(400).json({ message: errors.array() })
     }
 
     const id = parseInt(req.params.id, 10)
     const { startDate, endDate, absenceTypeId } = req.body as {
-      startDate?: Date
-      endDate?: Date
+      startDate?: string
+      endDate?: string
       absenceTypeId?: number
     }
 
     const result = await this.absenceService.updateAbsenceRecord(id, {
-      ...(startDate ? { startDate } : {}),
-      ...(endDate ? { endDate } : {}),
+      ...(startDate ? { startDate: new UTCDateMini(startDate) } : {}),
+      ...(endDate ? { endDate: new UTCDateMini(endDate) } : {}),
       ...(typeof absenceTypeId === 'number' ? { absenceTypeId } : {}),
     })
 
     if (result instanceof Failure) {
-      res.status(500).json({ message: result.error.message })
-      return
+      return res.status(500).json({ message: result.error.message })
     }
 
-    res.status(200).json({ absenceRecord: result.value })
+    res.status(200).json({ absenceRecord: toAbsenceRecordDTO(result.value) })
   }
 
   private async deleteAbsence(req: Request, res: Response) {
@@ -783,18 +486,17 @@ export class EmployeeRoutes {
 
     let result
     if (startDate && endDate) {
-      const s = toUTC(startDate.length === 'YYYY-MM-DD'.length ? startDate + 'T00:00:00Z' : startDate)
-      const e = toUTC(endDate.length === 'YYYY-MM-DD'.length ? endDate + 'T00:00:00Z' : endDate)
-      result = await this.absenceService.getAbsenceRecordsByEmployeeIdAndRange(employeeId, s, e)
+      const start = new UTCDateMini(startDate)
+      const end = new UTCDateMini(endDate)
+      result = await this.absenceService.getAbsenceRecordsByEmployeeIdAndRange(employeeId, start, end)
     } else {
       result = await this.absenceService.getAbsenceRecordsByEmployeeId(employeeId)
     }
 
     if (result instanceof Failure) {
-      res.status(500).json({ message: result.error.message })
-      return
+      return res.status(500).json({ message: result.error.message })
     }
 
-    res.status(200).json({ absences: result.value })
+    res.status(200).json({ absences: result.value.map(toAbsenceRecordDTO) })
   }
 }

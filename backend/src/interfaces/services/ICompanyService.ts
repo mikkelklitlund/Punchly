@@ -1,4 +1,4 @@
-import { Company } from 'shared'
+import { Company } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface ICompanyService {

@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { AttendanceRecord } from 'shared'
+import { AttendanceRecordDTO } from 'shared'
 import { toast } from 'react-toastify'
 import { employeeService } from '../../services/employeeService'
 import dayjs from 'dayjs'
 import LoadingSpinner from '../common/LoadingSpinner'
 
 interface Props {
-  record: AttendanceRecord
+  record: AttendanceRecordDTO
   onSuccess: () => void
   onCancel: () => void
 }
@@ -47,8 +47,8 @@ const EditAttendanceForm = ({ record, onSuccess, onCancel }: Props) => {
     try {
       await toast.promise(
         employeeService.updateAttendanceRecord(record.id, {
-          checkIn: checkInD.toDate(),
-          checkOut: checkOutD?.toDate(),
+          checkIn,
+          checkOut,
           autoClosed: false,
         }),
         {

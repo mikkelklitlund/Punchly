@@ -1,42 +1,76 @@
 import { PrismaClient, AbsenceRecord as PrismaAbsenceRecord, AbsenceType as PrismaAbsenceType } from '@prisma/client'
-import { CreateAbsenceRecord, AbsenceRecord as AbsenceRecordDTO, AbsenceType as AbsenceTypeDTO } from 'shared'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
+import { CreateAbsenceRecord, AbsenceRecord } from '../types/index.js'
 
-type AbsenceRecordWithType = PrismaAbsenceRecord & { absenceType?: PrismaAbsenceType | null }
+type PrismaAbsenceRecordWithType = PrismaAbsenceRecord & { absenceType: PrismaAbsenceType }
 
 export class AbsenceRecordRepository implements IAbsenceRecordRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async createAbsenceRecord(data: CreateAbsenceRecord): Promise<AbsenceRecordDTO> {
+  private toDomain(prismaRec: PrismaAbsenceRecordWithType): AbsenceRecord {
+    return {
+      id: prismaRec.id,
+      employeeId: prismaRec.employeeId,
+      startDate: prismaRec.startDate,
+      endDate: prismaRec.endDate,
+      absenceTypeId: prismaRec.absenceTypeId,
+      absenceType: {
+        id: prismaRec.absenceType.id,
+        name: prismaRec.absenceType.name,
+        companyId: prismaRec.absenceType.companyId,
+      },
+    }
+  }
+
+  private toPrismaUpdateData(patch: Partial<Omit<AbsenceRecord, 'id' | 'absenceType'>>) {
+    const data: Partial<Omit<AbsenceRecord, 'id' | 'absenceType'>> = {}
+
+    if (patch.employeeId !== undefined) {
+      data.employeeId = patch.employeeId
+    }
+    if (patch.startDate !== undefined) {
+      data.startDate = patch.startDate
+    }
+    if (patch.endDate !== undefined) {
+      data.endDate = patch.endDate
+    }
+    if (patch.absenceTypeId !== undefined) {
+      data.absenceTypeId = patch.absenceTypeId
+    }
+
+    return data
+  }
+
+  async createAbsenceRecord(data: CreateAbsenceRecord): Promise<AbsenceRecord> {
     const absence = await this.prisma.absenceRecord.create({
       data,
       include: { absenceType: true },
     })
-    return this.translateToDTO(absence)
+    return this.toDomain(absence)
   }
 
-  async getAbsenceRecordById(id: number): Promise<AbsenceRecordDTO | null> {
+  async getAbsenceRecordById(id: number): Promise<AbsenceRecord | null> {
     const absence = await this.prisma.absenceRecord.findUnique({
       where: { id },
       include: { absenceType: true },
     })
-    return absence ? this.translateToDTO(absence) : null
+    return absence ? this.toDomain(absence) : null
   }
 
-  async getAbsenceRecordsByEmployeeId(employeeId: number): Promise<AbsenceRecordDTO[]> {
+  async getAbsenceRecordsByEmployeeId(employeeId: number): Promise<AbsenceRecord[]> {
     const absences = await this.prisma.absenceRecord.findMany({
       where: { employeeId },
       include: { absenceType: true },
       orderBy: { startDate: 'asc' },
     })
-    return absences.map((a) => this.translateToDTO(a))
+    return absences.map(this.toDomain)
   }
 
   async getAbsenceRecordsByEmployeeIdAndRange(
     employeeId: number,
     periodStart: Date,
     periodEnd: Date
-  ): Promise<AbsenceRecordDTO[]> {
+  ): Promise<AbsenceRecord[]> {
     const absences = await this.prisma.absenceRecord.findMany({
       where: {
         employeeId,
@@ -46,42 +80,23 @@ export class AbsenceRecordRepository implements IAbsenceRecordRepository {
       include: { absenceType: true },
       orderBy: { startDate: 'asc' },
     })
-    return absences.map((a) => this.translateToDTO(a))
+    return absences.map(this.toDomain)
   }
 
-  async updateAbsenceRecord(id: number, data: Partial<Omit<PrismaAbsenceRecord, 'id'>>): Promise<AbsenceRecordDTO> {
+  async updateAbsenceRecord(id: number, patch: Partial<Omit<AbsenceRecord, 'id'>>): Promise<AbsenceRecord> {
     const absence = await this.prisma.absenceRecord.update({
       where: { id },
-      data,
+      data: this.toPrismaUpdateData(patch),
       include: { absenceType: true },
     })
-    return this.translateToDTO(absence)
+    return this.toDomain(absence)
   }
 
-  async deleteAbsenceRecord(id: number): Promise<AbsenceRecordDTO> {
+  async deleteAbsenceRecord(id: number): Promise<AbsenceRecord> {
     const absence = await this.prisma.absenceRecord.delete({
       where: { id },
       include: { absenceType: true },
     })
-    return this.translateToDTO(absence)
-  }
-
-  private translateToDTO(absenceRecord: AbsenceRecordWithType): AbsenceRecordDTO {
-    return {
-      id: absenceRecord.id,
-      employeeId: absenceRecord.employeeId,
-      startDate: absenceRecord.startDate,
-      endDate: absenceRecord.endDate,
-      absenceTypeId: absenceRecord.absenceTypeId,
-      absenceType: absenceRecord.absenceType ? this.translateAbsenceType(absenceRecord.absenceType) : undefined,
-    } as AbsenceRecordDTO
-  }
-
-  private translateAbsenceType(a: PrismaAbsenceType): AbsenceTypeDTO {
-    return {
-      id: a.id,
-      name: a.name,
-      companyId: a.companyId,
-    }
+    return this.toDomain(absence)
   }
 }

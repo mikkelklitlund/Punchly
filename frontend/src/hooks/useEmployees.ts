@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { employeeService } from '../services/employeeService'
-import { SimpleEmployee } from 'shared'
+import { SimpleEmployeeDTO } from 'shared'
 import { qk } from './queryKeys'
 import { ApiError } from '../utils/errorUtils'
 
@@ -8,11 +8,11 @@ type UseEmployeesOpts = { live?: boolean; departmentId?: number }
 
 const FIVE_MIN = 5 * 60 * 1000
 
-export function useEmployees(companyId?: number, opts: UseEmployeesOpts = {}) {
+export function useEmployees(companyId: number | undefined, opts: UseEmployeesOpts = {}) {
   const { live = false, departmentId } = opts
   const interval = () => (document.visibilityState === 'visible' ? FIVE_MIN : false)
 
-  return useQuery<{ employees: SimpleEmployee[]; total: number }, ApiError, SimpleEmployee[]>({
+  return useQuery<{ employees: SimpleEmployeeDTO[]; total: number }, ApiError, SimpleEmployeeDTO[]>({
     queryKey: qk.employees(companyId, departmentId),
     enabled: !!companyId,
     queryFn: () => employeeService.getEmployees(companyId!, departmentId),

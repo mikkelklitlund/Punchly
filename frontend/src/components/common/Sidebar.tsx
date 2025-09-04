@@ -1,4 +1,4 @@
-import { Department, Role } from 'shared'
+import { DepartmentDTO, Role } from 'shared'
 import { useAuth } from '../../contexts/AuthContext'
 import { House, Users, Settings, ChevronDown, ChevronUp, LogOut, CalendarClock } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
@@ -11,7 +11,7 @@ function Sidebar() {
   const [showSubMenuOverview, setShowSubMenuOverview] = useState(false)
   const [showSubMenuAttendance, setShowSubMenuAttendance] = useState(false)
   const location = useLocation()
-  const isSelected = (dep: Department | undefined) => location.pathname === '/' && currentDepartment === dep
+  const isSelected = (dep: DepartmentDTO | undefined) => location.pathname === '/' && currentDepartment === dep
 
   if (!role || role === Role.COMPANY) return null
 

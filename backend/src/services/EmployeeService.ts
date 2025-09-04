@@ -1,4 +1,3 @@
-import { Employee, CreateEmployee, SimpleEmployee } from 'shared'
 import { Result, failure, success } from '../utils/Result.js'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
@@ -6,8 +5,9 @@ import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRep
 import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository.js'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
-import { startOfDayUTC, endOfDayUTC, toDateOnlyUTC } from '../utils/date.js'
-import { DateInput } from '../types/index.js'
+import { CreateEmployee, Employee, SimpleEmployee } from '../types/index.js'
+import { UTCDateMini } from '@date-fns/utc'
+import { differenceInYears, endOfDay, startOfDay } from 'date-fns'
 
 export class EmployeeService implements IEmployeeService {
   constructor(
@@ -18,22 +18,17 @@ export class EmployeeService implements IEmployeeService {
   ) {}
 
   private ageOnTodayUTC(birthdate: Date): number {
-    const today = startOfDayUTC(new Date())
-    const b = startOfDayUTC(birthdate)
-    let age = today.getUTCFullYear() - b.getUTCFullYear()
-    const m = today.getUTCMonth() - b.getUTCMonth()
-    if (m < 0 || (m === 0 && today.getUTCDate() < b.getUTCDate())) age--
-    return age
+    const today = new UTCDateMini()
+    return differenceInYears(today, birthdate)
   }
 
   private todayBoundsUTC() {
-    const now = new Date()
-    const start = startOfDayUTC(now)
-    const end = endOfDayUTC(now)
-    return { start, end }
+    const today = new UTCDateMini()
+    return {
+      start: startOfDay(today),
+      end: endOfDay(today),
+    }
   }
-
-  // ---- CRUD ----
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
     if (!data.name || data.name.trim().length === 0) {
@@ -65,8 +60,7 @@ export class EmployeeService implements IEmployeeService {
       return failure(new ValidationError('Hourly salary must be positive', 'hourlySalary'))
     }
 
-    const birthdateUTC = toDateOnlyUTC(data.birthdate)
-    const age = this.ageOnTodayUTC(birthdateUTC)
+    const age = this.ageOnTodayUTC(data.birthdate)
     if (age < 13) {
       return failure(new ValidationError('Must be over the age of 13 to be employed', 'birthday'))
     }
@@ -74,7 +68,6 @@ export class EmployeeService implements IEmployeeService {
     try {
       const employee = await this.employeeRepository.createEmployee({
         ...data,
-        birthdate: birthdateUTC,
       })
       return success(employee)
     } catch (error) {
@@ -160,18 +153,14 @@ export class EmployeeService implements IEmployeeService {
         return failure(new ValidationError('Hourly salary must be a positive number', 'hourlySalary'))
       }
 
-      const patch: Partial<Employee> = { ...data }
-
       if (data.birthdate) {
-        const birthdateUTC = toDateOnlyUTC(data.birthdate as DateInput)
-        const age = this.ageOnTodayUTC(birthdateUTC)
+        const age = this.ageOnTodayUTC(data.birthdate)
         if (age < 13) {
           return failure(new ValidationError('Employee must be at least 13 years old', 'birthday'))
         }
-        patch.birthdate = birthdateUTC
       }
 
-      const updatedEmployee = await this.employeeRepository.updateEmployee(id, patch)
+      const updatedEmployee = await this.employeeRepository.updateEmployee(id, data)
       return success(updatedEmployee)
     } catch (error) {
       console.error(`Error updating employee with ID ${id}:`, error)
