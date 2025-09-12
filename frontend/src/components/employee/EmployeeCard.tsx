@@ -26,7 +26,6 @@ const EmployeeCard = React.memo(({ employee }: EmployeeCardProps) => {
 
       <img
         src={getProfilePictureUrl(employee.profilePicturePath)}
-        src={getProfilePictureUrl(employee.profilePicturePath)}
         className="h-40 w-40 rounded-lg object-cover shadow-lg sm:h-48 sm:w-48 lg:h-52 lg:w-52"
         alt={`${employee.name}'s profile`}
         loading="lazy"
