@@ -14,6 +14,7 @@ model Company {
   employees     Employee[]
   departments   Department[]
   employeeTypes EmployeeType[]
+  absenceTypes  AbsenceType[]
   users         UserCompanyAccess[]
 
   @@unique(name: "addressName", [name, address])
@@ -24,7 +25,7 @@ model User {
   email     String    @unique
   password  String
   username  String    @unique
-  deletedAt DateTime?
+  deletedAt DateTime? @db.Timestamptz(3)
 
   companies    UserCompanyAccess[]
   RefreshToken RefreshToken[]
@@ -39,8 +40,8 @@ model RefreshToken {
   token      String   @unique
   userId     Int
   user       User     @relation(fields: [userId], references: [id])
-  expiryDate DateTime
-  createdAt  DateTime @default(now())
+  expiryDate DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
   revoked    Boolean  @default(false)
 
   @@index([userId])
@@ -71,13 +72,13 @@ model Department {
 model Employee {
   id                 Int                @id @default(autoincrement())
   name               String
-  profilePicturePath String
+  profilePicturePath String             @default("default-avatar.jpg")
   companyId          Int
   company            Company            @relation(fields: [companyId], references: [id])
   departmentId       Int
   department         Department         @relation(fields: [departmentId], references: [id])
   checkedIn          Boolean            @default(false)
-  birthdate          DateTime
+  birthdate          DateTime           @db.Date
   employeeTypeId     Int
   employeeType       EmployeeType       @relation(fields: [employeeTypeId], references: [id])
   monthlySalary      Float?
@@ -87,7 +88,7 @@ model Employee {
   city               String
   absenceRecords     AbsenceRecord[]
   attendanceRecords  AttendanceRecord[]
-  deletedAt          DateTime?
+  deletedAt          DateTime?          @db.Timestamptz(3)
 
   @@index([companyId])
   @@index([departmentId])
@@ -107,29 +108,37 @@ model AbsenceRecord {
   id          Int         @id @default(autoincrement())
   employeeId  Int
   employee    Employee    @relation(fields: [employeeId], references: [id])
-  startDate   DateTime
-  endDate     DateTime
-  absenceType AbsenceType
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  absenceTypeId  Int
+  absenceType    AbsenceType  @relation(fields: [absenceTypeId], references: [id])
 
   @@index([employeeId])
+  @@index([absenceTypeId])
+  @@index([employeeId, startDate])
+  @@index([employeeId, endDate])
 }
 
 model AttendanceRecord {
   id         Int       @id @default(autoincrement())
   employeeId Int
   employee   Employee  @relation(fields: [employeeId], references: [id])
-  checkIn    DateTime
-  checkOut   DateTime?
+  checkIn    DateTime  @default(now()) @db.Timestamptz(3)
+  checkOut   DateTime? @db.Timestamptz(3)
   autoClosed Boolean   @default(false)
 
   @@index([employeeId])
 }
 
-enum AbsenceType {
-  VACATION
-  SICK
-  HOMEDAY
-  PUBLIC_HOLIDAY
+model AbsenceType {
+  id             Int              @id @default(autoincrement())
+  name           String
+  companyId      Int
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  absenceRecords AbsenceRecord[]
+
+  @@unique([name, companyId], name: "absenceTypeCompany")
+  @@index([companyId])
 }
 
 enum Role {

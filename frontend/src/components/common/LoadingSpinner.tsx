@@ -19,18 +19,24 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     large: 'w-16 h-16',
   }
 
+  const borderMap = {
+    small: 'border-2',
+    medium: 'border-4',
+    large: 'border-4',
+  }
+
   const spinner = (
     <div className="flex flex-col items-center justify-center">
       <div
-        className={`${sizeMap[size]} animate-spin rounded-full border-4 border-t-4 border-gray-300`}
+        className={`${sizeMap[size]} animate-spin rounded-full ${borderMap[size]} border-gray-300`}
         style={{ borderTopColor: color }}
       />
-      {message && <p className="mt-4 text-gray-600">{message}</p>}
+      {message && <p className="text-gray-600">{message}</p>}
     </div>
   )
 
   if (fullScreen) {
-    return <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-80">{spinner}</div>
+    return <div className="bg-opacity-80 fixed inset-0 z-50 flex items-center justify-center bg-white">{spinner}</div>
   }
 
   return spinner

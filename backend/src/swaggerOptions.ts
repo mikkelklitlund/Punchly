@@ -1,7 +1,5 @@
-import swaggerJSDoc from 'swagger-jsdoc'
-
-import path from 'path'
-import { fileURLToPath } from 'url'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -16,21 +14,15 @@ export const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:4000/api',
+        url: `${process.env.API_BASE_URL ?? 'http://localhost:4000'}/api`,
       },
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
+        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       },
     },
     security: [{ bearerAuth: [] }],
   },
-  apis: [path.join(__dirname, './routes/**/*.ts')],
+  apis: [path.resolve(__dirname, 'routes/**/*.ts')],
 }
-
-export const swaggerSpec = swaggerJSDoc(swaggerOptions)

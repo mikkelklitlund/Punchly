@@ -1,4 +1,4 @@
-import { Company } from 'shared'
+import { Company } from '../../types/index.js'
 
 export interface ICompanyRepository {
   createCompany(name: string, address: string): Promise<Company>

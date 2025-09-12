@@ -4,6 +4,7 @@ import { ValidationError } from '../utils/Errors.js'
 import { body, validationResult } from 'express-validator'
 import { Router, Response, Request } from 'express'
 import authMiddleware from '../middleware/Auth.js'
+import { UserDTO } from 'shared'
 
 export class AuthRoutes {
   public router: Router
@@ -14,40 +15,6 @@ export class AuthRoutes {
   }
 
   private initializeRoutes() {
-    /**
-     * @swagger
-     * /auth/register:
-     *   post:
-     *     summary: Register a new user
-     *     tags:
-     *       - Authentication
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required:
-     *               - email
-     *               - password
-     *               - username
-     *             properties:
-     *               email:
-     *                 type: string
-     *                 format: email
-     *               password:
-     *                 type: string
-     *                 description: Must be at least 8 characters and include both letters and numbers
-     *               username:
-     *                 type: string
-     *     responses:
-     *       201:
-     *         description: User registered successfully
-     *       400:
-     *         description: Validation failed
-     *       409:
-     *         description: User already exists
-     */
     this.router.post(
       '/register',
       [
@@ -61,94 +28,23 @@ export class AuthRoutes {
       this.register.bind(this)
     )
 
-    /**
-     * @swagger
-     * /auth/login:
-     *   post:
-     *     summary: Log in a user
-     *     tags:
-     *       - Authentication
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required:
-     *               - username
-     *               - password
-     *             properties:
-     *               username:
-     *                 type: string
-     *               password:
-     *                 type: string
-     *               companyId:
-     *                 type: integer
-     *                 nullable: true
-     *     responses:
-     *       200:
-     *         description: Login successful, returns access token and user info
-     *       401:
-     *         description: Invalid credentials
-     */
     this.router.post(
       '/login',
       [body('username').trim().notEmpty(), body('password').notEmpty(), body('companyId').isNumeric().optional()],
       this.login.bind(this)
     )
 
-    /**
-     * @swagger
-     * /auth/profile:
-     *   get:
-     *     summary: Get the profile of the logged-in user
-     *     tags:
-     *       - Authentication
-     *     security:
-     *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: User profile data
-     *       401:
-     *         description: Unauthorized
-     *       404:
-     *         description: User not found
-     */
     this.router.get('/profile', authMiddleware, this.getProfile.bind(this))
 
-    /**
-     * @swagger
-     * /auth/refresh:
-     *   get:
-     *     summary: Refresh access token using a valid refresh token
-     *     tags:
-     *       - Authentication
-     *     responses:
-     *       200:
-     *         description: New access token issued
-     *       401:
-     *         description: No refresh token provided
-     *       403:
-     *         description: Invalid refresh token
-     */
     this.router.post('/refresh', this.refreshToken.bind(this))
 
-    /**
-     * @swagger
-     * /auth/logout:
-     *   post:
-     *     summary: Log out the user and revoke refresh token
-     *     tags:
-     *       - Authentication
-     *     security:
-     *       - bearerAuth: []
-     *     responses:
-     *       204:
-     *         description: Logout successful
-     *       500:
-     *         description: Server error during logout
-     */
     this.router.post('/logout', authMiddleware, this.logout.bind(this))
+
+    this.router.post(
+      '/companies-for-user',
+      [body('username').trim().notEmpty().isLength({ max: 100 })],
+      this.getCompaniesForUser.bind(this)
+    )
   }
 
   private validateRequest(req: Request, res: Response): boolean {
@@ -216,9 +112,12 @@ export class AuthRoutes {
       return
     }
 
-    // Exclude password from the response
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = result.value
+    const userWithoutPassword: UserDTO = {
+      id: result.value.id,
+      username: result.value.username,
+      email: result.value.email,
+      password: null,
+    }
     res.json(userWithoutPassword)
   }
 
@@ -249,6 +148,7 @@ export class AuthRoutes {
 
       this.clearAuthCookies(res)
       res.status(200).json({ message: 'Logged out successfully' })
+      res.status(200).json({ message: 'Logged out successfully' })
     } catch {
       this.clearAuthCookies(res)
       res.status(500).json({ error: 'Internal server error' })
@@ -259,9 +159,9 @@ export class AuthRoutes {
     const isProd = process.env.NODE_ENV === 'production'
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
-      sameSite: 'lax', // same-site -> perfect for example.com/api
-      secure: isProd, // true in prod (HTTPS), false in dev (http://localhost)
-      path: '/api', // <-- important: cookie sent to /api/refresh AND /api/logout
+      sameSite: 'lax',
+      secure: isProd,
+      path: '/api',
       maxAge: 24 * 60 * 60 * 1000,
     })
   }
@@ -272,7 +172,28 @@ export class AuthRoutes {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
-      path: '/api', // must match setAuthCookies
+      path: '/api',
     })
+  }
+
+  private async getCompaniesForUser(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+
+    const { username } = req.body as { username: string }
+
+    try {
+      const companies = await this.userService.getCompaniesForUsername(username)
+      if (companies instanceof Failure) {
+        return res.status(500).json({ message: 'Server error' })
+      }
+
+      return res.status(200).json({ companies: companies.value })
+    } catch (err) {
+      console.error('companies-for-user failed:', err)
+      return res.status(500).json({ message: 'Server error' })
+    }
   }
 }

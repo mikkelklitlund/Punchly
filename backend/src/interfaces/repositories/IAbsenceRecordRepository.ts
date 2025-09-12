@@ -1,4 +1,4 @@
-import { AbsenceRecord, CreateAbsenceRecord } from 'shared'
+import { CreateAbsenceRecord, AbsenceRecord } from '../../types/index.js'
 
 export interface IAbsenceRecordRepository {
   createAbsenceRecord(data: CreateAbsenceRecord): Promise<AbsenceRecord>

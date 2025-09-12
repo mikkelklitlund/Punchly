@@ -1,4 +1,4 @@
-import { Department, Role } from 'shared'
+import { DepartmentDTO, Role } from 'shared'
 import { useAuth } from '../../contexts/AuthContext'
 import { House, Users, Settings, ChevronDown, ChevronUp, LogOut, CalendarClock } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
@@ -11,14 +11,14 @@ function Sidebar() {
   const [showSubMenuOverview, setShowSubMenuOverview] = useState(false)
   const [showSubMenuAttendance, setShowSubMenuAttendance] = useState(false)
   const location = useLocation()
-  const isSelected = (dep: Department | undefined) => location.pathname === '/' && currentDepartment === dep
+  const isSelected = (dep: DepartmentDTO | undefined) => location.pathname === '/' && currentDepartment === dep
 
   if (!role || role === Role.COMPANY) return null
 
   const menuItems = [
     { label: 'Medarbejdere', href: '/employees', icon: Users, roles: [Role.ADMIN, Role.MANAGER] },
     { label: 'Managere', href: '/managers', icon: Users, roles: [Role.ADMIN] },
-    { label: 'Indstillinger', href: '/settings', icon: Settings, roles: [Role.ADMIN, Role.MANAGER] },
+    { label: 'Indstillinger', href: '/settings', icon: Settings, roles: [Role.ADMIN] },
   ]
 
   return (
@@ -116,6 +116,11 @@ function Sidebar() {
                     Medarbejder tider
                   </span>
                 </Link>
+                <Link to={'/absence'} className="w-full rounded px-2 py-1 text-left text-sm transition duration-150">
+                  <span className="block truncate overflow-hidden whitespace-nowrap" title="Fravær">
+                    Fravær
+                  </span>
+                </Link>
                 <Link
                   to={'/attendance-report'}
                   className="w-full rounded px-2 py-1 text-left text-sm transition duration-150"
@@ -154,10 +159,7 @@ function Sidebar() {
 
         {/* Sticky Logout */}
         <div className="border-mustard/30 border-t pt-4">
-          <button
-            onClick={logout}
-            className="bg-rust hover:bg-rust/80 flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white transition-colors duration-200"
-          >
+          <button onClick={logout} className="btn btn-rust w-full">
             <LogOut size={16} />
             Log ud
           </button>

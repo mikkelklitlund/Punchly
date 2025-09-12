@@ -1,14 +1,14 @@
-import { SimpleEmployee } from 'shared'
+import { SimpleEmployeeDTO } from 'shared'
 import EmployeeCard from './EmployeeCard'
 
 interface EmployeeListProps {
-  employees: SimpleEmployee[]
-  onEmployeeClick: (employee: SimpleEmployee) => void
+  employees: SimpleEmployeeDTO[]
+  onEmployeeClick: (employee: SimpleEmployeeDTO) => void
 }
 
 const EmployeeList = ({ employees, onEmployeeClick }: EmployeeListProps) => {
   return (
-    <div className="grid w-full grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid w-full grid-cols-1 gap-4 p-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {employees.length > 0 ? (
         employees.map((employee) => (
           <button

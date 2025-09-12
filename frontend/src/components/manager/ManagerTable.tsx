@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { companyService } from '../../services/companyService'
-import { User } from 'shared'
 import { useAuth } from '../../contexts/AuthContext'
-import { useToast } from '../../contexts/ToastContext'
 import DataTable, { Column } from '../common/DataTable'
+import { UserDTO } from 'shared'
+import { toast } from 'react-toastify'
 
 const ManagerTable = () => {
-  const [managers, setManagers] = useState<User[]>([])
+  const [managers, setManagers] = useState<UserDTO[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const { companyId } = useAuth()
-  const { showToast } = useToast()
 
   useEffect(() => {
     if (!companyId) return
@@ -21,22 +20,22 @@ const ManagerTable = () => {
         setManagers(res.managers)
       } catch (error) {
         console.error('Error fetching managers:', error)
-        showToast('Der opstod en fejl ved hentning af managers', 'error')
+        toast.error('Der opstod en fejl ved hentning af managers')
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchManagers()
-  }, [companyId, showToast])
+  }, [companyId])
 
-  const columns: Column<User>[] = [
+  const columns: Column<UserDTO>[] = [
     {
       header: '#',
       accessor: (row) => managers.findIndex((u) => u.id === row.id) + 1,
     },
-    { header: 'Brugernavn', accessor: 'username' as keyof User },
-    { header: 'Email', accessor: 'email' as keyof User },
+    { header: 'Brugernavn', accessor: 'username' as keyof UserDTO },
+    { header: 'Email', accessor: 'email' as keyof UserDTO },
   ]
 
   return (

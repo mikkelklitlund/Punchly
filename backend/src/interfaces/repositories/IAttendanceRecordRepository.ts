@@ -1,4 +1,4 @@
-import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
+import { AttendanceRecord, CreateAttendanceRecord } from '../../types/index.js'
 
 export interface IAttendanceRecordRepository {
   createAttendanceRecord(data: CreateAttendanceRecord): Promise<AttendanceRecord>

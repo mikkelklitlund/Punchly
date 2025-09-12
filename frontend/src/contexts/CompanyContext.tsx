@@ -1,16 +1,17 @@
-import { createContext, useContext, useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Department, EmployeeType, SimpleEmployee } from 'shared'
+import { createContext, useContext, useState } from 'react'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
 import { employeeService } from '../services/employeeService'
+import { ApiError } from '../utils/errorUtils'
+import { DepartmentDTO, SimpleEmployeeDTO, EmployeeTypeDTO } from 'shared'
 
 interface CompanyContextType {
-  departments: Department[]
-  currentDepartment: Department | undefined
-  setCurrentDepartment: (dep: Department | undefined) => void
-  employees: SimpleEmployee[]
-  employeeTypes: EmployeeType[]
+  departments: DepartmentDTO[]
+  currentDepartment: DepartmentDTO | undefined
+  setCurrentDepartment: (dep: DepartmentDTO | undefined) => void
+  employees: SimpleEmployeeDTO[]
+  employeeTypes: EmployeeTypeDTO[]
   isLoading: boolean
   error: string | null
   refreshEmployees: () => void
@@ -20,54 +21,63 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined)
 
 export const CompanyProvider = ({ children }: { children: React.ReactNode }) => {
   const { companyId } = useAuth()
-  const [currentDepartment, setCurrentDepartment] = useState<Department | undefined>(undefined)
+  const [currentDepartment, setCurrentDepartment] = useState<DepartmentDTO | undefined>(undefined)
+  const departmentId = currentDepartment?.id
 
   const {
-    data: departmentData,
+    data: departments = [],
     isLoading: deptLoading,
     error: deptError,
-  } = useQuery({
-    queryKey: ['departments', companyId],
-    queryFn: () => (companyId ? companyService.getDepartments(companyId) : Promise.reject('No company ID')),
+  } = useQuery<{ departments: DepartmentDTO[] }, ApiError, DepartmentDTO[]>({
+    queryKey: ['departments', { companyId }],
     enabled: !!companyId,
+    queryFn: () => companyService.getDepartments(companyId!),
+    select: (d) => d.departments,
+    staleTime: Infinity,
+    retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
+    refetchOnWindowFocus: false,
   })
 
   const {
-    data: employeeTypeData,
+    data: employeeTypes = [],
     isLoading: typeLoading,
     error: typeError,
-  } = useQuery({
-    queryKey: ['employeeTypes', companyId],
-    queryFn: () => (companyId ? companyService.getEmployeeTypes(companyId) : Promise.reject('No company ID')),
+  } = useQuery<{ employeeTypes: EmployeeTypeDTO[] }, ApiError, EmployeeTypeDTO[]>({
+    queryKey: ['employeeTypes', { companyId }],
     enabled: !!companyId,
+    queryFn: () => companyService.getEmployeeTypes(companyId!),
+    select: (d) => d.employeeTypes,
+    staleTime: Infinity,
+    retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
+    refetchOnWindowFocus: false,
   })
 
+  const poll = () => (document.visibilityState === 'visible' ? 30_000 : false)
+
   const {
-    data: employeeData,
+    data: employees = [],
     isLoading: empLoading,
     error: empError,
     refetch: refreshEmployees,
-  } = useQuery({
-    queryKey: ['employees', companyId, currentDepartment?.id],
-    queryFn: () =>
-      companyId ? employeeService.getEmployees(companyId, currentDepartment?.id) : Promise.reject('No company ID'),
+  } = useQuery<{ employees: SimpleEmployeeDTO[]; total: number }, ApiError, SimpleEmployeeDTO[]>({
+    queryKey: ['employees', { companyId, departmentId }],
     enabled: !!companyId,
-    refetchInterval: 30000,
+    queryFn: () => employeeService.getEmployees(companyId!, departmentId),
+    select: (d) => d.employees,
+    placeholderData: keepPreviousData,
+    refetchInterval: poll,
+    refetchIntervalInBackground: false,
+    retry: (failures, err) => (err.status && err.status >= 500 ? failures < 2 : false),
   })
-
-  const filteredEmployees = useMemo(() => {
-    if (!currentDepartment) return employeeData?.employees || []
-    return employeeData?.employees.filter((e) => e.departmentId === currentDepartment.id) || []
-  }, [employeeData, currentDepartment])
 
   return (
     <CompanyContext.Provider
       value={{
-        departments: departmentData?.departments || [],
+        departments,
         currentDepartment,
         setCurrentDepartment,
-        employees: filteredEmployees,
-        employeeTypes: employeeTypeData?.employeeTypes || [],
+        employees,
+        employeeTypes,
         isLoading: deptLoading || empLoading || typeLoading,
         error: deptError?.message || empError?.message || typeError?.message || null,
         refreshEmployees,
@@ -79,7 +89,7 @@ export const CompanyProvider = ({ children }: { children: React.ReactNode }) => 
 }
 
 export const useCompany = () => {
-  const context = useContext(CompanyContext)
-  if (!context) throw new Error('useCompany must be used within a CompanyProvider')
-  return context
+  const ctx = useContext(CompanyContext)
+  if (!ctx) throw new Error('useCompany must be used within a CompanyProvider')
+  return ctx
 }

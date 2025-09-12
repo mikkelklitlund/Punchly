@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import { SimpleEmployee } from 'shared'
+import { SimpleEmployeeDTO } from 'shared'
 import { employeeService } from '../services/employeeService'
 
 export function useEmployeeModal(updateData: () => void) {
-  const [selectedEmployee, setSelectedEmployee] = useState<SimpleEmployee | null>(null)
+  const [selectedEmployee, setSelectedEmployee] = useState<SimpleEmployeeDTO | undefined>(undefined)
   const [showModal, setShowModal] = useState(false)
 
-  const openModal = (employee: SimpleEmployee) => {
+  const openModal = (employee: SimpleEmployeeDTO) => {
     setSelectedEmployee(employee)
     setShowModal(true)
   }
 
   const closeModal = () => {
-    setSelectedEmployee(null)
+    setSelectedEmployee(undefined)
     setShowModal(false)
   }
 

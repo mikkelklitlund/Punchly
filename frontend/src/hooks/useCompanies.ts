@@ -1,28 +1,17 @@
-import { useEffect, useState } from 'react'
-import { Company } from 'shared'
+import { useQuery } from '@tanstack/react-query'
 import { companyService } from '../services/companyService'
+import { CompanyDTO } from 'shared'
+import { qk } from './queryKeys'
+import { ApiError } from '../utils/errorUtils'
 
 export function useCompanies() {
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const { companies } = await companyService.getAllCompanies()
-        setCompanies(companies)
-      } catch (error) {
-        console.error('Failed to fetch companies:', error)
-        setError('Could not load companies.')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchCompanies()
-  }, [])
-
-  return { companies, loading, error }
+  return useQuery<{ companies: CompanyDTO[] }, ApiError, CompanyDTO[]>({
+    queryKey: qk.companies,
+    queryFn: () => companyService.getAllCompanies(),
+    select: (d) => d.companies,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: (n, err) => (err.status && err.status >= 500 ? n < 2 : false),
+  })
 }

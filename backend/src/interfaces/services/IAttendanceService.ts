@@ -1,4 +1,4 @@
-import { CreateAttendanceRecord, AttendanceRecord } from 'shared'
+import { CreateAttendanceRecord, AttendanceRecord } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IAttendanceService {

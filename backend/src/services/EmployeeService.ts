@@ -1,4 +1,3 @@
-import { Employee, CreateEmployee } from 'shared'
 import { Result, failure, success } from '../utils/Result.js'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
 import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
@@ -6,6 +5,9 @@ import { IDepartmentRepository } from '../interfaces/repositories/IDepartmentRep
 import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository.js'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
+import { CreateEmployee, Employee, SimpleEmployee } from '../types/index.js'
+import { UTCDateMini } from '@date-fns/utc'
+import { differenceInYears, endOfDay, startOfDay } from 'date-fns'
 
 export class EmployeeService implements IEmployeeService {
   constructor(
@@ -14,6 +16,19 @@ export class EmployeeService implements IEmployeeService {
     private readonly departmentRepository: IDepartmentRepository,
     private readonly employeeTypeRepository: IEmployeeTypeRepository
   ) {}
+
+  private ageOnTodayUTC(birthdate: Date): number {
+    const today = new UTCDateMini()
+    return differenceInYears(today, birthdate)
+  }
+
+  private todayBoundsUTC() {
+    const today = new UTCDateMini()
+    return {
+      start: startOfDay(today),
+      end: endOfDay(today),
+    }
+  }
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
     if (!data.name || data.name.trim().length === 0) {
@@ -38,23 +53,22 @@ export class EmployeeService implements IEmployeeService {
     if (data.monthlySalary && data.hourlySalary) {
       return failure(new ValidationError('Both monthly and hourly salary are filled', 'salary'))
     }
-
     if (data.monthlySalary && data.monthlySalary < 0) {
       return failure(new ValidationError('Monthly salary must be positive', 'monthlySalary'))
     }
-
     if (data.hourlySalary && data.hourlySalary < 0) {
       return failure(new ValidationError('Hourly salary must be positive', 'hourlySalary'))
     }
 
-    const currentDate = new Date()
-    const age = currentDate.getFullYear() - data.birthdate.getFullYear()
+    const age = this.ageOnTodayUTC(data.birthdate)
     if (age < 13) {
       return failure(new ValidationError('Must be over the age of 13 to be employed', 'birthday'))
     }
 
     try {
-      const employee = await this.employeeRepository.createEmployee(data)
+      const employee = await this.employeeRepository.createEmployee({
+        ...data,
+      })
       return success(employee)
     } catch (error) {
       console.error('Error creating employee:', error)
@@ -132,18 +146,15 @@ export class EmployeeService implements IEmployeeService {
           new ValidationError('Both monthly and hourly salary cannot be filled at the same time', 'salary')
         )
       }
-
       if (data.monthlySalary && data.monthlySalary < 0) {
         return failure(new ValidationError('Monthly salary must be a positive number', 'monthlySalary'))
       }
-
       if (data.hourlySalary && data.hourlySalary < 0) {
         return failure(new ValidationError('Hourly salary must be a positive number', 'hourlySalary'))
       }
 
       if (data.birthdate) {
-        const currentDate = new Date()
-        const age = currentDate.getFullYear() - new Date(data.birthdate).getFullYear()
+        const age = this.ageOnTodayUTC(data.birthdate)
         if (age < 13) {
           return failure(new ValidationError('Employee must be at least 13 years old', 'birthday'))
         }
@@ -196,6 +207,36 @@ export class EmployeeService implements IEmployeeService {
     } catch (error) {
       console.error('Error fetching employees: ', error)
       return failure(new DatabaseError('Database error while fetching employees'))
+    }
+  }
+
+  async getSimpleEmployees(companyId: number): Promise<Result<SimpleEmployee[], Error>> {
+    try {
+      const { start, end } = this.todayBoundsUTC()
+      const emps = await this.employeeRepository.getSimpleEmployeesByCompanyIdWithTodayAbsence(companyId, start, end)
+      return success(emps)
+    } catch (error) {
+      console.error('Error fetching simple employees:', error)
+      return failure(new DatabaseError('Database error while fetching simple employees'))
+    }
+  }
+
+  async getSimpleEmployeesByDepartment(
+    companyId: number,
+    departmentId: number
+  ): Promise<Result<SimpleEmployee[], Error>> {
+    try {
+      const { start, end } = this.todayBoundsUTC()
+      const emps = await this.employeeRepository.getSimpleEmployeesByCompanyAndDepartmentWithTodayAbsence(
+        companyId,
+        departmentId,
+        start,
+        end
+      )
+      return success(emps)
+    } catch (error) {
+      console.error('Error fetching simple employees by department:', error)
+      return failure(new DatabaseError('Database error while fetching simple employees by department'))
     }
   }
 }

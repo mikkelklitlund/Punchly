@@ -1,11 +1,13 @@
 import argon2 from 'argon2'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { Role, User, UserRefreshToken } from 'shared'
 import { Result, success, failure, Failure } from '../utils/Result.js'
 import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
-import { addDays } from 'date-fns'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
+import { Company, User, UserRefreshToken } from '../types/index.js'
+import { Role } from 'shared'
+import { UTCDateMini } from '@date-fns/utc'
+import { addDays } from 'date-fns'
 
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
@@ -40,19 +42,13 @@ export class UserService implements IUserService {
   > {
     try {
       const user = await this.userRepository.getUserByUsername(username)
-      if (!user) {
-        throw new Error('Invalid username')
-      }
+      if (!user) throw new Error('Invalid username')
 
       const match = await argon2.verify(user.password, password)
-      if (!match) {
-        throw new Error('Invalid password')
-      }
+      if (!match) throw new Error('Invalid password')
 
       const accessRecord = await this.userRepository.getUserCompanyAccess(user.id, companyId)
-      if (!accessRecord) {
-        throw new Error('User does not have access to this company')
-      }
+      if (!accessRecord) throw new Error('User does not have access to this company')
 
       const userRole = accessRecord.role
 
@@ -70,7 +66,7 @@ export class UserService implements IUserService {
         { expiresIn: '30d' }
       )
 
-      const expiryDate = addDays(new Date(), 1)
+      const expiryDate = addDays(new UTCDateMini(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
       return success({ accessToken, refreshToken, username: user.username, role: userRole, companyId })
@@ -83,9 +79,7 @@ export class UserService implements IUserService {
   async getUserByUsername(username: string): Promise<Result<User, Error>> {
     try {
       const user = await this.userRepository.getUserByUsername(username)
-      if (user) {
-        return success(user)
-      }
+      if (user) return success(user)
       return failure(new EntityNotFoundError(`User with username: ${username} was not found`))
     } catch (error) {
       console.error('Error fetching user:', error)
@@ -96,9 +90,7 @@ export class UserService implements IUserService {
   async getUserById(id: number): Promise<Result<User, Error>> {
     try {
       const user = await this.userRepository.getUserById(id)
-      if (user) {
-        return success(user)
-      }
+      if (user) return success(user)
       return failure(new EntityNotFoundError(`User with id: ${id} was not found`))
     } catch (error) {
       console.error('Error fetching user:', error)
@@ -143,46 +135,44 @@ export class UserService implements IUserService {
       const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as JwtPayload
 
       const user = await this.userRepository.getUserByUsername(decoded.username)
-      if (!user) {
-        return failure(new Error('User not found'))
-      }
+      if (!user) return failure(new Error('User not found'))
 
       const accessRecord = await this.userRepository.getUserCompanyAccess(user.id, decoded.companyId)
-      if (!accessRecord) {
-        throw new Error('User does not have access to this company')
-      }
+      if (!accessRecord) throw new Error('User does not have access to this company')
 
       const userRole = accessRecord.role
 
       const storedToken = await this.userRepository.getRefreshToken(refreshToken)
-      if (!storedToken || storedToken.revoked || storedToken.expiryDate < new Date()) {
+      const now = new UTCDateMini()
+      if (!storedToken || storedToken.revoked || storedToken.expiryDate < now) {
         return failure(new Error('Invalid or expired refresh token'))
       }
 
       const newAccessToken = jwt.sign(
         { username: user.username, companyId: decoded.companyId, role: userRole },
         process.env.ACCESS_TOKEN_SECRET!,
-        {
-          expiresIn: '15m',
-        }
+        { expiresIn: '15m' }
       )
 
-      let newRefreshToken: string | undefined = undefined
-      const timeUntilExpiry = storedToken.expiryDate.getTime() - Date.now()
+      let newRefreshToken: string | undefined
+      const timeUntilExpiryMs = storedToken.expiryDate.getTime() - now.getTime()
 
-      if (timeUntilExpiry < 5 * 60 * 1000) {
+      if (timeUntilExpiryMs < 5 * 60 * 1000) {
         await this.revokeRefreshToken(refreshToken)
 
-        newRefreshToken = jwt.sign({ username: user.username, role: userRole }, process.env.REFRESH_TOKEN_SECRET!, {
-          expiresIn: '30d',
-        })
-        const expiryDate = addDays(new Date(), 1)
+        newRefreshToken = jwt.sign(
+          { username: user.username, companyId: decoded.companyId, role: userRole },
+          process.env.REFRESH_TOKEN_SECRET!,
+          { expiresIn: '30d' }
+        )
+
+        const expiryDate = addDays(new UTCDateMini(), 1)
         await this.userRepository.createRefreshToken(user.id, newRefreshToken, expiryDate)
       }
 
       return success({
         accessToken: newAccessToken,
-        refreshToken: newRefreshToken ? newRefreshToken : refreshToken,
+        refreshToken: newRefreshToken ?? refreshToken,
       })
     } catch {
       return failure(new Error('Invalid refresh token'))
@@ -192,7 +182,6 @@ export class UserService implements IUserService {
   async getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
     try {
       const users = await this.userRepository.getUsersByCompanyAndRole(companyId, Role.MANAGER)
-
       return success(users)
     } catch {
       return failure(new Error('Error in database connection'))
@@ -201,21 +190,37 @@ export class UserService implements IUserService {
 
   async userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>> {
     const user = await this.getUserByUsername(username)
-
-    if (user instanceof Failure) {
-      return failure(new Error('User does not exist'))
-    }
+    if (user instanceof Failure) return failure(new Error('User does not exist'))
 
     const accessRecord = await this.userRepository.getUserCompanyAccess(user.value.id, companyId)
-
-    if (!accessRecord) {
-      return failure(new Error('User does not have access to this company'))
-    }
+    if (!accessRecord) return failure(new Error('User does not have access to this company'))
 
     if (!allowedRoles.includes(accessRecord.role)) {
       return failure(new Error('User does not have the correct role for this company'))
     }
 
     return success(true)
+  }
+
+  async getUserCompanyAccesses(userId: number): Promise<Result<Company[], Error>> {
+    try {
+      const companies = await this.userRepository.getCompaniesForUserId(userId)
+      return success(companies)
+    } catch (err) {
+      console.error('Error fetching companies for user:', err)
+      return failure(new DatabaseError('Database error while fetching user companies'))
+    }
+  }
+
+  async getCompaniesForUsername(username: string): Promise<Result<Company[], Error>> {
+    try {
+      const user = await this.userRepository.getUserByUsername(username)
+      if (!user) return success([])
+      const companies = await this.userRepository.getCompaniesForUserId(user.id)
+      return success(companies)
+    } catch (err) {
+      console.error('Error fetching companies for username:', err)
+      return failure(new DatabaseError('Database error while fetching companies for username'))
+    }
   }
 }

@@ -1,4 +1,5 @@
-import { Role, User, UserCompanyAccess, UserRefreshToken } from 'shared'
+import { Role } from 'shared'
+import { Company, User, UserCompanyAccess, UserRefreshToken } from '../../types/index.js'
 
 export interface IUserRepository {
   createUser(email: string, password: string, username: string): Promise<User>
@@ -15,4 +16,5 @@ export interface IUserRepository {
   revokeAllActiveUserTokens(userId: number): Promise<void>
   getUserCompanyAccess(userId: number, companyId: number): Promise<UserCompanyAccess | null>
   getUsersByCompanyAndRole(companyId: number, role: Role): Promise<User[]>
+  getCompaniesForUserId(userId: number): Promise<Company[]>
 }

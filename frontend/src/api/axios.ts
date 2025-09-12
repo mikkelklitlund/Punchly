@@ -9,6 +9,12 @@ interface AuthResponse extends JwtPayload {
   role?: Role
 }
 
+interface AuthResponse extends JwtPayload {
+  username?: string
+  companyId?: number
+  role?: Role
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 const STORAGE_TYPE = (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'sessionStorage') || 'localStorage'
 
@@ -67,21 +73,6 @@ export const removeStoredToken = (): void => {
   getStorage().removeItem('accessToken')
 }
 
-const isTokenExpired = (token: string): boolean => {
-  try {
-    const decoded = jwtDecode<AuthResponse>(token)
-    if (!decoded.exp) return false
-
-    const currentTime = Date.now()
-    const expiryTime = decoded.exp * 1000
-    const timeUntilExpiry = expiryTime - currentTime
-
-    return timeUntilExpiry <= 30000
-  } catch {
-    return true
-  }
-}
-
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (token) {
@@ -132,6 +123,17 @@ axiosInstance.interceptors.response.use(
           }
         }
 
+        setStoredToken(newAccessToken)
+
+        if (authContextUpdater) {
+          try {
+            const decoded = jwtDecode<AuthResponse>(newAccessToken)
+            authContextUpdater(decoded.username || '', decoded.role || Role.COMPANY, decoded.companyId)
+          } catch (decodeError) {
+            console.error('Failed to decode refreshed token:', decodeError)
+          }
+        }
+
         originalRequest.headers = originalRequest.headers || {}
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
 
@@ -140,6 +142,12 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         const errorObj = refreshError as Error
         processQueue(errorObj, null)
+
+        removeStoredToken()
+
+        if (logoutTrigger) {
+          logoutTrigger()
+        }
 
         removeStoredToken()
 
@@ -158,7 +166,11 @@ axiosInstance.interceptors.response.use(
     if (formattedError.status >= 500) {
       console.error('Server error:', formattedError.message)
     }
+    if (formattedError.status >= 500) {
+      console.error('Server error:', formattedError.message)
+    }
 
+    return Promise.reject(formattedError)
     return Promise.reject(formattedError)
   }
 )
@@ -178,5 +190,4 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-export { isTokenExpired }
 export default axiosInstance

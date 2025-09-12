@@ -1,4 +1,5 @@
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
+import { IAbsenceTypeService } from '../interfaces/services/IAbsenceTypeService.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import { ICompanyService } from '../interfaces/services/ICompanyService.js'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
@@ -7,6 +8,7 @@ import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeServic
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { RepositoryContainer } from '../repositories/RepositoryContainer.js'
 import { AbsenceService } from './AbsenceService.js'
+import { AbsenceTypeService } from './AbsenceTypeService.js'
 import { AttendanceService } from './AttendanceService.js'
 import { CompanyService } from './CompanyService.js'
 import { DepartmentService } from './DepartmentService.js'
@@ -22,12 +24,14 @@ export class ServiceContainer {
   public employeeService: IEmployeeService
   public employeeTypeService: IEmployeeTypeService
   public userService: IUserService
+  public absenceTypeService: IAbsenceTypeService
 
   constructor(repositoryContainer: RepositoryContainer) {
     this.absenceService = new AbsenceService(repositoryContainer.absenceRepository)
     this.attendanceService = new AttendanceService(
       repositoryContainer.attendanceRepository,
-      repositoryContainer.employeeRepository
+      repositoryContainer.employeeRepository,
+      repositoryContainer.absenceRepository
     )
     this.companyService = new CompanyService(repositoryContainer.companyRepository)
     this.departmentService = new DepartmentService(repositoryContainer.departmentRepository)
@@ -39,5 +43,6 @@ export class ServiceContainer {
     )
     this.employeeTypeService = new EmployeeTypeService(repositoryContainer.employeeTypeRepository)
     this.userService = new UserService(repositoryContainer.userRepository)
+    this.absenceTypeService = new AbsenceTypeService(repositoryContainer.absenceTypeRpository)
   }
 }

@@ -1,4 +1,4 @@
-import { CreateEmployee, Employee, EmployeeWithRecords } from 'shared'
+import { CreateEmployee, Employee, EmployeeWithRecords, SimpleEmployee } from '../../types/index.js'
 
 export interface IEmployeeRepository {
   createEmployee(data: CreateEmployee): Promise<Employee>
@@ -17,4 +17,11 @@ export interface IEmployeeRepository {
     companyId: number,
     departmentId?: number
   ): Promise<EmployeeWithRecords[]>
+  getSimpleEmployeesByCompanyIdWithTodayAbsence(companyId: number, start: Date, end: Date): Promise<SimpleEmployee[]>
+  getSimpleEmployeesByCompanyAndDepartmentWithTodayAbsence(
+    companyId: number,
+    departmentId: number,
+    start: Date,
+    end: Date
+  ): Promise<SimpleEmployee[]>
 }

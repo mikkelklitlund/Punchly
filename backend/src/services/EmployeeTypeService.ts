@@ -1,8 +1,8 @@
-import { EmployeeType } from 'shared'
 import { DatabaseError, ValidationError } from '../utils/Errors.js'
 import { failure, Result, success } from '../utils/Result.js'
 import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
 import { IEmployeeTypeRepository } from '../interfaces/repositories/IEmployeeTypeRepository.js'
+import { EmployeeType } from '../types/index.js'
 
 export class EmployeeTypeService implements IEmployeeTypeService {
   constructor(private readonly employeeTypeRepository: IEmployeeTypeRepository) {}
@@ -42,6 +42,26 @@ export class EmployeeTypeService implements IEmployeeTypeService {
     } catch (error) {
       console.error('Error deleting employee type:', error)
       return failure(new DatabaseError('Database error occurred while deleting the employee type.'))
+    }
+  }
+
+  async deleteEmployeeType(employeeTypeId: number): Promise<Result<EmployeeType, Error>> {
+    try {
+      const type = await this.employeeTypeRepository.deleteEmployeeType(employeeTypeId)
+      return success(type)
+    } catch (error) {
+      console.error('Error deleting employee type:', error)
+      return failure(new DatabaseError('Database error occurred while deleting the employee type.'))
+    }
+  }
+
+  async renameEmployeeType(employeeTypeId: number, newName: string): Promise<Result<EmployeeType, Error>> {
+    try {
+      const types = await this.employeeTypeRepository.updateEmployeeType(employeeTypeId, { name: newName })
+      return success(types)
+    } catch (error) {
+      console.error('Error updating employee type:', error)
+      return failure(new DatabaseError('Database error occurred while updating the employee type.'))
     }
   }
 }
