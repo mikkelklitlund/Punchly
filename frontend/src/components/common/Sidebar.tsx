@@ -1,7 +1,6 @@
 import { DepartmentDTO, Role } from 'shared'
 import { useAuth } from '../../contexts/AuthContext'
 import { House, Users, Settings, ChevronDown, ChevronUp, LogOut, CalendarClock } from 'lucide-react'
-import { House, Users, Settings, ChevronDown, ChevronUp, LogOut, CalendarClock } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useCompany } from '../../contexts/CompanyContext'
@@ -9,8 +8,6 @@ import { useCompany } from '../../contexts/CompanyContext'
 function Sidebar() {
   const { role, logout } = useAuth()
   const { departments, setCurrentDepartment, currentDepartment } = useCompany()
-  const [showSubMenuOverview, setShowSubMenuOverview] = useState(false)
-  const [showSubMenuAttendance, setShowSubMenuAttendance] = useState(false)
   const [showSubMenuOverview, setShowSubMenuOverview] = useState(false)
   const [showSubMenuAttendance, setShowSubMenuAttendance] = useState(false)
   const location = useLocation()
@@ -29,20 +26,11 @@ function Sidebar() {
       <div className="flex h-full flex-col justify-between p-4">
         {/* Scrollable content */}
         <ul className="flex-1 space-y-4 overflow-y-auto pr-1">
-    <aside className="bg-burnt flex h-screen w-full max-w-56 flex-col text-white">
-      <div className="flex h-full flex-col justify-between p-4">
-        {/* Scrollable content */}
-        <ul className="flex-1 space-y-4 overflow-y-auto pr-1">
           <li className="border-mustard border-b-2 pb-2">
             <Link to={'/'} className="text-3xl font-bold" onClick={() => setCurrentDepartment(undefined)}>
               Punchly
             </Link>
-            <Link to={'/'} className="text-3xl font-bold" onClick={() => setCurrentDepartment(undefined)}>
-              Punchly
-            </Link>
           </li>
-
-          {/* Overview menu */}
 
           {/* Overview menu */}
           <li>
@@ -51,9 +39,7 @@ function Sidebar() {
               onClick={(e) => {
                 e.stopPropagation()
                 setShowSubMenuOverview((prev) => !prev)
-                setShowSubMenuOverview((prev) => !prev)
               }}
-              aria-expanded={showSubMenuOverview}
               aria-expanded={showSubMenuOverview}
             >
               <div className="flex w-full items-center gap-2">
@@ -62,15 +48,10 @@ function Sidebar() {
                   Oversigt
                 </span>
                 {showSubMenuOverview ? <ChevronUp className="ml-auto" /> : <ChevronDown className="ml-auto" />}
-                <span className="truncate" title="Oversigt">
-                  Oversigt
-                </span>
-                {showSubMenuOverview ? <ChevronUp className="ml-auto" /> : <ChevronDown className="ml-auto" />}
               </div>
 
               <div
                 className={`flex flex-col justify-items-start space-y-2 overflow-hidden pl-6 transition-all duration-300 ${
-                  showSubMenuOverview ? 'max-h-96 pt-2 opacity-100' : 'max-h-0 opacity-0'
                   showSubMenuOverview ? 'max-h-96 pt-2 opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
@@ -85,9 +66,6 @@ function Sidebar() {
                     }`}
                     onClick={() => setCurrentDepartment(department)}
                   >
-                    <span className="block truncate overflow-hidden whitespace-nowrap" title={department.name}>
-                      {department.name}
-                    </span>
                     <span className="block truncate overflow-hidden whitespace-nowrap" title={department.name}>
                       {department.name}
                     </span>
@@ -156,8 +134,6 @@ function Sidebar() {
           </li>
 
           {/* Other main links */}
-
-          {/* Other main links */}
           {menuItems
             .filter((item) => item.roles.includes(role))
             .map((item) => (
@@ -171,15 +147,8 @@ function Sidebar() {
                     setShowSubMenuOverview(false)
                     setShowSubMenuAttendance(false)
                   }}
-                  onClick={() => {
-                    setShowSubMenuOverview(false)
-                    setShowSubMenuAttendance(false)
-                  }}
                 >
                   <item.icon className="text-cream" />
-                  <span className="block truncate overflow-hidden whitespace-nowrap" title={item.label}>
-                    {item.label}
-                  </span>
                   <span className="block truncate overflow-hidden whitespace-nowrap" title={item.label}>
                     {item.label}
                   </span>

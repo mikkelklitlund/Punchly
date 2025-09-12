@@ -9,13 +9,6 @@ import {
   removeStoredToken,
   setStoredToken,
 } from '../api/axios'
-import {
-  setAuthContextUpdater,
-  clearAuthContextUpdater,
-  setLogoutTrigger,
-  removeStoredToken,
-  setStoredToken,
-} from '../api/axios'
 import { Role } from 'shared'
 
 // Types
@@ -65,20 +58,17 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return { ...state, isLoading: true, error: null }
     case 'AUTH_SUCCESS':
     case 'SILENT_AUTH_SUCCESS':
-    case 'SILENT_AUTH_SUCCESS':
       return {
         ...state,
         user: action.payload.user,
         role: action.payload.role,
         companyId: action.payload.companyId,
         isLoading: false,
-        isLoading: false,
         error: null,
       }
     case 'AUTH_FAILURE':
       return { ...state, isLoading: false, error: action.payload }
     case 'AUTH_LOGOUT':
-    case 'FORCE_LOGOUT':
     case 'FORCE_LOGOUT':
       return { ...initialState, isLoading: false }
     default:
@@ -141,6 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         errorMessage = 'Invalid username or password'
       } else if (axiosError.response?.data?.message) {
         errorMessage = axiosError.response.data.message
+      }
       if (axiosError.response?.status === 401) {
         errorMessage = 'Invalid username or password'
       } else if (axiosError.response?.data?.message) {

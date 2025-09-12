@@ -9,11 +9,6 @@ interface AuthResponse extends JwtPayload {
   role?: Role
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
-const STORAGE_TYPE = (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'sessionStorage') || 'localStorage'
-import { jwtDecode, JwtPayload } from 'jwt-decode'
-import { Role } from 'shared'
-
 interface AuthResponse extends JwtPayload {
   username?: string
   companyId?: number
@@ -25,12 +20,10 @@ const STORAGE_TYPE = (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'ses
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  baseURL: API_BASE_URL,
   withCredentials: true,
 })
 
 const refreshTokenRequest = axios.create({
-  baseURL: API_BASE_URL,
   baseURL: API_BASE_URL,
   withCredentials: true,
 })
@@ -117,7 +110,6 @@ axiosInstance.interceptors.response.use(
 
       try {
         const response = await refreshTokenRequest.post('/auth/refresh')
-        const response = await refreshTokenRequest.post('/auth/refresh')
         const newAccessToken = response.data.accessToken
 
         setStoredToken(newAccessToken)
@@ -170,7 +162,6 @@ axiosInstance.interceptors.response.use(
     }
 
     const formattedError = formatApiError(error)
-    const formattedError = formatApiError(error)
 
     if (formattedError.status >= 500) {
       console.error('Server error:', formattedError.message)
@@ -188,7 +179,6 @@ axiosInstance.interceptors.request.use(
   (config) => {
     if (!config.url?.includes('/auth/')) {
       const token = getStoredToken()
-      const token = getStoredToken()
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`
       }
@@ -200,5 +190,4 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-export { isTokenExpired }
 export default axiosInstance

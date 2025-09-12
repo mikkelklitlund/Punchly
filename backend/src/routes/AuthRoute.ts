@@ -3,7 +3,6 @@ import { Failure } from '../utils/Result.js'
 import { ValidationError } from '../utils/Errors.js'
 import { body, validationResult } from 'express-validator'
 import { Router, Response, Request } from 'express'
-import { Router, Response, Request } from 'express'
 import authMiddleware from '../middleware/Auth.js'
 import { UserDTO } from 'shared'
 
@@ -49,7 +48,6 @@ export class AuthRoutes {
   }
 
   private validateRequest(req: Request, res: Response): boolean {
-  private validateRequest(req: Request, res: Response): boolean {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ errors: errors.array() })
@@ -58,7 +56,6 @@ export class AuthRoutes {
     return true
   }
 
-  private async register(req: Request, res: Response) {
   private async register(req: Request, res: Response) {
     if (!this.validateRequest(req, res)) return
 
@@ -82,7 +79,6 @@ export class AuthRoutes {
   }
 
   private async login(req: Request, res: Response) {
-  private async login(req: Request, res: Response) {
     if (!this.validateRequest(req, res)) return
 
     const { username, password, companyId } = req.body
@@ -103,7 +99,6 @@ export class AuthRoutes {
     })
   }
 
-  private async getProfile(req: Request, res: Response) {
   private async getProfile(req: Request, res: Response) {
     if (!req.username) {
       res.status(401).json({ error: 'Authentication required' })
@@ -127,7 +122,6 @@ export class AuthRoutes {
   }
 
   private async refreshToken(req: Request, res: Response) {
-  private async refreshToken(req: Request, res: Response) {
     const refreshToken = req.cookies?.jwt
     if (!refreshToken) {
       res.status(401).json({ error: 'No refresh token' })
@@ -146,7 +140,6 @@ export class AuthRoutes {
   }
 
   private async logout(req: Request, res: Response) {
-  private async logout(req: Request, res: Response) {
     try {
       const refreshToken = req.cookies.jwt
       if (refreshToken) {
@@ -164,7 +157,6 @@ export class AuthRoutes {
 
   private setAuthCookies(res: Response, refreshToken: string) {
     const isProd = process.env.NODE_ENV === 'production'
-    const isProd = process.env.NODE_ENV === 'production'
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
       sameSite: 'lax',
@@ -175,7 +167,6 @@ export class AuthRoutes {
   }
 
   private clearAuthCookies(res: Response) {
-    const isProd = process.env.NODE_ENV === 'production'
     const isProd = process.env.NODE_ENV === 'production'
     res.clearCookie('jwt', {
       httpOnly: true,

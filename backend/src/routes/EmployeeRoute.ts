@@ -260,7 +260,6 @@ export class EmployeeRoutes {
   }
 
   private async employeeCheckout(req: Request, res: Response) {
-  private async employeeCheckout(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
     const checkOutResult = await this.attendanceService.checkOutEmployee(employeeId)
 
@@ -333,7 +332,6 @@ export class EmployeeRoutes {
   }
 
   private async updateEmployee(req: Request, res: Response) {
-  private async updateEmployee(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ message: errors.array() })
@@ -352,7 +350,6 @@ export class EmployeeRoutes {
     res.status(200).json({ employee: toEmployeeDTO(result.value) })
   }
 
-  private async deleteEmployee(req: Request, res: Response) {
   private async deleteEmployee(req: Request, res: Response) {
     const employeeId = parseInt(req.params.id)
     const result = await this.employeeService.deleteEmployee(employeeId)
