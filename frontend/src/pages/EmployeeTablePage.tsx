@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
 import { useCompany } from '../contexts/CompanyContext'
-import { Employee, SimpleEmployee } from 'shared'
 import { employeeService } from '../services/employeeService'
 import Modal from '../components/common/Modal'
 import EditEmployeeForm from '../components/employee/EditEmployeeForm'
@@ -10,6 +9,7 @@ import DataTable, { Column } from '../components/common/DataTable'
 import { toast } from 'react-toastify'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAuth } from '../contexts/AuthContext'
+import { EmployeeDTO, SimpleEmployeeDTO } from 'shared'
 
 const EmployeeTablePage = () => {
   const { companyId } = useAuth()
@@ -17,7 +17,7 @@ const EmployeeTablePage = () => {
 
   const { data: employees = [], isLoading, error, refetch } = useEmployees(companyId, { live: false })
 
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDTO | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
 
@@ -48,7 +48,7 @@ const EmployeeTablePage = () => {
     })
   }, [employees, departments])
 
-  const columns: Column<SimpleEmployee>[] = [
+  const columns: Column<SimpleEmployeeDTO>[] = [
     {
       header: 'Navn',
       accessor: (emp) => (
@@ -83,7 +83,7 @@ const EmployeeTablePage = () => {
             e.stopPropagation()
             openEditModal(emp.id)
           }}
-          className="bg-rust hover:bg-rust/80 rounded-md px-3 py-1 text-sm text-white"
+          className="btn btn-rust"
         >
           Rediger
         </button>
@@ -96,10 +96,7 @@ const EmployeeTablePage = () => {
       <div className="w-full p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Medarbejderliste</h2>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700"
-          >
+          <button onClick={() => setShowCreateModal(true)} className="btn btn-rust">
             Ny medarbejder
           </button>
         </div>

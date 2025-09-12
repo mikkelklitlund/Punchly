@@ -159,10 +159,7 @@ function Sidebar() {
 
         {/* Sticky Logout */}
         <div className="border-mustard/30 border-t pt-4">
-          <button
-            onClick={logout}
-            className="bg-rust hover:bg-rust/80 flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white transition-colors duration-200"
-          >
+          <button onClick={logout} className="btn btn-rust w-full">
             <LogOut size={16} />
             Log ud
           </button>

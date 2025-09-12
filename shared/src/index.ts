@@ -93,4 +93,6 @@ export type AttendanceRecordDTO = {
 }
 export type CreateAttendanceRecordDTO = {
 	employeeId: number
+	checkIn: string | null
+	checkOut: string | null
 }

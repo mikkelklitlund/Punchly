@@ -28,3 +28,31 @@ layer(base);
     border-color: var(--color-gray-200, currentColor);
   }
 }
+
+@layer base {
+  button {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply flex cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white transition-colors duration-200;
+  }
+
+  .btn-rust {
+    @apply bg-rust hover:bg-rust/80;
+  }
+
+  .btn-gray {
+    @apply bg-gray-500 hover:bg-gray-700;
+  }
+
+  .btn-green {
+    @apply bg-green-600 hover:bg-green-700;
+  }
+
+  .btn-red {
+    @apply bg-red-500 hover:bg-red-700;
+  }
+}

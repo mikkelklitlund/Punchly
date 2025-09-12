@@ -14,6 +14,7 @@ export type EmployeeFormValues = {
   employeeTypeId?: number | ''
   monthlySalary?: number
   hourlySalary?: number
+  monthlyHours?: number
   profilePicturePath?: string
 }
 
@@ -27,20 +28,23 @@ interface Props {
 
 const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDelete }: Props) => {
   const { departments, employeeTypes } = useCompany()
+
   const [name, setName] = useState(initialValues.name ?? '')
   const [birthdate, setBirthdate] = useState(initialValues.birthdate ?? '')
   const [address, setAddress] = useState(initialValues.address ?? '')
   const [city, setCity] = useState(initialValues.city ?? '')
-  const [departmentId, setDepartmentId] = useState<number | ''>(initialValues.departmentId ?? departments[0]?.id ?? '')
-  const [employeeTypeId, setEmployeeTypeId] = useState<number | ''>(
-    initialValues.employeeTypeId ?? employeeTypes[0]?.id ?? ''
-  )
+  const [departmentId, setDepartmentId] = useState<number | ''>(initialValues.departmentId ?? '')
+  const [employeeTypeId, setEmployeeTypeId] = useState<number | ''>(initialValues.employeeTypeId ?? '')
   const [monthlySalary, setMonthlySalary] = useState<number>(initialValues.monthlySalary ?? 0)
   const [hourlySalary, setHourlySalary] = useState<number>(initialValues.hourlySalary ?? 0)
+  const [monthlyHours, setMonthlyHours] = useState<number | undefined>(initialValues.monthlyHours ?? undefined)
+
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string>(initialValues.profilePicturePath ?? '')
+
   const [isSaving, setIsSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -55,10 +59,21 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const newErrors: { [key: string]: string } = {}
 
-    if (!departmentId || !employeeTypeId) return
-    if ((monthlySalary ?? 0) > 0 && (hourlySalary ?? 0) > 0) return
+    if (!name) newErrors.name = 'Navn er påkrævet'
+    if (!departmentId) newErrors.departmentId = 'Vælg en afdeling'
+    if (!employeeTypeId) newErrors.employeeTypeId = 'Vælg en medarbejdertype'
+    if ((monthlySalary ?? 0) > 0 && (hourlySalary ?? 0) > 0) {
+      newErrors.salary = 'Udfyld kun én af lønfelterne'
+    }
 
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    setErrors({})
     setIsSaving(true)
     try {
       await onSubmit(
@@ -69,8 +84,9 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
           city,
           departmentId,
           employeeTypeId,
-          monthlySalary: monthlySalary || 0,
-          hourlySalary: hourlySalary || 0,
+          monthlySalary: monthlySalary,
+          hourlySalary: hourlySalary,
+          monthlyHours: monthlyHours,
           profilePicturePath: initialValues.profilePicturePath,
         },
         imageFile
@@ -87,7 +103,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isSaving}>
         {/* Image + Upload */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-          <div className="h-28 w-28 overflow-hidden rounded-full bg-gray-100 shadow-md">
+          <div className="h-28 w-28 overflow-hidden rounded-md bg-gray-100 shadow-md">
             {renderPreviewSrc ? (
               <img src={renderPreviewSrc} alt="Profilbillede" className="h-full w-full object-cover" />
             ) : (
@@ -96,12 +112,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
           </div>
 
           <div className="flex h-28 flex-col items-center justify-end sm:items-start sm:justify-end">
-            <label
-              htmlFor="imageUpload"
-              className={`cursor-pointer rounded bg-gray-100 px-4 py-2 text-sm text-gray-700 shadow hover:bg-gray-200 ${
-                isSaving ? 'pointer-events-none opacity-50' : ''
-              }`}
-            >
+            <label htmlFor="imageUpload" className={`btn btn-gray ${isSaving ? 'pointer-events-none opacity-50' : ''}`}>
               {imageFile ? 'Skift billede' : 'Vælg billede'}
             </label>
             <input
@@ -119,29 +130,35 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
 
         {/* Fields */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Navn</label>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
-              required
+              onChange={(e) => {
+                setName(e.target.value)
+                setErrors((prev) => ({ ...prev, name: '' }))
+              }}
+              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
               disabled={isSaving}
             />
+            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
           </div>
 
+          {/* Birthdate */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Fødselsdato</label>
             <input
               type="date"
               value={birthdate}
               onChange={(e) => setBirthdate(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
               disabled={isSaving}
             />
           </div>
 
+          {/* Address */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Adresse</label>
             <input
@@ -153,6 +170,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
             />
           </div>
 
+          {/* City */}
           <div>
             <label className="block text-sm font-medium text-gray-700">By</label>
             <input
@@ -164,16 +182,19 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
             />
           </div>
 
+          {/* Department */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Afdeling</label>
             <select
               value={departmentId ?? ''}
-              onChange={(e) => setDepartmentId(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              onChange={(e) => {
+                setDepartmentId(Number(e.target.value))
+                setErrors((prev) => ({ ...prev, departmentId: '' }))
+              }}
+              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm ${errors.departmentId ? 'border-red-500' : 'border-gray-300'}`}
               disabled={isSaving}
-              required
             >
-              <option value="" disabled>
+              <option value="" hidden>
                 Vælg afdeling...
               </option>
               {departments.map((d) => (
@@ -182,18 +203,22 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
                 </option>
               ))}
             </select>
+            {errors.departmentId && <p className="mt-1 text-sm text-red-600">{errors.departmentId}</p>}
           </div>
 
+          {/* Employee type */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Medarbejdertype</label>
             <select
               value={employeeTypeId ?? ''}
-              onChange={(e) => setEmployeeTypeId(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              onChange={(e) => {
+                setEmployeeTypeId(Number(e.target.value))
+                setErrors((prev) => ({ ...prev, employeeTypeId: '' }))
+              }}
+              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm ${errors.employeeTypeId ? 'border-red-500' : 'border-gray-300'}`}
               disabled={isSaving}
-              required
             >
-              <option value="" disabled>
+              <option value="" hidden>
                 Vælg type...
               </option>
               {employeeTypes.map((t) => (
@@ -202,68 +227,84 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
                 </option>
               ))}
             </select>
+            {errors.employeeTypeId && <p className="mt-1 text-sm text-red-600">{errors.employeeTypeId}</p>}
           </div>
 
+          {/* Monthly Salary */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Månedsløn (DKK)</label>
             <input
               type="number"
               value={monthlySalary}
-              onChange={(e) => setMonthlySalary(Number(e.target.value))}
-              disabled={(hourlySalary ?? 0) > 0 || isSaving}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm disabled:bg-gray-100"
+              onChange={(e) => {
+                setMonthlySalary(Number(e.target.value))
+                setErrors((prev) => ({ ...prev, salary: '' }))
+              }}
+              disabled={hourlySalary > 0 || isSaving}
+              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm disabled:bg-gray-100 ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
               min={0}
             />
           </div>
 
+          {/* Hourly Salary */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Timeløn (DKK)</label>
             <input
               type="number"
               value={hourlySalary}
-              onChange={(e) => setHourlySalary(Number(e.target.value))}
-              disabled={(monthlySalary ?? 0) > 0 || isSaving}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm disabled:bg-gray-100"
+              onChange={(e) => {
+                setHourlySalary(Number(e.target.value))
+                setErrors((prev) => ({ ...prev, salary: '' }))
+              }}
+              disabled={monthlySalary > 0 || isSaving}
+              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm disabled:bg-gray-100 ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
               min={0}
+            />
+          </div>
+
+          {/* Monthly Hours */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Månedlige timer</label>
+            <input
+              type="number"
+              value={monthlyHours ?? ''}
+              onChange={(e) => setMonthlyHours(e.target.value ? Number(e.target.value) : undefined)}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              min={0}
+              disabled={isSaving}
             />
           </div>
         </div>
 
+        {errors.salary && <p className="mt-2 text-sm text-red-600">{errors.salary}</p>}
         <p className="mt-2 text-xs text-gray-500 italic">Udfyld kun én af lønfelterne: månedsløn eller timeløn.</p>
 
+        {/* Actions */}
         <div className="flex items-center justify-between pt-4">
           {onDelete ? (
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              className="btn btn-red"
               disabled={isSaving}
             >
               Slet
             </button>
           ) : onCancel ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-md bg-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-400 hover:text-white"
-              disabled={isSaving}
-            >
+            <button type="button" onClick={onCancel} className="btn btn-gray" disabled={isSaving}>
               Annuller
             </button>
           ) : (
             <span />
           )}
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={isSaving} className="btn btn-green">
             {isSaving && <LoadingSpinner size="small" />}
             {isSaving ? 'Gemmer...' : submitLabel}
           </button>
         </div>
       </form>
+
       {/* Confirm delete modal */}
       {onDelete && showDeleteConfirm && (
         <Modal title="Bekræft sletning" closeModal={() => setShowDeleteConfirm(false)}>
@@ -284,7 +325,7 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
                 await onDelete()
                 setShowDeleteConfirm(false)
               }}
-              className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              className="btn btn-red"
             >
               Slet
             </button>

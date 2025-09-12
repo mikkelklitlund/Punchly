@@ -14,7 +14,7 @@ const AttendanceReportPage = () => {
   const [departmentId, setDepartmentId] = useState<number | ''>('')
 
   const reportMutation = useMutation({
-    mutationFn: (vars: { start: Date; end: Date; departmentId?: number }) =>
+    mutationFn: (vars: { start: string; end: string; departmentId?: number }) =>
       employeeService.getAttendanceReport(vars.start, vars.end, vars.departmentId),
   })
 
@@ -34,8 +34,8 @@ const AttendanceReportPage = () => {
     try {
       const blob = await toast.promise(
         reportMutation.mutateAsync({
-          start: start.toDate(),
-          end: end.toDate(),
+          start: startDate,
+          end: endDate,
           departmentId: departmentId ? Number(departmentId) : undefined,
         }),
         {
@@ -108,11 +108,7 @@ const AttendanceReportPage = () => {
       </div>
 
       <div>
-        <button
-          onClick={handleDownload}
-          disabled={reportMutation.isPending}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        <button onClick={handleDownload} disabled={reportMutation.isPending} className="btn btn-rust">
           {reportMutation.isPending && <LoadingSpinner size="small" />}
           {reportMutation.isPending ? 'Genererer...' : 'Download rapport'}
         </button>

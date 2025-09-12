@@ -1,22 +1,21 @@
 import EmployeeForm, { EmployeeFormValues } from './EmployeeForm'
-import { useCompany } from '../../contexts/CompanyContext'
 import { employeeService } from '../../services/employeeService'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../contexts/AuthContext'
 
 const CreateEmployeeForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const { companyId } = useAuth()
-  const { departments, employeeTypes } = useCompany()
 
   const initial: EmployeeFormValues = {
     name: '',
     birthdate: '',
     address: '',
     city: '',
-    departmentId: departments[0]?.id ?? '',
-    employeeTypeId: employeeTypes[0]?.id ?? '',
+    departmentId: '',
+    employeeTypeId: '',
     monthlySalary: 0,
     hourlySalary: 0,
+    monthlyHours: undefined,
     profilePicturePath: '',
   }
 
@@ -42,8 +41,9 @@ const CreateEmployeeForm = ({ onSuccess }: { onSuccess: () => void }) => {
         city: v.city,
         departmentId: Number(v.departmentId),
         employeeTypeId: Number(v.employeeTypeId),
-        monthlySalary: (v.monthlySalary ?? 0) > 0 ? v.monthlySalary : undefined,
-        hourlySalary: (v.hourlySalary ?? 0) > 0 ? v.hourlySalary : undefined,
+        monthlySalary: v.monthlySalary ?? null,
+        hourlySalary: v.hourlySalary ?? null,
+        monthlyHours: v.monthlyHours ?? null,
         birthdate: v.birthdate,
         companyId,
       }),

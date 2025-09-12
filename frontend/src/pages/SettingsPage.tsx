@@ -61,235 +61,237 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 p-6">
-      <h1 className="text-2xl font-bold text-gray-800">Indstillinger</h1>
+    <div className="w-fullp-4">
+      <h1 className="text-2xl text-gray-800">Indstillinger</h1>
 
       {busy && <LoadingSpinner message="Indlæser..." />}
+      <div className="mt-3 flex flex-wrap gap-5">
+        {/* Departments */}
+        <section className="min-w-[500px] flex-1 rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold">Afdelinger</h2>
 
-      {/* Departments */}
-      <section className="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold">Afdelinger</h2>
+          <div className="mb-3 flex gap-2">
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Ny afdeling…"
+              value={newDep}
+              onChange={(e) => setNewDep(e.target.value)}
+            />
+            <button
+              className="btn btn-green"
+              onClick={() => newDep.trim() && depMut.create.mutate(newDep.trim(), { onSuccess: () => setNewDep('') })}
+              disabled={!newDep.trim() || depMut.create.isPending}
+            >
+              Opret
+            </button>
+          </div>
 
-        <div className="mb-3 flex gap-2">
-          <input
-            className="w-full rounded-md border px-3 py-2"
-            placeholder="Ny afdeling…"
-            value={newDep}
-            onChange={(e) => setNewDep(e.target.value)}
-          />
-          <button
-            className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
-            onClick={() => newDep.trim() && depMut.create.mutate(newDep.trim(), { onSuccess: () => setNewDep('') })}
-            disabled={!newDep.trim() || depMut.create.isPending}
-          >
-            Opret
-          </button>
-        </div>
-
-        <ul className="divide-y">
-          {departments.map((d) => (
-            <li key={d.id} className="flex items-center justify-between py-2">
-              {editingDepId === d.id ? (
-                <div className="flex w-full items-center gap-2">
-                  <input
-                    className="w-full rounded-md border px-3 py-2"
-                    value={editingDepName}
-                    onChange={(e) => setEditingDepName(e.target.value)}
-                  />
-                  <button
-                    className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
-                    onClick={() =>
-                      editingDepName.trim() &&
-                      depMut.rename.mutate(
-                        { id: d.id, name: editingDepName.trim() },
-                        { onSuccess: () => setEditingDepId(null) }
-                      )
-                    }
-                    disabled={!editingDepName.trim() || depMut.rename.isPending}
-                  >
-                    Gem
-                  </button>
-                  <button className="rounded-md bg-gray-200 px-3 py-2" onClick={() => setEditingDepId(null)}>
-                    Annuller
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span className="text-gray-800">{d.name}</span>
-                  <div className="flex items-center gap-2">
+          <ul className="divide-y">
+            {departments.map((d) => (
+              <li key={d.id} className="flex items-center justify-between py-2">
+                {editingDepId === d.id ? (
+                  <div className="flex w-full items-center gap-2">
+                    <input
+                      className="w-full rounded-md border px-3 py-2"
+                      value={editingDepName}
+                      onChange={(e) => setEditingDepName(e.target.value)}
+                    />
                     <button
-                      className="rounded-md bg-blue-600 px-3 py-1.5 text-white"
-                      onClick={() => {
-                        setEditingDepId(d.id)
-                        setEditingDepName(d.name)
-                      }}
+                      className="btn btn-green"
+                      onClick={() =>
+                        editingDepName.trim() &&
+                        depMut.rename.mutate(
+                          { id: d.id, name: editingDepName.trim() },
+                          { onSuccess: () => setEditingDepId(null) }
+                        )
+                      }
+                      disabled={!editingDepName.trim() || depMut.rename.isPending}
                     >
-                      Rediger
+                      Gem
                     </button>
-                    <button
-                      className="rounded-md bg-red-600 px-3 py-1.5 text-white"
-                      onClick={() => setConfirmDelete({ kind: 'dep', id: d.id, name: d.name })}
-                    >
-                      Slet
+                    <button className="btn btn-gray" onClick={() => setEditingDepId(null)}>
+                      Annuller
                     </button>
                   </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+                ) : (
+                  <>
+                    <span className="text-gray-800">{d.name}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="btn btn-rust"
+                        onClick={() => {
+                          setEditingDepId(d.id)
+                          setEditingDepName(d.name)
+                        }}
+                      >
+                        Rediger
+                      </button>
+                      <button
+                        className="btn btn-red"
+                        onClick={() => setConfirmDelete({ kind: 'dep', id: d.id, name: d.name })}
+                      >
+                        Slet
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      {/* Employee Types */}
-      <section className="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold">Medarbejdertyper</h2>
+        {/* Employee Types */}
+        <section className="min-w-[500px] flex-1 rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold">Medarbejdertyper</h2>
 
-        <div className="mb-3 flex gap-2">
-          <input
-            className="w-full rounded-md border px-3 py-2"
-            placeholder="Ny medarbejdertype…"
-            value={newType}
-            onChange={(e) => setNewType(e.target.value)}
-          />
-          <button
-            className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
-            onClick={() => newType.trim() && typeMut.create.mutate(newType.trim(), { onSuccess: () => setNewType('') })}
-            disabled={!newType.trim() || typeMut.create.isPending}
-          >
-            Opret
-          </button>
-        </div>
+          <div className="mb-3 flex gap-2">
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Ny medarbejdertype…"
+              value={newType}
+              onChange={(e) => setNewType(e.target.value)}
+            />
+            <button
+              className="btn btn-green"
+              onClick={() =>
+                newType.trim() && typeMut.create.mutate(newType.trim(), { onSuccess: () => setNewType('') })
+              }
+              disabled={!newType.trim() || typeMut.create.isPending}
+            >
+              Opret
+            </button>
+          </div>
 
-        <ul className="divide-y">
-          {employeeTypes.map((t) => (
-            <li key={t.id} className="flex items-center justify-between py-2">
-              {editingTypeId === t.id ? (
-                <div className="flex w-full items-center gap-2">
-                  <input
-                    className="w-full rounded-md border px-3 py-2"
-                    value={editingTypeName}
-                    onChange={(e) => setEditingTypeName(e.target.value)}
-                  />
-                  <button
-                    className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
-                    onClick={() =>
-                      editingTypeName.trim() &&
-                      typeMut.rename.mutate(
-                        { id: t.id, name: editingTypeName.trim() },
-                        { onSuccess: () => setEditingTypeId(null) }
-                      )
-                    }
-                    disabled={!editingTypeName.trim() || typeMut.rename.isPending}
-                  >
-                    Gem
-                  </button>
-                  <button className="rounded-md bg-gray-200 px-3 py-2" onClick={() => setEditingTypeId(null)}>
-                    Annuller
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span className="text-gray-800">{t.name}</span>
-                  <div className="flex items-center gap-2">
+          <ul className="divide-y">
+            {employeeTypes.map((t) => (
+              <li key={t.id} className="flex items-center justify-between py-2">
+                {editingTypeId === t.id ? (
+                  <div className="flex w-full items-center gap-2">
+                    <input
+                      className="w-full rounded-md border px-3 py-2"
+                      value={editingTypeName}
+                      onChange={(e) => setEditingTypeName(e.target.value)}
+                    />
                     <button
-                      className="rounded-md bg-blue-600 px-3 py-1.5 text-white"
-                      onClick={() => {
-                        setEditingTypeId(t.id)
-                        setEditingTypeName(t.name)
-                      }}
+                      className="btn btn-green"
+                      onClick={() =>
+                        editingTypeName.trim() &&
+                        typeMut.rename.mutate(
+                          { id: t.id, name: editingTypeName.trim() },
+                          { onSuccess: () => setEditingTypeId(null) }
+                        )
+                      }
+                      disabled={!editingTypeName.trim() || typeMut.rename.isPending}
                     >
-                      Rediger
+                      Gem
                     </button>
-                    <button
-                      className="rounded-md bg-red-600 px-3 py-1.5 text-white"
-                      onClick={() => setConfirmDelete({ kind: 'type', id: t.id, name: t.name })}
-                    >
-                      Slet
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* Absence Types (NEW) */}
-      <section className="rounded-lg border bg-white p-4 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold">Fraværstyper</h2>
-
-        <div className="mb-3 flex gap-2">
-          <input
-            className="w-full rounded-md border px-3 py-2"
-            placeholder="Ny fraværstype…"
-            value={newAbsence}
-            onChange={(e) => setNewAbsence(e.target.value)}
-          />
-          <button
-            className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
-            onClick={() =>
-              newAbsence.trim() && absenceMut.create.mutate(newAbsence.trim(), { onSuccess: () => setNewAbsence('') })
-            }
-            disabled={!newAbsence.trim() || absenceMut.create.isPending}
-          >
-            Opret
-          </button>
-        </div>
-
-        <ul className="divide-y">
-          {absenceTypes.map((a) => (
-            <li key={a.id} className="flex items-center justify-between py-2">
-              {editingAbsenceId === a.id ? (
-                <div className="flex w-full items-center gap-2">
-                  <input
-                    className="w-full rounded-md border px-3 py-2"
-                    value={editingAbsenceName}
-                    onChange={(e) => setEditingAbsenceName(e.target.value)}
-                  />
-                  <button
-                    className="rounded-md bg-green-600 px-3 py-2 text-white disabled:opacity-50"
-                    onClick={() =>
-                      editingAbsenceName.trim() &&
-                      absenceMut.rename.mutate(
-                        { id: a.id, name: editingAbsenceName.trim() },
-                        { onSuccess: () => setEditingAbsenceId(null) }
-                      )
-                    }
-                    disabled={!editingAbsenceName.trim() || absenceMut.rename.isPending}
-                  >
-                    Gem
-                  </button>
-                  <button className="rounded-md bg-gray-200 px-3 py-2" onClick={() => setEditingAbsenceId(null)}>
-                    Annuller
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span className="text-gray-800">{a.name}</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="rounded-md bg-blue-600 px-3 py-1.5 text-white"
-                      onClick={() => {
-                        setEditingAbsenceId(a.id)
-                        setEditingAbsenceName(a.name)
-                      }}
-                    >
-                      Rediger
-                    </button>
-                    <button
-                      className="rounded-md bg-red-600 px-3 py-1.5 text-white"
-                      onClick={() => setConfirmDelete({ kind: 'absence', id: a.id, name: a.name })}
-                    >
-                      Slet
+                    <button className="btn btn-gray" onClick={() => setEditingTypeId(null)}>
+                      Annuller
                     </button>
                   </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+                ) : (
+                  <>
+                    <span className="text-gray-800">{t.name}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="btn btn-rust"
+                        onClick={() => {
+                          setEditingTypeId(t.id)
+                          setEditingTypeName(t.name)
+                        }}
+                      >
+                        Rediger
+                      </button>
+                      <button
+                        className="btn btn-red"
+                        onClick={() => setConfirmDelete({ kind: 'type', id: t.id, name: t.name })}
+                      >
+                        Slet
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
 
+        {/* Absence Types */}
+        <section className="min-w-[500px] flex-1 rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold">Fraværstyper</h2>
+
+          <div className="mb-3 flex gap-2">
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              placeholder="Ny fraværstype…"
+              value={newAbsence}
+              onChange={(e) => setNewAbsence(e.target.value)}
+            />
+            <button
+              className="btn btn-green"
+              onClick={() =>
+                newAbsence.trim() && absenceMut.create.mutate(newAbsence.trim(), { onSuccess: () => setNewAbsence('') })
+              }
+              disabled={!newAbsence.trim() || absenceMut.create.isPending}
+            >
+              Opret
+            </button>
+          </div>
+
+          <ul className="divide-y">
+            {absenceTypes.map((a) => (
+              <li key={a.id} className="flex items-center justify-between py-2">
+                {editingAbsenceId === a.id ? (
+                  <div className="flex w-full items-center gap-2">
+                    <input
+                      className="w-full rounded-md border px-3 py-2"
+                      value={editingAbsenceName}
+                      onChange={(e) => setEditingAbsenceName(e.target.value)}
+                    />
+                    <button
+                      className="btn btn-green"
+                      onClick={() =>
+                        editingAbsenceName.trim() &&
+                        absenceMut.rename.mutate(
+                          { id: a.id, name: editingAbsenceName.trim() },
+                          { onSuccess: () => setEditingAbsenceId(null) }
+                        )
+                      }
+                      disabled={!editingAbsenceName.trim() || absenceMut.rename.isPending}
+                    >
+                      Gem
+                    </button>
+                    <button className="btn btn-gray" onClick={() => setEditingAbsenceId(null)}>
+                      Annuller
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-gray-800">{a.name}</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="btn btn-rust"
+                        onClick={() => {
+                          setEditingAbsenceId(a.id)
+                          setEditingAbsenceName(a.name)
+                        }}
+                      >
+                        Rediger
+                      </button>
+                      <button
+                        className="btn btn-red"
+                        onClick={() => setConfirmDelete({ kind: 'absence', id: a.id, name: a.name })}
+                      >
+                        Slet
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
       {/* Confirm Delete Modal */}
       {confirmDelete && (
         <Modal

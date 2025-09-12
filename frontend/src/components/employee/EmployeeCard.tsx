@@ -20,7 +20,7 @@ const EmployeeCard = React.memo(({ employee }: EmployeeCardProps) => {
     >
       {isAbsentToday && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <span className="rounded-md bg-black/60 px-3 py-1.5 text-sm font-semibold text-white shadow">{reason}</span>
+          <span className="rounded-md bg-black/60 px-3 py-1.5 text-xl font-semibold text-white shadow">{reason}</span>
         </div>
       )}
 

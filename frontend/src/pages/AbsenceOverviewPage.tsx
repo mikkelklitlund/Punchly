@@ -8,11 +8,13 @@ import dayjs from 'dayjs'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import EditAbsenceForm from '../components/absence/EditAbsenceForm'
+import CreateAbsenceForm from '../components/absence/CreateAbsenceForm'
 
 const AbsenceOverviewPage = () => {
   const { companyId } = useAuth()
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
   const [editRecord, setEditRecord] = useState<AbsenceRecordDTO | null>(null)
+  const [createRecord, setCreateRecord] = useState<boolean>(false)
   const [selectedStartDate, setSelectedStartDate] = useState<string>(dayjs().subtract(30, 'days').format('YYYY-MM-DD'))
   const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
 
@@ -56,31 +58,39 @@ const AbsenceOverviewPage = () => {
       <h1 className="text-2xl font-bold text-gray-800">Fravær</h1>
 
       <div className="space-y-2">
-        <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-          Vælg medarbejder
-        </label>
-        <select
-          id="employee"
-          className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
-          value={selectedEmployeeId || ''}
-          disabled={empLoading}
-        >
-          <option value="" hidden>
-            -- Vælg en medarbejder --
-          </option>
-          {employees.map((emp) => (
-            <option key={emp.id} value={emp.id}>
-              {emp.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-end justify-between">
+          <div>
+            <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+              Vælg medarbejder
+            </label>
+            <select
+              id="employee"
+              className="mt-1 w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
+              value={selectedEmployeeId || ''}
+              disabled={empLoading}
+            >
+              <option value="" hidden>
+                -- Vælg en medarbejder --
+              </option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button className="btn btn-rust" onClick={() => setCreateRecord(true)}>
+            Nyt fravær
+          </button>
+        </div>
+
         <div className="flex gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700">Start dato</label>
             <input
               type="date"
-              value={dayjs(selectedStartDate).format('YYYY-MM-DD')}
+              value={selectedStartDate}
               onChange={(e) => setSelectedStartDate(e.target.value)}
               className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
               disabled={isLoading}
@@ -90,11 +100,16 @@ const AbsenceOverviewPage = () => {
             <label className="block text-sm font-medium text-gray-700">Slut dato</label>
             <input
               type="date"
-              value={dayjs(selectedEndDate).format('YYYY-MM-DD')}
+              value={selectedEndDate}
               onChange={(e) => setSelectedEndDate(e.target.value)}
               className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
               disabled={isLoading}
             />
+          </div>
+          <div className="flex items-end">
+            <button className="btn btn-rust" onClick={() => refetch()} disabled={isLoading || !selectedEmployeeId}>
+              Hent
+            </button>
           </div>
         </div>
 
@@ -130,6 +145,18 @@ const AbsenceOverviewPage = () => {
               refetch()
               setEditRecord(null)
             }}
+          />
+        </Modal>
+      )}
+
+      {createRecord && (
+        <Modal title="Opret Fravær" closeModal={() => setCreateRecord(false)}>
+          <CreateAbsenceForm
+            onSuccess={() => {
+              refetch()
+              setCreateRecord(false)
+            }}
+            onCancel={() => setCreateRecord(false)}
           />
         </Modal>
       )}

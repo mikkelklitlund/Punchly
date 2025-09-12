@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAttendanceRecords } from '../hooks/useAttendanceRecords'
 import { AttendanceRecordDTO } from 'shared'
+import CreateAttendanceForm from '../components/attendance/CreateAttendanceForm'
 
 dayjs.extend(duration)
 
@@ -20,7 +21,17 @@ const AttendanceOverviewPage = () => {
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
   const [editRecord, setEditRecord] = useState<AttendanceRecordDTO | null>(null)
-  const { data: records = [], isLoading, error, refetch } = useAttendanceRecords(selectedEmployeeId || undefined)
+  const [selectedStartDate, setSelectedStartDate] = useState<string>(
+    dayjs().subtract(30, 'days').format('YYYY-MM-DDTHH:mm')
+  )
+  const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DDTHH:mm'))
+  const {
+    data: records = [],
+    isLoading,
+    error,
+    refetch,
+  } = useAttendanceRecords(selectedEmployeeId || undefined, selectedStartDate, selectedEndDate)
+  const [createRecord, setCreateRecord] = useState<boolean>(false)
 
   const selectedEmployee = useMemo(
     () => employees.find((e) => e.id === selectedEmployeeId),
@@ -74,25 +85,61 @@ const AttendanceOverviewPage = () => {
       <h1 className="text-2xl font-bold text-gray-800">Registrerede tider</h1>
 
       <div className="space-y-2">
-        <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-          Vælg medarbejder
-        </label>
-        <select
-          id="employee"
-          className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-          onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
-          value={selectedEmployeeId || ''}
-          disabled={empLoading}
-        >
-          <option value="" hidden>
-            -- Vælg en medarbejder --
-          </option>
-          {employees.map((emp) => (
-            <option key={emp.id} value={emp.id}>
-              {emp.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-end justify-between">
+          <div>
+            <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+              Vælg medarbejder
+            </label>
+            <select
+              id="employee"
+              className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
+              value={selectedEmployeeId || ''}
+              disabled={empLoading}
+            >
+              <option value="" hidden>
+                -- Vælg en medarbejder --
+              </option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button className="btn btn-rust" onClick={() => setCreateRecord(true)}>
+            Nyt fravær
+          </button>
+        </div>
+
+        <div className="flex gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Start dato</label>
+            <input
+              type="datetime-local"
+              value={selectedStartDate}
+              onChange={(e) => setSelectedStartDate(e.target.value)}
+              className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
+              disabled={isLoading}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Slut dato</label>
+            <input
+              type="datetime-local"
+              value={selectedEndDate}
+              onChange={(e) => setSelectedEndDate(e.target.value)}
+              className="mt-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:ring-green-500"
+              disabled={isLoading}
+            />
+          </div>
+          <div className="flex items-end">
+            <button className="btn btn-rust" onClick={() => refetch()} disabled={isLoading || !selectedEmployeeId}>
+              Hent
+            </button>
+          </div>
+        </div>
 
         {empLoading && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -126,7 +173,18 @@ const AttendanceOverviewPage = () => {
               refetch()
               setEditRecord(null)
             }}
-            onCancel={() => setEditRecord(null)}
+          />
+        </Modal>
+      )}
+
+      {createRecord && (
+        <Modal title="Opret registrering" closeModal={() => setCreateRecord(false)}>
+          <CreateAttendanceForm
+            onSuccess={() => {
+              refetch()
+              setCreateRecord(false)
+            }}
+            onCancel={() => setCreateRecord(false)}
           />
         </Modal>
       )}

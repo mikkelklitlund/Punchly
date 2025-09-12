@@ -6,8 +6,10 @@ import {
   AbsenceRecordDTO,
   CreateAbsenceRecordDTO,
   CalendarDate,
+  CreateAttendanceRecordDTO,
 } from 'shared'
 import axiosInstance from '../api/axios'
+import dayjs from 'dayjs'
 
 export interface EmployeeResponse {
   employees: SimpleEmployeeDTO[]
@@ -70,11 +72,15 @@ export const employeeService = {
     return res.data.profilePictureUrl
   },
 
-  getAttendanceRecords: async (employeeId: number): Promise<AttendanceRecordDTO[]> => {
-    const response = await axiosInstance.get<{ records: AttendanceRecordDTO[] }>(
-      `/employees/${employeeId}/attendance-records-last-30`
-    )
-    return response.data.records
+  async getAttendanceRecords(employeeId: number, startDate: string, endDate: string): Promise<AttendanceRecordDTO[]> {
+    const params: Record<string, string> = {
+      startDate: dayjs(startDate).toISOString(),
+      endDate: dayjs(endDate).toISOString(),
+    }
+    const res = await axiosInstance.get<{ records: AttendanceRecordDTO[] }>(`/employees/${employeeId}/attendances`, {
+      params,
+    })
+    return res.data.records
   },
 
   getAttendanceReport: async (startDate: CalendarDate, endDate: CalendarDate, departmentId?: number): Promise<Blob> => {
@@ -89,10 +95,27 @@ export const employeeService = {
     return response.data
   },
 
+  createAttendance: async (data: CreateAttendanceRecordDTO): Promise<AttendanceRecordDTO> => {
+    if (data.checkIn) {
+      data.checkIn = dayjs(data.checkIn).toISOString()
+    }
+    if (data.checkOut) {
+      data.checkOut = dayjs(data.checkOut).toISOString()
+    }
+    const res = await axiosInstance.post(`/employees/attendance-records/${data.employeeId}`, data)
+    return res.data.record
+  },
+
   updateAttendanceRecord: async (
     id: number,
     data: Partial<Pick<AttendanceRecordDTO, 'checkIn' | 'checkOut' | 'autoClosed'>>
   ): Promise<AttendanceRecordDTO> => {
+    if (data.checkIn) {
+      data.checkIn = dayjs(data.checkIn).toISOString()
+    }
+    if (data.checkOut) {
+      data.checkOut = dayjs(data.checkOut).toISOString()
+    }
     const res = await axiosInstance.put(`/employees/attendance-records/${id}`, data)
     return res.data.record
   },

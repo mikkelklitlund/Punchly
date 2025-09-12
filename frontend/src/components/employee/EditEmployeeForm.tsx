@@ -13,6 +13,7 @@ const EditEmployeeForm = ({ employee, onSuccess }: { employee: EmployeeDTO; onSu
     departmentId: employee.departmentId,
     employeeTypeId: employee.employeeTypeId,
     monthlySalary: employee.monthlySalary || 0,
+    monthlyHours: employee.monthlyHours || undefined,
     hourlySalary: employee.hourlySalary || 0,
     profilePicturePath: employee.profilePicturePath || '',
   }
@@ -40,6 +41,7 @@ const EditEmployeeForm = ({ employee, onSuccess }: { employee: EmployeeDTO; onSu
         monthlySalary: (v.monthlySalary ?? 0) > 0 ? v.monthlySalary : undefined,
         hourlySalary: (v.hourlySalary ?? 0) > 0 ? v.hourlySalary : undefined,
         birthdate: v.birthdate,
+        monthlyHours: v.monthlyHours,
       }),
       { success: 'Medarbejder opdateret', error: 'Fejl under opdatering' }
     )

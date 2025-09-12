@@ -83,7 +83,7 @@ const Home = () => {
           {!selectedEmployee.absence && (
             <div className="mt-4 flex w-full justify-evenly">
               <button
-                className="rounded-lg bg-red-500 px-4 py-2 text-white hover:bg-red-700"
+                className="btn btn-rust"
                 onClick={() => {
                   handleCheckAction(selectedEmployee.id, false)
                   closeModal()
@@ -92,7 +92,7 @@ const Home = () => {
                 Tjek ud
               </button>
               <button
-                className="rounded-lg bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                className="btn btn-green"
                 onClick={() => {
                   handleCheckAction(selectedEmployee.id, true)
                   closeModal()

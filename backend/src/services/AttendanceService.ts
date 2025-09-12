@@ -4,7 +4,7 @@ import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttenda
 import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import ExcelJS from 'exceljs'
-import { differenceInMinutes, endOfDay, startOfDay } from 'date-fns'
+import { differenceInMinutes, endOfDay, startOfDay, isBefore } from 'date-fns'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
 import { AttendanceRecord, CreateAttendanceRecord, EmployeeWithRecords } from '../types/index.js'
 import { UTCDateMini } from '@date-fns/utc'
@@ -50,6 +50,10 @@ export class AttendanceService implements IAttendanceService {
       return failure(new ValidationError('When creating a full attendance record, all params must be present'))
     }
 
+    if (isBefore(newAttendance.checkOut, newAttendance.checkIn)) {
+      return failure(new ValidationError('Checkout cannot be before checkin'))
+    }
+
     try {
       if (await this.hasAbsenceOnDate(newAttendance.employeeId, newAttendance.checkIn)) {
         return failure(new ValidationError('Employee has an active absence on this date.'))
@@ -59,11 +63,6 @@ export class AttendanceService implements IAttendanceService {
         ...newAttendance,
       })
 
-      const utcNow = new UTCDateMini()
-
-      if (newAttendance.checkIn <= utcNow && newAttendance.checkOut > utcNow) {
-        await this.employeeRepository.updateEmployee(newAttendance.employeeId, { checkedIn: true })
-      }
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error creating attendance record:', error)

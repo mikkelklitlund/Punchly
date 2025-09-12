@@ -144,6 +144,28 @@ export class EmployeeRoutes {
       this.getLast30AttendanceRecordsForEmployee.bind(this)
     )
 
+    this.router.get(
+      '/:employeeId/attendances',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        query('startDate').isISO8601().withMessage('startDate must be ISO date'),
+        query('endDate').isISO8601().withMessage('endDate must be ISO date'),
+      ],
+      this.getAttendanceRecordsForEmployee.bind(this)
+    )
+
+    this.router.post(
+      '/attendance-records/:id',
+      authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      [
+        body('checkIn').isISO8601().withMessage('Check-in must be a valid ISO date string'),
+        body('checkOut').isISO8601().withMessage('Check-out must be a valid ISO date string'),
+      ],
+      this.createAttendanceRecord.bind(this)
+    )
+
     this.router.put(
       '/attendance-records/:id',
       authMiddleware,
@@ -336,6 +358,31 @@ export class EmployeeRoutes {
     res.status(204).send()
   }
 
+  private async getAttendanceRecordsForEmployee(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: errors.array() })
+      return
+    }
+
+    const id = parseInt(req.params.employeeId, 10)
+
+    const { startDate, endDate } = req.query
+
+    const result = await this.attendanceService.getAttendanceRecordsByEmployeeIdAndPeriod(
+      id,
+      new UTCDateMini(startDate as string),
+      new UTCDateMini(endDate as string)
+    )
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ records: result.value.map(toAttendanceRecordDTO) })
+  }
+
   private async getLast30AttendanceRecordsForEmployee(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
 
@@ -347,6 +394,30 @@ export class EmployeeRoutes {
     }
 
     res.status(200).json({ records: result.value.map(toAttendanceRecordDTO) })
+  }
+
+  private async createAttendanceRecord(req: Request, res: Response) {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      res.status(400).json({ message: errors.array() })
+      return
+    }
+
+    const id = parseInt(req.params.id)
+    const { checkIn, checkOut } = req.body
+
+    const result = await this.attendanceService.createAttendanceRecord({
+      employeeId: id,
+      checkIn: new UTCDateMini(checkIn),
+      checkOut: new UTCDateMini(checkOut),
+    })
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+
+    res.status(200).json({ record: toAttendanceRecordDTO(result.value) })
   }
 
   private async updateAttendanceRecord(req: Request, res: Response) {
