@@ -181,7 +181,6 @@ export class EmployeeService implements IEmployeeService {
       })
 
       return success(updatedEmployee)
-      return success(updatedEmployee)
     } catch (error) {
       console.error(`Error updating profile picture for employee with ID ${id}:`, error)
       return failure(new DatabaseError('Database error occurred while updating the profile picture'))
