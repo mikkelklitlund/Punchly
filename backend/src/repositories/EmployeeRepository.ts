@@ -188,6 +188,7 @@ export class EmployeeRepository implements IEmployeeRepository {
       employeeTypeId: employee.employeeTypeId,
       monthlySalary: employee.monthlySalary ?? undefined,
       monthlyHours: employee.monthlyHours ?? undefined,
+      monthlyHours: employee.monthlyHours ?? undefined,
       hourlySalary: employee.hourlySalary ?? undefined,
       address: employee.address,
       city: employee.city,

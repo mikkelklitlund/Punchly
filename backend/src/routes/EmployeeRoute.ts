@@ -64,6 +64,7 @@ export class EmployeeRoutes {
       '/',
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
         body('companyId').isInt().toInt().withMessage('Valid company ID is required'),
         body('departmentId').isInt().toInt().withMessage('Valid department ID is required'),
@@ -95,12 +96,14 @@ export class EmployeeRoutes {
       '/:employeeId/checkin',
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN, Role.COMPANY, Role.MANAGER),
+      authorizeRoles(this.userService, Role.ADMIN, Role.COMPANY, Role.MANAGER),
       this.employeeCheckin.bind(this)
     )
 
     this.router.post(
       '/:employeeId/checkout',
       authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.COMPANY, Role.MANAGER),
       authorizeRoles(this.userService, Role.ADMIN, Role.COMPANY, Role.MANAGER),
       this.employeeCheckout.bind(this)
     )
@@ -121,6 +124,7 @@ export class EmployeeRoutes {
     this.router.put(
       '/:id',
       authMiddleware,
+      authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       authorizeRoles(this.userService, Role.ADMIN, Role.MANAGER),
       [
         body('name').optional().notEmpty().withMessage('Name is required if provided'),
@@ -256,6 +260,7 @@ export class EmployeeRoutes {
   }
 
   private async employeeCheckout(req: Request, res: Response) {
+  private async employeeCheckout(req: Request, res: Response) {
     const employeeId = parseInt(req.params.employeeId)
     const checkOutResult = await this.attendanceService.checkOutEmployee(employeeId)
 
@@ -328,6 +333,7 @@ export class EmployeeRoutes {
   }
 
   private async updateEmployee(req: Request, res: Response) {
+  private async updateEmployee(req: Request, res: Response) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       res.status(400).json({ message: errors.array() })
@@ -346,6 +352,7 @@ export class EmployeeRoutes {
     res.status(200).json({ employee: toEmployeeDTO(result.value) })
   }
 
+  private async deleteEmployee(req: Request, res: Response) {
   private async deleteEmployee(req: Request, res: Response) {
     const employeeId = parseInt(req.params.id)
     const result = await this.employeeService.deleteEmployee(employeeId)

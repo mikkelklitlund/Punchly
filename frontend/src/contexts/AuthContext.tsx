@@ -9,6 +9,13 @@ import {
   removeStoredToken,
   setStoredToken,
 } from '../api/axios'
+import {
+  setAuthContextUpdater,
+  clearAuthContextUpdater,
+  setLogoutTrigger,
+  removeStoredToken,
+  setStoredToken,
+} from '../api/axios'
 import { Role } from 'shared'
 
 // Types
@@ -46,8 +53,10 @@ type AuthAction =
   | { type: 'AUTH_START' }
   | { type: 'AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'SILENT_AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
+  | { type: 'SILENT_AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'AUTH_LOGOUT' }
+  | { type: 'FORCE_LOGOUT' }
   | { type: 'FORCE_LOGOUT' }
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
@@ -56,17 +65,20 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return { ...state, isLoading: true, error: null }
     case 'AUTH_SUCCESS':
     case 'SILENT_AUTH_SUCCESS':
+    case 'SILENT_AUTH_SUCCESS':
       return {
         ...state,
         user: action.payload.user,
         role: action.payload.role,
         companyId: action.payload.companyId,
         isLoading: false,
+        isLoading: false,
         error: null,
       }
     case 'AUTH_FAILURE':
       return { ...state, isLoading: false, error: action.payload }
     case 'AUTH_LOGOUT':
+    case 'FORCE_LOGOUT':
     case 'FORCE_LOGOUT':
       return { ...initialState, isLoading: false }
     default:
@@ -109,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await authService.login(username, password, companyId)
 
       setStoredToken(data.accessToken)
+      setStoredToken(data.accessToken)
 
       const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
@@ -124,6 +137,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const axiosError = error as AxiosError<{ message?: string }>
       let errorMessage = 'An unexpected error occurred'
 
+      if (axiosError.response?.status === 401) {
+        errorMessage = 'Invalid username or password'
+      } else if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message
       if (axiosError.response?.status === 401) {
         errorMessage = 'Invalid username or password'
       } else if (axiosError.response?.data?.message) {
@@ -151,6 +168,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authService.refresh()
       setStoredToken(data.accessToken)
+      setStoredToken(data.accessToken)
 
       const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
@@ -164,6 +182,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       })
     } catch (error) {
       removeStoredToken()
+      removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
       throw error
     }
@@ -176,6 +195,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
+      removeStoredToken()
       removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
     }

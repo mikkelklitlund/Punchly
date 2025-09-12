@@ -91,6 +91,7 @@ export class AttendanceService implements IAttendanceService {
       })
 
       await this.employeeRepository.updateEmployee(employeeId, { checkedIn: true })
+
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error during employee check-in:', error)

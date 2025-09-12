@@ -150,6 +150,7 @@ async function main() {
       { token: `expired-refresh-token-1-${uuid()}`, userId: testUser.id, expiryDate: subDays(now, 1), revoked: false },
       {
         token: `revoked-refresh-token-2-${uuid()}`,
+        token: `revoked-refresh-token-2-${uuid()}`,
         userId: managerUser.id,
         expiryDate: addDays(now, 7),
         revoked: true,

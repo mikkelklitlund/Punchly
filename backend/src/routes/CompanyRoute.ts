@@ -68,6 +68,7 @@ export class CompanyRoutes {
       '/',
       authMiddleware,
       authorizeRoles(this.userService, Role.ADMIN),
+      authorizeRoles(this.userService, Role.ADMIN),
       [
         body('name').notEmpty().withMessage('Name is required'),
         body('address').notEmpty().withMessage('Address is required'),
