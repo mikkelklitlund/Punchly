@@ -56,9 +56,22 @@ const httpServer = createServer(app)
 
 const prismaClient = new PrismaClient({
   log: [
-    { level: 'warn', emit: 'event' },
-    { level: 'error', emit: 'event' },
-    ...(isProd ? [] : [{ level: 'query', emit: 'event' } as const]),
+    {
+      emit: 'event',
+      level: 'query',
+    },
+    {
+      emit: 'stdout',
+      level: 'error',
+    },
+    {
+      emit: 'stdout',
+      level: 'info',
+    },
+    {
+      emit: 'stdout',
+      level: 'warn',
+    },
   ],
   errorFormat: 'pretty',
 })

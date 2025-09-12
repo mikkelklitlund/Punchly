@@ -18,8 +18,8 @@ const AttendanceReportPage = () => {
     setError(null)
     try {
       const buffer = await employeeService.getAttendanceReport(
-        new Date(startDate),
-        new Date(endDate),
+        startDate,
+        endDate,
         departmentId ? Number(departmentId) : undefined
       )
 

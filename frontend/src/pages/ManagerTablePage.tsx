@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { User } from 'shared'
 import DataTable, { Column } from '../components/common/DataTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { useAuth } from '../contexts/AuthContext'
 import { companyService } from '../services/companyService'
 import { ApiError } from '../utils/errorUtils'
+import { UserDTO } from 'shared'
 
 const ManagerTablePage = () => {
   const { companyId } = useAuth()
@@ -15,7 +15,7 @@ const ManagerTablePage = () => {
     isLoading,
     isFetching,
     error,
-  } = useQuery<{ managers: User[] }, ApiError, User[]>({
+  } = useQuery<{ managers: UserDTO[] }, ApiError, UserDTO[]>({
     queryKey: ['managers', { companyId }],
     enabled: !!companyId,
     queryFn: () => companyService.getManagers(companyId!),
@@ -27,7 +27,7 @@ const ManagerTablePage = () => {
 
   const numbered = useMemo(() => managers.map((m, i) => ({ ...m, _row: i + 1 })), [managers])
 
-  const columns: Column<User & { _row?: number }>[] = [
+  const columns: Column<UserDTO & { _row?: number }>[] = [
     { header: '#', accessor: (row) => row._row ?? 0 },
     { header: 'Brugernavn', accessor: 'username' as const },
     { header: 'Email', accessor: 'email' as const },

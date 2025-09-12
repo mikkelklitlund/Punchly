@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useCompany } from '../contexts/CompanyContext'
-import { Employee, SimpleEmployee } from 'shared'
 import { employeeService } from '../services/employeeService'
-import { useToast } from '../contexts/ToastContext'
 import Modal from '../components/common/Modal'
 import EditEmployeeForm from '../components/employee/EditEmployeeForm'
 import { getProfilePictureUrl } from '../utils/imageUtils'
 import DataTable, { Column } from '../components/common/DataTable'
+import { EmployeeDTO, SimpleEmployeeDTO } from 'shared'
+import { toast } from 'react-toastify'
 
 const EmployeeTable = () => {
   const { employees, isLoading, error, departments, setCurrentDepartment } = useCompany()
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDTO | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const { showToast } = useToast()
 
   useEffect(() => {
     setCurrentDepartment(undefined)
@@ -25,7 +24,7 @@ const EmployeeTable = () => {
       setShowModal(true)
     } catch (err) {
       console.error(err)
-      showToast('Kunne ikke hente medarbejderens data', 'error')
+      toast.error('Kunne ikke hente medarbejderens data')
     }
   }
 
@@ -40,10 +39,10 @@ const EmployeeTable = () => {
     return depA.localeCompare(depB)
   })
 
-  const columns: Column<SimpleEmployee>[] = [
+  const columns: Column<SimpleEmployeeDTO>[] = [
     {
       header: 'Navn',
-      accessor: (emp: SimpleEmployee) => (
+      accessor: (emp: SimpleEmployeeDTO) => (
         <div className="flex items-center space-x-3">
           <img
             src={getProfilePictureUrl(emp.profilePicturePath)}
@@ -56,11 +55,11 @@ const EmployeeTable = () => {
     },
     {
       header: 'Afdeling',
-      accessor: (emp: SimpleEmployee) => departments.find((dp) => dp.id === emp.departmentId)?.name ?? '-',
+      accessor: (emp: SimpleEmployeeDTO) => departments.find((dp) => dp.id === emp.departmentId)?.name ?? '-',
     },
     {
       header: 'Status',
-      accessor: (emp: SimpleEmployee) => (
+      accessor: (emp: SimpleEmployeeDTO) => (
         <span className="flex items-center gap-2">
           <span className={`inline-block h-3 w-3 rounded-full ${emp.checkedIn ? 'bg-green-500' : 'bg-red-500'}`} />
           {emp.checkedIn ? 'Tjekket ind' : 'Ikke tjekket ind'}
@@ -69,7 +68,7 @@ const EmployeeTable = () => {
     },
     {
       header: 'Handling',
-      accessor: (emp: SimpleEmployee) => (
+      accessor: (emp: SimpleEmployeeDTO) => (
         <button
           onClick={(e) => {
             e.stopPropagation()

@@ -2,10 +2,6 @@ import { Response, NextFunction, Request } from 'express'
 import { Role } from 'shared'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { Failure } from '../utils/Result.js'
-import { Response, NextFunction, Request } from 'express'
-import { Role } from 'shared'
-import { IUserService } from '../interfaces/services/IUserService.js'
-import { Failure } from '../utils/Result.js'
 
 const authorizeRoles = (userService: IUserService, ...allowedRoles: Role[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {

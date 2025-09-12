@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import { Company } from 'shared'
 import { authService } from '../services/authService'
+import { CompanyDTO } from 'shared'
 
 function LoginPage() {
   const { login, isLoading: authLoading, user } = useAuth()
@@ -17,7 +17,7 @@ function LoginPage() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
 
   const [discovering, setDiscovering] = useState(false)
-  const [companiesForUser, setCompaniesForUser] = useState<Company[] | null>(null)
+  const [companiesForUser, setCompaniesForUser] = useState<CompanyDTO[] | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string>('')
 
