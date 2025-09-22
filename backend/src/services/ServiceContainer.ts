@@ -5,6 +5,7 @@ import { ICompanyService } from '../interfaces/services/ICompanyService.js'
 import { IDepartmentService } from '../interfaces/services/IDepartmentService.js'
 import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
 import { IEmployeeTypeService } from '../interfaces/services/IEmployeeTypeService.js'
+import { IManagerInviteService } from '../interfaces/services/IManagerInviteService.js'
 import { IUserService } from '../interfaces/services/IUserService.js'
 import { RepositoryContainer } from '../repositories/RepositoryContainer.js'
 import { AbsenceService } from './AbsenceService.js'
@@ -14,6 +15,7 @@ import { CompanyService } from './CompanyService.js'
 import { DepartmentService } from './DepartmentService.js'
 import { EmployeeService } from './EmployeeService.js'
 import { EmployeeTypeService } from './EmployeeTypeService.js'
+import { ManagerInviteService } from './ManagerInviteService.js'
 import { UserService } from './UserService.js'
 
 export class ServiceContainer {
@@ -25,6 +27,7 @@ export class ServiceContainer {
   public employeeTypeService: IEmployeeTypeService
   public userService: IUserService
   public absenceTypeService: IAbsenceTypeService
+  public managerInviteService: IManagerInviteService
 
   constructor(repositoryContainer: RepositoryContainer) {
     this.absenceService = new AbsenceService(repositoryContainer.absenceRepository)
@@ -44,5 +47,6 @@ export class ServiceContainer {
     this.employeeTypeService = new EmployeeTypeService(repositoryContainer.employeeTypeRepository)
     this.userService = new UserService(repositoryContainer.userRepository)
     this.absenceTypeService = new AbsenceTypeService(repositoryContainer.absenceTypeRpository)
+    this.managerInviteService = new ManagerInviteService(repositoryContainer.managerInviteRepository)
   }
 }

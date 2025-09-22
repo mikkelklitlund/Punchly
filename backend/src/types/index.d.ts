@@ -123,3 +123,12 @@ export type EmployeeWithRecords = Employee & {
   department: Department
   employeeType: EmployeeType
 }
+
+export type ManagerInvite = {
+  id: number
+  email: string
+  companyId: number
+  token: string
+  expiryDate: Date
+  used: boolean
+}

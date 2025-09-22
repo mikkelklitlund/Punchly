@@ -16,6 +16,7 @@ model Company {
   employeeTypes EmployeeType[]
   absenceTypes  AbsenceType[]
   users         UserCompanyAccess[]
+  managerInvites ManagerInvite[]
 
   @@unique(name: "addressName", [name, address])
 }
@@ -138,6 +139,18 @@ model AbsenceType {
   absenceRecords AbsenceRecord[]
 
   @@unique([name, companyId], name: "absenceTypeCompany")
+  @@index([companyId])
+}
+
+model ManagerInvite {
+  id         Int      @id @default(autoincrement())
+  email      String
+  companyId  Int
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  expiryDate DateTime @db.Timestamptz(3)
+  used       Boolean  @default(false)
+
   @@index([companyId])
 }
 

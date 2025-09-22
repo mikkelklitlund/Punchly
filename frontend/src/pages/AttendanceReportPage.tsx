@@ -13,9 +13,11 @@ const AttendanceReportPage = () => {
   const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'))
   const [departmentId, setDepartmentId] = useState<number | ''>('')
 
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
   const reportMutation = useMutation({
     mutationFn: (vars: { start: string; end: string; departmentId?: number }) =>
-      employeeService.getAttendanceReport(vars.start, vars.end, vars.departmentId),
+      employeeService.getAttendanceReport(vars.start, vars.end, timezone, vars.departmentId),
   })
 
   const handleDownload = async () => {

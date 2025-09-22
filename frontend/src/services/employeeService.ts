@@ -17,7 +17,7 @@ export interface EmployeeResponse {
 }
 
 export const employeeService = {
-  getEmployees: async (companyId: number, departmentId?: number): Promise<EmployeeResponse> => {
+  async getEmployees(companyId: number, departmentId?: number): Promise<EmployeeResponse> {
     const endpoint = departmentId
       ? `/companies/${companyId}/${departmentId}/simple-employees`
       : `/companies/${companyId}/simple-employees`
@@ -35,12 +35,12 @@ export const employeeService = {
     await axiosInstance.delete(`/employees/${id}`)
   },
 
-  checkIn: async (employeeId: number): Promise<{ success: boolean; message?: string }> => {
+  async checkIn(employeeId: number): Promise<{ success: boolean; message?: string }> {
     const response = await axiosInstance.post(`/employees/${employeeId}/checkin`)
     return response.data
   },
 
-  checkOut: async (employeeId: number): Promise<{ success: boolean; message?: string }> => {
+  async checkOut(employeeId: number): Promise<{ success: boolean; message?: string }> {
     const response = await axiosInstance.post(`/employees/${employeeId}/checkout`)
     return response.data
   },
@@ -83,11 +83,17 @@ export const employeeService = {
     return res.data.records
   },
 
-  getAttendanceReport: async (startDate: CalendarDate, endDate: CalendarDate, departmentId?: number): Promise<Blob> => {
+  async getAttendanceReport(
+    startDate: CalendarDate,
+    endDate: CalendarDate,
+    timezone: string,
+    departmentId?: number
+  ): Promise<Blob> {
     const response = await axiosInstance.get<Blob>('/employees/attendance-report', {
       params: {
-        startDate: startDate,
-        endDate: endDate,
+        startDate,
+        endDate,
+        timezone,
         departmentId,
       },
       responseType: 'blob' as const,
@@ -95,7 +101,7 @@ export const employeeService = {
     return response.data
   },
 
-  createAttendance: async (data: CreateAttendanceRecordDTO): Promise<AttendanceRecordDTO> => {
+  async createAttendance(data: CreateAttendanceRecordDTO): Promise<AttendanceRecordDTO> {
     if (data.checkIn) {
       data.checkIn = dayjs(data.checkIn).toISOString()
     }
@@ -106,10 +112,10 @@ export const employeeService = {
     return res.data.record
   },
 
-  updateAttendanceRecord: async (
+  async updateAttendanceRecord(
     id: number,
     data: Partial<Pick<AttendanceRecordDTO, 'checkIn' | 'checkOut' | 'autoClosed'>>
-  ): Promise<AttendanceRecordDTO> => {
+  ): Promise<AttendanceRecordDTO> {
     if (data.checkIn) {
       data.checkIn = dayjs(data.checkIn).toISOString()
     }
@@ -120,7 +126,7 @@ export const employeeService = {
     return res.data.record
   },
 
-  deleteAttendanceRecord: async (id: number) => {
+  async deleteAttendanceRecord(id: number) {
     await axiosInstance.delete(`/attendance/${id}`)
   },
 
@@ -145,7 +151,7 @@ export const employeeService = {
     const res = await axiosInstance.post<{ absenceRecord: AbsenceRecordDTO }>(
       `/employees/${params.employeeId}/absences`,
       {
-        params,
+        ...params,
       }
     )
     return res.data.absenceRecord

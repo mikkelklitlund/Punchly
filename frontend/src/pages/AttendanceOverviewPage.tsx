@@ -109,7 +109,7 @@ const AttendanceOverviewPage = () => {
           </div>
 
           <button className="btn btn-rust" onClick={() => setCreateRecord(true)}>
-            Nyt fravær
+            Ny registrering
           </button>
         </div>
 

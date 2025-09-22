@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import EditAbsenceForm from '../components/absence/EditAbsenceForm'
 import CreateAbsenceForm from '../components/absence/CreateAbsenceForm'
+import { businessDaysDiff } from '../utils/businessdays'
 
 const AbsenceOverviewPage = () => {
   const { companyId } = useAuth()
@@ -40,9 +41,9 @@ const AbsenceOverviewPage = () => {
       },
     },
     {
-      header: 'Antal dage',
+      header: 'Antal hverdage',
       accessor: (rec) => {
-        return dayjs(rec.endDate).diff(dayjs(rec.startDate), 'd') + 1
+        return businessDaysDiff(rec.startDate, rec.endDate)
       },
     },
     {
@@ -153,7 +154,6 @@ const AbsenceOverviewPage = () => {
         <Modal title="Opret Fravær" closeModal={() => setCreateRecord(false)}>
           <CreateAbsenceForm
             onSuccess={() => {
-              refetch()
               setCreateRecord(false)
             }}
             onCancel={() => setCreateRecord(false)}

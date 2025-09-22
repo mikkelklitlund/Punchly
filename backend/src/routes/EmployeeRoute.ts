@@ -9,7 +9,7 @@ import { IAttendanceService } from '../interfaces/services/IAttendanceService.js
 import authorizeRoles from '../middleware/authorizeRole.js'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
 import { UTCDateMini } from '@date-fns/utc'
-import { isValid, parseISO } from 'date-fns'
+import { endOfDay, isValid, parseISO, startOfDay } from 'date-fns'
 import {
   fromCreateEmployeeDTO,
   fromPartialEmployeeDTO,
@@ -54,6 +54,8 @@ export class EmployeeRoutes {
           .notEmpty()
           .custom((v) => validateYYYYMMDD(v, 'endDate'))
           .customSanitizer((v) => new UTCDateMini(v)),
+
+        query('timezone').notEmpty(),
 
         query('departmentId').optional().isInt().toInt(),
       ],
@@ -461,24 +463,35 @@ export class EmployeeRoutes {
   }
 
   private async generateAttendanceReport(req: Request, res: Response) {
-    const { startDate, endDate, departmentId } = req.query
+    const { startDate, endDate, timezone, departmentId } = req.query
     if (!req.companyId) {
       res.status(500).json({ message: 'CompanyId must be provided, try to log out and login again' })
       return
     }
     const companyId = parseInt(req.companyId)
 
+    if (!timezone || typeof timezone !== 'string') {
+      res.status(400).json({ message: 'timezone must be provided' })
+      return
+    }
+
     if (!startDate || !endDate) {
       res.status(400).json({ message: 'startDate and endDate are required query parameters' })
       return
     }
 
-    const start = new UTCDateMini(startDate as string)
-    const end = new UTCDateMini(endDate as string)
+    const start = startOfDay(new UTCDateMini(startDate as string))
+    const end = endOfDay(new UTCDateMini(endDate as string))
 
     const deptId = departmentId ? parseInt(departmentId as string, 10) : undefined
 
-    const result = await this.attendanceService.generateEmployeeAttendanceReport(start, end, companyId, deptId)
+    const result = await this.attendanceService.generateEmployeeAttendanceReport(
+      start,
+      end,
+      companyId,
+      timezone,
+      deptId
+    )
 
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })

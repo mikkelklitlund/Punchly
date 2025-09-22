@@ -8,6 +8,7 @@ import { differenceInMinutes, endOfDay, startOfDay, isBefore } from 'date-fns'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
 import { AttendanceRecord, CreateAttendanceRecord, EmployeeWithRecords } from '../types/index.js'
 import { UTCDateMini } from '@date-fns/utc'
+import { format, toZonedTime } from 'date-fns-tz'
 
 export class AttendanceService implements IAttendanceService {
   constructor(
@@ -31,6 +32,16 @@ export class AttendanceService implements IAttendanceService {
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
     return `${hours},${minutes.toString().padStart(2, '0')}`
+  }
+
+  private formatTimeForTz(date: Date, tz: string) {
+    const zoned = toZonedTime(date, tz)
+    return format(zoned, 'HH:mm', { timeZone: tz })
+  }
+
+  private formatDateForTz(date: Date, tz: string): string {
+    const zoned = toZonedTime(date, tz)
+    return format(zoned, 'yyyy-MM-dd', { timeZone: tz })
   }
 
   private groupByEmployeeType(data: EmployeeWithRecords[]): Record<string, EmployeeWithRecords[]> {
@@ -316,20 +327,21 @@ export class AttendanceService implements IAttendanceService {
     return workbook
   }
 
-  private generateRecordSheet(workbook: ExcelJS.Workbook, data: EmployeeWithRecords[]): ExcelJS.Workbook {
+  private generateRecordSheet(workbook: ExcelJS.Workbook, data: EmployeeWithRecords[], tz: string): ExcelJS.Workbook {
     const sheet = workbook.addWorksheet('Registrerede tider')
     const employeesList = data.map((e) => e.name)
 
     const dates = Array.from(
       new Set(
         data.flatMap((e) => [
-          ...e.attendanceRecords.map((r) => r.checkIn.toISOString().split('T')[0]),
+          ...e.attendanceRecords.map((r) => this.formatDateForTz(r.checkIn, tz)),
           ...e.absenceRecords.flatMap((a) => {
             const days: string[] = []
-            const cur = startOfDay(a.startDate)
-            const end = endOfDay(a.endDate)
+            const cur = new Date(a.startDate)
+            const end = new Date(a.endDate)
+
             while (cur <= end) {
-              days.push(cur.toISOString().split('T')[0])
+              days.push(this.formatDateForTz(cur, tz))
               cur.setUTCDate(cur.getUTCDate() + 1)
             }
             return days
@@ -358,15 +370,16 @@ export class AttendanceService implements IAttendanceService {
 
       for (const emp of data) {
         const absence = emp.absenceRecords.find(
-          (a) => date >= a.startDate.toISOString().split('T')[0] && date <= a.endDate.toISOString().split('T')[0]
+          (a) => date >= this.formatDateForTz(a.startDate, tz) && date <= this.formatDateForTz(a.endDate, tz)
         )
+
         if (absence) {
           checkInRow.push(absence.absenceType.name)
           checkOutRow.push(absence.absenceType.name)
         } else {
-          const record = emp.attendanceRecords.find((r) => r.checkIn.toISOString().split('T')[0] === date)
-          checkInRow.push(record ? `${record.checkIn.getHours()}:${record.checkIn.getMinutes()}` : '')
-          checkOutRow.push(record?.checkOut ? `${record.checkOut.getHours()}:${record.checkOut.getMinutes()}` : '')
+          const record = emp.attendanceRecords.find((r) => this.formatDateForTz(r.checkIn, tz) === date)
+          checkInRow.push(record ? this.formatTimeForTz(record.checkIn, tz) : '')
+          checkOutRow.push(record?.checkOut ? this.formatTimeForTz(record.checkOut, tz) : '')
         }
       }
 
@@ -379,7 +392,7 @@ export class AttendanceService implements IAttendanceService {
       this.centerAlignRow(checkOutRowObj)
 
       data.forEach((emp, idx) => {
-        const record = emp.attendanceRecords.find((r) => r.checkIn.toISOString().split('T')[0] === date)
+        const record = emp.attendanceRecords.find((r) => this.formatDateForTz(r.checkIn, tz) === date)
         if (record?.autoClosed) {
           const cell = checkOutRowObj.getCell(idx + 2)
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } }
@@ -392,11 +405,10 @@ export class AttendanceService implements IAttendanceService {
       totalRowObj.getCell(1).border = { top: { style: 'thin' } }
 
       data.forEach((emp, index) => {
-        const dayRecords = emp.attendanceRecords.filter((r) => r.checkIn.toISOString().split('T')[0] === date)
+        const dayRecords = emp.attendanceRecords.filter((r) => this.formatDateForTz(r.checkIn, tz) === date)
         const totalMinutes = this.calculateTotalMinutes(dayRecords)
         const cell = totalRowObj.getCell(index + 2)
-        cell.value = totalMinutes / 60
-        cell.numFmt = '0.00'
+        cell.value = this.formatMinutesToHHmm(totalMinutes)
         cell.alignment = { horizontal: 'center' }
         cell.border = { top: { style: 'thin' } }
       })
@@ -449,6 +461,7 @@ export class AttendanceService implements IAttendanceService {
     startDate: Date,
     endDate: Date,
     companyId: number,
+    tz: string,
     departmentId?: number
   ): Promise<Result<Buffer, Error>> {
     try {
@@ -461,7 +474,7 @@ export class AttendanceService implements IAttendanceService {
 
       let workbook = new ExcelJS.Workbook()
       workbook = this.generateEmployeeOverviewSheet(workbook, data)
-      workbook = this.generateRecordSheet(workbook, data)
+      workbook = this.generateRecordSheet(workbook, data, tz)
       workbook = this.generateSalarySheet(workbook, data)
 
       for (const sheet of workbook.worksheets) {
