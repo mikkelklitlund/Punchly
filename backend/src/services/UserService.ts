@@ -12,7 +12,12 @@ import { addDays } from 'date-fns'
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
 
-  async register(email: string, password: string, username: string): Promise<Result<User, Error>> {
+  async register(
+    email: string,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean
+  ): Promise<Result<User, Error>> {
     try {
       const emailAlreadyExists = await this.userRepository.getUserByEmail(email)
       if (emailAlreadyExists) {
@@ -25,7 +30,7 @@ export class UserService implements IUserService {
       }
 
       const hashedPassword = await argon2.hash(password)
-      const user = await this.userRepository.createUser(email, hashedPassword, username)
+      const user = await this.userRepository.createUser(email, hashedPassword, username, shouldChangePassword)
       return success(user)
     } catch (error) {
       console.error('Error creating user:', error)
@@ -38,7 +43,17 @@ export class UserService implements IUserService {
     password: string,
     companyId: number
   ): Promise<
-    Result<{ accessToken: string; refreshToken: string; username: string; role: string; companyId: number }, Error>
+    Result<
+      {
+        accessToken: string
+        refreshToken: string
+        username: string
+        role: string
+        companyId: number
+        shouldChangePassword: boolean
+      },
+      Error
+    >
   > {
     try {
       const user = await this.userRepository.getUserByUsername(username)
@@ -55,13 +70,13 @@ export class UserService implements IUserService {
       await this.userRepository.revokeAllActiveUserTokens(user.id)
 
       const accessToken = jwt.sign(
-        { username: user.username, companyId, role: userRole },
+        { username: user.username, companyId, role: userRole, userId: user.id },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
 
       const refreshToken = jwt.sign(
-        { username: user.username, companyId, role: userRole },
+        { username: user.username, companyId, role: userRole, userId: user.id },
         process.env.REFRESH_TOKEN_SECRET!,
         { expiresIn: '30d' }
       )
@@ -69,7 +84,14 @@ export class UserService implements IUserService {
       const expiryDate = addDays(new UTCDateMini(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
-      return success({ accessToken, refreshToken, username: user.username, role: userRole, companyId })
+      return success({
+        accessToken,
+        refreshToken,
+        username: user.username,
+        role: userRole,
+        companyId,
+        shouldChangePassword: user.shouldChangePassword,
+      })
     } catch (err) {
       console.log(err)
       return failure(new Error((err as Error).message))
@@ -149,7 +171,7 @@ export class UserService implements IUserService {
       }
 
       const newAccessToken = jwt.sign(
-        { username: user.username, companyId: decoded.companyId, role: userRole },
+        { username: user.username, companyId: decoded.companyId, role: userRole, userId: user.id },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
@@ -161,7 +183,7 @@ export class UserService implements IUserService {
         await this.revokeRefreshToken(refreshToken)
 
         newRefreshToken = jwt.sign(
-          { username: user.username, companyId: decoded.companyId, role: userRole },
+          { username: user.username, companyId: decoded.companyId, role: userRole, userId: user.id },
           process.env.REFRESH_TOKEN_SECRET!,
           { expiresIn: '30d' }
         )
@@ -221,6 +243,30 @@ export class UserService implements IUserService {
     } catch (err) {
       console.error('Error fetching companies for username:', err)
       return failure(new DatabaseError('Database error while fetching companies for username'))
+    }
+  }
+
+  async changePassword(userId: number, newPassword: string): Promise<Result<User, Error>> {
+    try {
+      const user = await this.userRepository.getUserById(userId)
+
+      if (!user) {
+        return failure(new ValidationError('User not found.'))
+      }
+
+      const hashedNewPassword = await argon2.hash(newPassword)
+
+      const updatedUser = await this.userRepository.updateUser(userId, {
+        password: hashedNewPassword,
+        shouldChangePassword: false,
+      })
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = updatedUser
+      return success(userWithoutPassword as User)
+    } catch (err) {
+      console.error('Error changing password:', err)
+      return failure(new DatabaseError('Database error while changing password.'))
     }
   }
 }

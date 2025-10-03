@@ -1,16 +1,16 @@
 import { CompanyDTO } from 'shared'
 import axiosInstance from '../api/axios'
-import { AuthTokens } from '../types/types'
+import { AuthTokens, LoginResponse } from '../types/types'
 
 export const authService = {
-  async login(username: string, password: string, companyId: number): Promise<AuthTokens> {
+  async login(username: string, password: string, companyId: number): Promise<LoginResponse> {
     const payload = { username, password, companyId }
     const response = await axiosInstance.post('/auth/login', payload)
     return response.data
   },
 
-  async register(email: string, password: string, username: string): Promise<void> {
-    await axiosInstance.post('/auth/register', { email, password, username })
+  async register(email: string, password: string, username: string, shouldChangePassword: boolean): Promise<void> {
+    await axiosInstance.post('/auth/register', { email, password, username, shouldChangePassword })
   },
 
   async logout(): Promise<void> {
@@ -25,5 +25,9 @@ export const authService = {
   async getUserCompanies(username: string): Promise<CompanyDTO[]> {
     const response = await axiosInstance.post('/auth/companies-for-user', { username })
     return response.data.companies
+  },
+
+  async changePassword(newPassword: string): Promise<void> {
+    await axiosInstance.post('/auth/change-password', { newPassword })
   },
 }

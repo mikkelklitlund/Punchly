@@ -24,6 +24,7 @@ export class AuthRoutes {
           .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/)
           .withMessage('Password must be at least 8 characters long and contain both letters and numbers'),
         body('username').trim().isLength({ min: 3 }).escape(),
+        body('shouldChangePassword').isBoolean(),
       ],
       this.register.bind(this)
     )
@@ -45,6 +46,18 @@ export class AuthRoutes {
       [body('username').trim().notEmpty().isLength({ max: 100 })],
       this.getCompaniesForUser.bind(this)
     )
+
+    this.router.post(
+      '/change-password',
+      authMiddleware,
+      [
+        body('newPassword')
+          .isLength({ min: 8 })
+          .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/)
+          .withMessage('New password must be at least 8 characters long and contain both letters and numbers'),
+      ],
+      this.changePassword.bind(this)
+    )
   }
 
   private validateRequest(req: Request, res: Response): boolean {
@@ -59,8 +72,8 @@ export class AuthRoutes {
   private async register(req: Request, res: Response) {
     if (!this.validateRequest(req, res)) return
 
-    const { email, password, username } = req.body
-    const result = await this.userService.register(email, password, username)
+    const { email, password, username, shouldChangePassword } = req.body
+    const result = await this.userService.register(email, password, username, shouldChangePassword)
 
     if (result instanceof Failure) {
       const status = result.error instanceof ValidationError ? 409 : 500
@@ -96,16 +109,17 @@ export class AuthRoutes {
       username: result.value.username,
       role: result.value.role,
       companyId: result.value.companyId,
+      shouldChangePassword: result.value.shouldChangePassword,
     })
   }
 
   private async getProfile(req: Request, res: Response) {
-    if (!req.username) {
+    if (!req.userId) {
       res.status(401).json({ error: 'Authentication required' })
       return
     }
 
-    const result = await this.userService.getUserByUsername(req.username)
+    const result = await this.userService.getUserById(req.userId)
 
     if (result instanceof Failure) {
       res.status(404).json({ error: 'User not found' })
@@ -117,6 +131,7 @@ export class AuthRoutes {
       username: result.value.username,
       email: result.value.email,
       password: null,
+      shouldChangePassword: result.value.shouldChangePassword,
     }
     res.json(userWithoutPassword)
   }
@@ -182,7 +197,7 @@ export class AuthRoutes {
       return res.status(400).json({ errors: errors.array() })
     }
 
-    const { username } = req.body as { username: string }
+    const { username } = req.body
 
     try {
       const companies = await this.userService.getCompaniesForUsername(username)
@@ -195,5 +210,25 @@ export class AuthRoutes {
       console.error('companies-for-user failed:', err)
       return res.status(500).json({ message: 'Server error' })
     }
+  }
+
+  private async changePassword(req: Request, res: Response) {
+    if (!this.validateRequest(req, res)) return
+
+    const { newPassword } = req.body
+    const userId = req.userId
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' })
+    }
+
+    const result = await this.userService.changePassword(userId, newPassword)
+
+    if (result instanceof Failure) {
+      const status = result.error.message.includes('incorrect') ? 400 : 500
+      return res.status(status).json({ error: result.error.message })
+    }
+
+    res.status(200).json({ message: 'Password changed successfully' })
   }
 }

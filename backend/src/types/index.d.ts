@@ -10,6 +10,7 @@ export type User = {
   password: string
   username: string
   deletedAt?: Date
+  shouldChangePassword: boolean
 }
 
 export type UserRefreshToken = {

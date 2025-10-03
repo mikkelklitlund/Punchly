@@ -26,7 +26,7 @@ function Modal({ children, closeModal, title }: PropsWithChildren<ModalProps>) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90" onClick={closeModal}>
       <div
-        className="relative flex w-1/2 flex-col items-center rounded-lg bg-white p-6 shadow-lg xl:w-1/3"
+        className="relative flex w-1/2 flex-col items-center rounded-lg bg-white p-6 shadow-lg 2xl:w-1/3"
         onClick={(e) => e.stopPropagation()}
       >
         {title && <h2 className="mb-4 text-xl font-bold">{title}</h2>}

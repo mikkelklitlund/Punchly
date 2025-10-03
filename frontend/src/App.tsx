@@ -13,6 +13,7 @@ import Home from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import AbsenceOverviewPage from './pages/AbsenceOverviewPage'
 import queryClient from './utils/queryClient'
+import PasswordChangePage from './pages/PasswordChangePage'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/change-password" element={<PasswordChangePage />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Home />} />

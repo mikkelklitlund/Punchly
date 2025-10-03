@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { PasswordChangeRequiredError, useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { authService } from '../services/authService'
 import { CompanyDTO } from 'shared'
@@ -69,8 +69,12 @@ function LoginPage() {
 
     try {
       await login(username, password, id)
-    } catch {
-      setErrorMessage('Login mislykkedes. Tjek brugernavn/adgangskode.')
+    } catch (error: unknown) {
+      if (error instanceof PasswordChangeRequiredError) {
+        navigate('/change-password')
+      } else {
+        console.error('An unknown error occurred.')
+      }
     }
   }
 

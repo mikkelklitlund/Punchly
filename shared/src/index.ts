@@ -13,6 +13,7 @@ export type UserDTO = {
 	email: string
 	password: string | null
 	username: string
+	shouldChangePassword: boolean
 }
 export type DepartmentDTO = {
 	id: number

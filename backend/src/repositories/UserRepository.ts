@@ -22,6 +22,7 @@ export class UserRepository implements IUserRepository {
       email: user.email,
       password: user.password,
       deletedAt: user.deletedAt ?? undefined,
+      shouldChangePassword: user.shouldChangePassword,
     }
   }
 
@@ -58,12 +59,13 @@ export class UserRepository implements IUserRepository {
     if (patch.password !== undefined) data.password = patch.password
     if (patch.username !== undefined) data.username = patch.username
     if (patch.deletedAt !== undefined) data.deletedAt = patch.deletedAt
+    if (patch.shouldChangePassword !== undefined) data.shouldChangePassword = patch.shouldChangePassword
     return data
   }
 
-  async createUser(email: string, password: string, username: string): Promise<User> {
+  async createUser(email: string, password: string, username: string, shouldChangePassword: boolean): Promise<User> {
     const user = await this.prisma.user.create({
-      data: { email, password, username },
+      data: { email, password, username, shouldChangePassword },
     })
     return this.toDomain(user)
   }

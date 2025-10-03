@@ -27,6 +27,7 @@ model User {
   password  String
   username  String    @unique
   deletedAt DateTime? @db.Timestamptz(3)
+  shouldChangePassword Boolean @default(false)
 
   companies    UserCompanyAccess[]
   RefreshToken RefreshToken[]

@@ -104,7 +104,6 @@ const __dirname = path.dirname(__filename)
 // Routes
 app.use('/api/auth', authRoutes.router)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 app.use('/api/employees', employeeRoutes.router)
 app.use('/api/employees', employeePictureRoutes.router)
 app.use('/api/companies', companyRoutes.router)
