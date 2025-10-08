@@ -193,9 +193,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const errorMessage = handleAxiosError(error) || 'Registration failed'
         dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })
         throw new Error(errorMessage)
+      } finally {
+        if (state.isLoading) {
+          dispatch({ type: 'AUTH_INITIALIZED' })
+        }
       }
     },
-    []
+    [state.isLoading]
   )
 
   const changePassword = useCallback(async (newPassword: string) => {
@@ -208,7 +212,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const decoded = jwtDecode<AuthResponse>(storedToken)
       const username = decoded.username || ''
-      const companyId = decoded.companyId!
+      const companyId = decoded.companyId
+      if (companyId === undefined) {
+        throw new Error('Company ID missing in token, cannot re-login.')
+      }
 
       await authService.changePassword(newPassword)
 

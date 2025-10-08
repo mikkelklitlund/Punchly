@@ -1,13 +1,9 @@
 import express from 'express'
 import { createServer } from 'http'
-import { errorHandler } from './middleware/ErrorHandler.js'
+import { errorHandler } from './middleware/ErrorHandlerMiddleware.js'
 import swaggerUi from 'swagger-ui-express'
 import { PrismaClient } from '@prisma/client'
-import { AuthRoutes } from './routes/AuthRoute.js'
 import cors from 'cors'
-import { EmployeeRoutes } from './routes/EmployeeRoute.js'
-import { EmployeePictureRoutes } from './routes/ProfilePictureUpload.js'
-import { CompanyRoutes } from './routes/CompanyRoute.js'
 import { RepositoryContainer } from './repositories/RepositoryContainer.js'
 import { ServiceContainer } from './services/ServiceContainer.js'
 import cookieParser from 'cookie-parser'
@@ -15,9 +11,15 @@ import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { existsSync, readFileSync } from 'fs'
-import { httpLogger } from './middleware/logging.js'
+import { httpLogger } from './middleware/loggingMiddleware.js'
 import { logger } from './logger.js'
 import { attachPrismaLogging } from './prisma-logging.js'
+import { AuthController } from './controllers/authController.js'
+import { CompanyController } from './controllers/companyController.js'
+import { EmployeeController } from './controllers/employeeController.js'
+import { createAuthRoutes } from './routes/authRoute.js'
+import { createCompanyRoutes } from './routes/CompanyRoute.js'
+import { createEmployeeRoutes } from './routes/EmployeeRoute.js'
 
 dotenv.config()
 
@@ -81,15 +83,11 @@ attachPrismaLogging(prismaClient)
 const repositoryContainer = new RepositoryContainer(prismaClient)
 const serviceContainer = new ServiceContainer(repositoryContainer)
 
-const authRoutes = new AuthRoutes(serviceContainer.userService)
-const employeeRoutes = new EmployeeRoutes(
-  serviceContainer.userService,
-  serviceContainer.employeeService,
-  serviceContainer.attendanceService,
-  serviceContainer.absenceService
-)
-const employeePictureRoutes = new EmployeePictureRoutes(serviceContainer.employeeService, serviceContainer.userService)
-const companyRoutes = new CompanyRoutes(
+// Auth
+const authController = new AuthController(serviceContainer.userService)
+const authRouter = createAuthRoutes(authController)
+
+const companyController = new CompanyController(
   serviceContainer.companyService,
   serviceContainer.employeeService,
   serviceContainer.departmentService,
@@ -97,16 +95,24 @@ const companyRoutes = new CompanyRoutes(
   serviceContainer.employeeTypeService,
   serviceContainer.absenceTypeService
 )
+const companyRouter = createCompanyRoutes(companyController, serviceContainer.userService)
+
+const employeeController = new EmployeeController(
+  serviceContainer.employeeService,
+  serviceContainer.attendanceService,
+  serviceContainer.absenceService
+)
+
+const employeeRouter = createEmployeeRoutes(employeeController, serviceContainer.userService)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Routes
-app.use('/api/auth', authRoutes.router)
+app.use('/api/auth', authRouter)
+app.use('/api/companies', companyRouter)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
-app.use('/api/employees', employeeRoutes.router)
-app.use('/api/employees', employeePictureRoutes.router)
-app.use('/api/companies', companyRoutes.router)
+app.use('/api/employees', employeeRouter)
 
 app.get('/health', async (req, res) => {
   try {

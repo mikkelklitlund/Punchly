@@ -3,11 +3,9 @@ import { formatApiError } from '../utils/errorUtils'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { Role } from 'shared'
 
-interface AuthResponse extends JwtPayload {
-  username?: string
-  companyId?: number
-  role?: Role
-}
+// ---------------------
+// Types and Configuration
+// ---------------------
 
 interface AuthResponse extends JwtPayload {
   username?: string
@@ -41,6 +39,7 @@ interface CustomAxiosRequestConfig extends AxiosRequestConfig {
 let isRefreshing = false
 let failedQueue: FailedRequest[] = []
 
+// Context injection functions
 let authContextUpdater: ((user: string, role: Role, companyId?: number) => void) | null = null
 let logoutTrigger: (() => void) | null = null
 
@@ -57,6 +56,7 @@ export const clearAuthContextUpdater = () => {
   logoutTrigger = null
 }
 
+// Storage helpers
 export const getStorage = () => {
   return STORAGE_TYPE === 'localStorage' ? localStorage : sessionStorage
 }
@@ -73,6 +73,7 @@ export const removeStoredToken = (): void => {
   getStorage().removeItem('accessToken')
 }
 
+// Queue processor
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (token) {
@@ -83,6 +84,29 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   })
   failedQueue = []
 }
+
+// ---------------------
+// Request Interceptor (Add Token)
+// ---------------------
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    if (!config.url?.includes('/auth/')) {
+      const token = getStoredToken()
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`
+      }
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// ---------------------
+// Response Interceptor (Handle 401 & Retry)
+// ---------------------
 
 axiosInstance.interceptors.response.use(
   (response) => response,
@@ -123,17 +147,6 @@ axiosInstance.interceptors.response.use(
           }
         }
 
-        setStoredToken(newAccessToken)
-
-        if (authContextUpdater) {
-          try {
-            const decoded = jwtDecode<AuthResponse>(newAccessToken)
-            authContextUpdater(decoded.username || '', decoded.role || Role.COMPANY, decoded.companyId)
-          } catch (decodeError) {
-            console.error('Failed to decode refreshed token:', decodeError)
-          }
-        }
-
         originalRequest.headers = originalRequest.headers || {}
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
 
@@ -144,13 +157,6 @@ axiosInstance.interceptors.response.use(
         processQueue(errorObj, null)
 
         removeStoredToken()
-
-        if (logoutTrigger) {
-          logoutTrigger()
-        }
-
-        removeStoredToken()
-
         if (logoutTrigger) {
           logoutTrigger()
         }
@@ -166,27 +172,8 @@ axiosInstance.interceptors.response.use(
     if (formattedError.status >= 500) {
       console.error('Server error:', formattedError.message)
     }
-    if (formattedError.status >= 500) {
-      console.error('Server error:', formattedError.message)
-    }
 
     return Promise.reject(formattedError)
-    return Promise.reject(formattedError)
-  }
-)
-
-axiosInstance.interceptors.request.use(
-  (config) => {
-    if (!config.url?.includes('/auth/')) {
-      const token = getStoredToken()
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`
-      }
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
   }
 )
 
