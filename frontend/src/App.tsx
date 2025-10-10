@@ -7,7 +7,7 @@ import RoleLayout from './components/RoleLayout'
 import AttendanceOverviewPage from './pages/AttendanceOverviewPage'
 import AttendanceReportPage from './pages/AttendanceReportPage'
 import SettingsPage from './pages/SettingsPage'
-import ManagerTablePage from './pages/ManagerTablePage'
+import UserTablePage from './pages/UserTablePage'
 import EmployeeTablePage from './pages/EmployeeTablePage'
 import Home from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
@@ -33,7 +33,7 @@ function App() {
                 <Route path="/absence" element={<AbsenceOverviewPage />} />
               </Route>
               <Route element={<RoleLayout allowedRoles={[Role.ADMIN]} />}>
-                <Route path="/managers" element={<ManagerTablePage />} />
+                <Route path="/users" element={<UserTablePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
 

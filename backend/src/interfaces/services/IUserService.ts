@@ -4,10 +4,12 @@ import { Result } from '../../utils/Result.js'
 
 export interface IUserService {
   register(
-    email: string,
+    email: string | undefined,
     password: string,
     username: string,
-    shouldChangePassword: boolean
+    shouldChangePassword: boolean,
+    role: Role,
+    companyId: number
   ): Promise<Result<User, Error>>
   login(
     username: string,
@@ -35,6 +37,7 @@ export interface IUserService {
   getUserByUsername(username: string): Promise<Result<User, Error>>
   userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>>
   getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>>
+  getAllUsersByCompanyId(companyId: number): Promise<Result<User[], Error>>
   getUserCompanyAccesses(userId: number): Promise<Result<Company[], Error>>
   getCompaniesForUsername(username: string): Promise<Result<Company[], Error>>
 }

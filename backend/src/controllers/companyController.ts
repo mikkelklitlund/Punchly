@@ -111,6 +111,20 @@ export class CompanyController {
     })
   }
 
+  public getAllUsers = async (req: Request, res: Response) => {
+    const companyId = parseInt(req.params.companyId)
+
+    const result = await this.userService.getAllUsersByCompanyId(companyId)
+
+    if (result instanceof Failure) {
+      res.status(500).json({ message: result.error.message })
+      return
+    }
+    res.status(200).json({
+      users: result.value.map(toUserDTO),
+    })
+  }
+
   public getDepartmentsByCompanyId = async (req: Request, res: Response) => {
     const companyId = parseInt(req.params.companyId)
 

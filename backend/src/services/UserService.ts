@@ -13,24 +13,28 @@ export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
 
   async register(
-    email: string,
+    email: string | undefined,
     password: string,
     username: string,
-    shouldChangePassword: boolean
+    shouldChangePassword: boolean,
+    role: Role,
+    companyId: number
   ): Promise<Result<User, Error>> {
     try {
-      const emailAlreadyExists = await this.userRepository.getUserByEmail(email)
-      if (emailAlreadyExists) {
-        return failure(new ValidationError('User with email already exists', 'email'))
-      }
-
       const usernameAlreadyExists = await this.userRepository.getUserByUsername(username)
       if (usernameAlreadyExists) {
         return failure(new ValidationError('User with username already exists', 'username'))
       }
 
       const hashedPassword = await argon2.hash(password)
-      const user = await this.userRepository.createUser(email, hashedPassword, username, shouldChangePassword)
+      const user = await this.userRepository.createUser(
+        email,
+        hashedPassword,
+        username,
+        shouldChangePassword,
+        role,
+        companyId
+      )
       return success(user)
     } catch (error) {
       console.error('Error creating user:', error)
@@ -204,6 +208,15 @@ export class UserService implements IUserService {
   async getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
     try {
       const users = await this.userRepository.getUsersByCompanyAndRole(companyId, Role.MANAGER)
+      return success(users)
+    } catch {
+      return failure(new Error('Error in database connection'))
+    }
+  }
+
+  async getAllUsersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
+    try {
+      const users = await this.userRepository.getUsersForCompany(companyId)
       return success(users)
     } catch {
       return failure(new Error('Error in database connection'))

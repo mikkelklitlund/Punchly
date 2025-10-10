@@ -2,9 +2,16 @@ import { Role } from 'shared'
 import { Company, User, UserCompanyAccess, UserRefreshToken } from '../../types/index.js'
 
 export interface IUserRepository {
-  createUser(email: string, password: string, username: string, shouldChangePassword: boolean): Promise<User>
+  createUser(
+    email: string | undefined,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean,
+    role: Role,
+    companyId: number
+  ): Promise<User>
   getUserById(id: number): Promise<User | null>
-  getUserByEmail(email: string): Promise<User | null>
+  getUsersForCompany(companyId: number): Promise<User[]>
   getUserByUsername(username: string): Promise<User | null>
   getAllActiveUsers(): Promise<User[]>
   updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<User>

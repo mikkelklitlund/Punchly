@@ -15,14 +15,15 @@ import { UTCDateMini } from '@date-fns/utc'
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  private toDomain(user: PrismaUser): User {
+  private toDomain(user: PrismaUser, role?: PrismaRole): User {
     return {
       id: user.id,
       username: user.username,
-      email: user.email,
+      email: user.email ?? undefined,
       password: user.password,
       deletedAt: user.deletedAt ?? undefined,
       shouldChangePassword: user.shouldChangePassword,
+      role: role as Role,
     }
   }
 
@@ -49,7 +50,7 @@ export class UserRepository implements IUserRepository {
     return {
       userId: access.userId,
       companyId: access.companyId,
-      role: access.role,
+      role: access.role as Role,
     }
   }
 
@@ -63,20 +64,33 @@ export class UserRepository implements IUserRepository {
     return data
   }
 
-  async createUser(email: string, password: string, username: string, shouldChangePassword: boolean): Promise<User> {
+  async createUser(
+    email: string | undefined,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean,
+    role: Role,
+    companyId: number
+  ): Promise<User> {
     const user = await this.prisma.user.create({
-      data: { email, password, username, shouldChangePassword },
+      data: {
+        email,
+        username,
+        password,
+        shouldChangePassword,
+        companies: {
+          create: {
+            companyId: companyId,
+            role: role,
+          },
+        },
+      },
     })
     return this.toDomain(user)
   }
 
   async getUserById(id: number): Promise<User | null> {
     const user = await this.prisma.user.findUnique({ where: { id } })
-    return user ? this.toDomain(user) : null
-  }
-
-  async getUserByEmail(email: string): Promise<User | null> {
-    const user = await this.prisma.user.findUnique({ where: { email } })
     return user ? this.toDomain(user) : null
   }
 
@@ -146,6 +160,14 @@ export class UserRepository implements IUserRepository {
       where: { userId_companyId: { userId, companyId } },
     })
     return access ? this.toDomainAccess(access) : null
+  }
+
+  async getUsersForCompany(companyId: number): Promise<User[]> {
+    const users = await this.prisma.userCompanyAccess.findMany({
+      where: { companyId },
+      include: { user: true },
+    })
+    return users.map((acc) => this.toDomain(acc.user, acc.role))
   }
 
   async getUsersByCompanyAndRole(companyId: number, role: Role): Promise<User[]> {

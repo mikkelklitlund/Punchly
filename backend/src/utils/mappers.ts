@@ -207,7 +207,9 @@ export function toUserDTO(user: User): UserDTO {
   return {
     id: user.id,
     username: user.username,
-    email: user.email,
+    email: user.email ?? null,
+    role: user.role ?? null,
+    shouldChangePassword: user.shouldChangePassword,
     password: null,
   }
 }

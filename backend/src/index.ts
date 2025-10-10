@@ -18,8 +18,8 @@ import { AuthController } from './controllers/authController.js'
 import { CompanyController } from './controllers/companyController.js'
 import { EmployeeController } from './controllers/employeeController.js'
 import { createAuthRoutes } from './routes/authRoute.js'
-import { createCompanyRoutes } from './routes/CompanyRoute.js'
-import { createEmployeeRoutes } from './routes/EmployeeRoute.js'
+import { createCompanyRoutes } from './routes/companyRoute.js'
+import { createEmployeeRoutes } from './routes/employeeRoute.js'
 
 dotenv.config()
 
@@ -85,7 +85,7 @@ const serviceContainer = new ServiceContainer(repositoryContainer)
 
 // Auth
 const authController = new AuthController(serviceContainer.userService)
-const authRouter = createAuthRoutes(authController)
+const authRouter = createAuthRoutes(authController, serviceContainer.userService)
 
 const companyController = new CompanyController(
   serviceContainer.companyService,

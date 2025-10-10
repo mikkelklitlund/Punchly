@@ -30,8 +30,13 @@ export class AuthController {
   }
 
   public register = async (req: Request, res: Response) => {
-    const { email, password, username, shouldChangePassword } = req.body
-    const result = await this.userService.register(email, password, username, shouldChangePassword)
+    const companyId = req.companyId
+    if (!companyId) {
+      res.status(500).json({ message: 'CompanyId must be provided, try to log out and login again' })
+      return
+    }
+    const { email, password, username, shouldChangePassword, role } = req.body
+    const result = await this.userService.register(email, password, username, shouldChangePassword, role, companyId)
 
     if (result instanceof Failure) {
       const status = result.error instanceof ValidationError ? 409 : 500
@@ -84,9 +89,10 @@ export class AuthController {
     const userWithoutPassword: UserDTO = {
       id: result.value.id,
       username: result.value.username,
-      email: result.value.email,
+      email: result.value.email ?? null,
       password: null,
       shouldChangePassword: result.value.shouldChangePassword,
+      role: null,
     }
     res.json(userWithoutPassword)
   }

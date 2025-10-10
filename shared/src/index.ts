@@ -10,10 +10,11 @@ export type CompanyDTO = {
 }
 export type UserDTO = {
 	id: number
-	email: string
+	email: string | null
 	password: string | null
 	username: string
 	shouldChangePassword: boolean
+	role: Role | null
 }
 export type DepartmentDTO = {
 	id: number

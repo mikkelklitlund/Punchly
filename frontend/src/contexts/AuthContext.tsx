@@ -39,7 +39,13 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (username: string, password: string, companyId: number) => Promise<void>
-  register: (email: string, password: string, username: string, shouldChangePassword: boolean) => Promise<void>
+  register: (
+    email: string | undefined,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean,
+    role: Role
+  ) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
   changePassword: (newPassword: string) => Promise<void>
@@ -185,10 +191,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [])
 
   const register = useCallback(
-    async (email: string, password: string, username: string, shouldChangePassword: boolean) => {
+    async (
+      email: string | undefined,
+      password: string,
+      username: string,
+      shouldChangePassword: boolean,
+      role: Role
+    ) => {
       dispatch({ type: 'AUTH_START' })
       try {
-        await authService.register(email, password, username, shouldChangePassword)
+        await authService.register(email, password, username, shouldChangePassword, role)
       } catch (error) {
         const errorMessage = handleAxiosError(error) || 'Registration failed'
         dispatch({ type: 'AUTH_FAILURE', payload: errorMessage })

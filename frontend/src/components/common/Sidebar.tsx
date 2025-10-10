@@ -17,7 +17,7 @@ function Sidebar() {
 
   const menuItems = [
     { label: 'Medarbejdere', href: '/employees', icon: Users, roles: [Role.ADMIN, Role.MANAGER] },
-    { label: 'Managere', href: '/managers', icon: Users, roles: [Role.ADMIN] },
+    { label: 'Brugere', href: '/users', icon: Users, roles: [Role.ADMIN] },
     { label: 'Indstillinger', href: '/settings', icon: Settings, roles: [Role.ADMIN] },
   ]
 

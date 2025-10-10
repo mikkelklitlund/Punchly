@@ -17,6 +17,11 @@ export const companyService = {
     return response.data
   },
 
+  async getUsers(companyId: number): Promise<{ users: UserDTO[] }> {
+    const response = await axiosInstance.get(`/companies/${companyId}/users`)
+    return response.data
+  },
+
   async getEmployeeTypes(companyId: number): Promise<{ employeeTypes: EmployeeTypeDTO[] }> {
     const response = await axiosInstance.get(`/companies/${companyId}/employee-types`)
     return response.data

@@ -1,4 +1,4 @@
-import { CompanyDTO } from 'shared'
+import { CompanyDTO, Role } from 'shared'
 import axiosInstance from '../api/axios'
 import { AuthTokens, LoginResponse } from '../types/types'
 
@@ -9,8 +9,14 @@ export const authService = {
     return response.data
   },
 
-  async register(email: string, password: string, username: string, shouldChangePassword: boolean): Promise<void> {
-    await axiosInstance.post('/auth/register', { email, password, username, shouldChangePassword })
+  async register(
+    email: string | undefined,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean,
+    role: Role
+  ): Promise<void> {
+    await axiosInstance.post('/auth/register', { email, password, username, shouldChangePassword, role })
   },
 
   async logout(): Promise<void> {

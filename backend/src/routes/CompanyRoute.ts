@@ -31,6 +31,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   router.get('/:companyId/:departmentId/simple-employees', auth, controller.getAllSimpleEmployeesByCompanyAndDepartment)
   router.get('/:companyId/simple-employees', auth, controller.getSimpleEmployees)
   router.get('/:companyId/managers', auth, authorizeRoles(userService, Role.ADMIN), controller.getAllManagers)
+  router.get('/:companyId/users', auth, authorizeRoles(userService, Role.ADMIN), controller.getAllUsers)
 
   router.get('/:companyId/departments', auth, controller.getDepartmentsByCompanyId)
   router.post(
