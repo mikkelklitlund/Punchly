@@ -2,9 +2,10 @@ import { useState } from 'react'
 import LoadingSpinner from '../common/LoadingSpinner'
 import Modal from '../common/Modal'
 import { Role } from 'shared'
+import { translateRole } from '../../utils/roleTranslation'
 
 export type UserFormValues = {
-  email?: string
+  email: string
   username: string
   password?: string
   shouldChangePassword: boolean
@@ -20,7 +21,7 @@ interface Props {
 }
 
 const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDelete }: Props) => {
-  const [email, setEmail] = useState(initialValues.email ?? '')
+  const [email, setEmail] = useState(initialValues.email)
   const [username, setUsername] = useState(initialValues.username ?? '')
   const [password, setPassword] = useState(initialValues.password ?? '')
   const [userRole, setUserRole] = useState<Role>(initialValues.userRole ?? Role.MANAGER)
@@ -41,7 +42,6 @@ const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDe
       setErrors(newErrors)
       return
     }
-
     setErrors({})
     setIsSaving(true)
     try {
@@ -121,7 +121,9 @@ const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDe
                 Vælg rolle...
               </option>
               {Object.values(Role).map((r) => (
-                <option key={r}>{r}</option>
+                <option key={r} value={r}>
+                  {translateRole(r)}
+                </option>
               ))}
             </select>
           </div>

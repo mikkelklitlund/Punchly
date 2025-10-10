@@ -16,7 +16,13 @@ export const authService = {
     shouldChangePassword: boolean,
     role: Role
   ): Promise<void> {
-    await axiosInstance.post('/auth/register', { email, password, username, shouldChangePassword, role })
+    await axiosInstance.post('/auth/register', {
+      email,
+      password,
+      username,
+      shouldChangePassword,
+      role,
+    })
   },
 
   async logout(): Promise<void> {

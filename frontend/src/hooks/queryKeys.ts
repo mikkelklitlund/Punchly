@@ -5,4 +5,5 @@ export const qk = {
   employees: (companyId: number | undefined, departmentId?: number) =>
     ['employees', { companyId, departmentId }] as const,
   attendanceRecords: (employeeId: number | undefined) => ['attendanceRecords', employeeId] as const,
+  users: (companyId: number | undefined) => ['users', { companyId }] as const,
 }

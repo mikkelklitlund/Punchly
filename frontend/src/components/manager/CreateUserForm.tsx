@@ -1,14 +1,13 @@
 import UserForm, { UserFormValues } from './UserForm'
 import { toast } from 'react-toastify'
 import { Role } from 'shared'
-import { useAuth } from '../../contexts/AuthContext'
+import { authService } from '../../services/authService'
 
 interface CreateManagerProps {
   onSuccess: () => void
 }
 
 const CreateUserComponent = ({ onSuccess }: CreateManagerProps) => {
-  const { register } = useAuth()
   const initial: UserFormValues = {
     email: '',
     username: '',
@@ -23,7 +22,12 @@ const CreateUserComponent = ({ onSuccess }: CreateManagerProps) => {
       return
     }
 
-    await toast.promise(register(v.email, v.password, v.username, v.shouldChangePassword, v.userRole), {
+    let email: string | undefined = v.email
+    if (!v.email) {
+      email = undefined
+    }
+
+    await toast.promise(authService.register(email, v.password, v.username, v.shouldChangePassword, v.userRole), {
       success: 'Bruger oprettet',
       error: 'Fejl ved oprettelse af bruger',
     })

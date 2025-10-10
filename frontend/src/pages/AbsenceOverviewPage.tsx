@@ -154,6 +154,7 @@ const AbsenceOverviewPage = () => {
         <Modal title="Opret Fravær" closeModal={() => setCreateRecord(false)}>
           <CreateAbsenceForm
             onSuccess={() => {
+              refetch()
               setCreateRecord(false)
             }}
             onCancel={() => setCreateRecord(false)}
