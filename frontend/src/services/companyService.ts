@@ -1,5 +1,5 @@
 import axiosInstance from '../api/axios'
-import { AbsenceTypeDTO, CompanyDTO, DepartmentDTO, EmployeeTypeDTO, UserDTO } from 'shared'
+import { AbsenceTypeDTO, CompanyDTO, createUserDTO, DepartmentDTO, EmployeeTypeDTO, UserDTO } from 'shared'
 
 export const companyService = {
   async getAllCompanies(): Promise<{ companies: CompanyDTO[] }> {
@@ -65,5 +65,20 @@ export const companyService = {
   },
   async deleteAbsenceType(companyId: number, id: number): Promise<void> {
     await axiosInstance.delete(`/companies/${companyId}/absence-types/${id}`)
+  },
+
+  async createUser(companyId: number, user: createUserDTO) {
+    const { data } = await axiosInstance.post(`/companies/${companyId}/users`, { ...user })
+    return data
+  },
+
+  async updateUser(companyId: number, user: UserDTO) {
+    const { data } = await axiosInstance.patch(`/companies/${companyId}/users`, { ...user })
+    return data
+  },
+
+  async deleteUser(companyId: number, userId: number) {
+    const { data } = await axiosInstance.delete(`/companies/${companyId}/users/${userId}`)
+    return data
   },
 }

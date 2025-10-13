@@ -7,10 +7,12 @@ import { UserDTO } from 'shared'
 import CreateUserComponent from '../components/manager/CreateUserForm'
 import { translateRole } from '../utils/roleTranslation'
 import { useUsers } from '../hooks/useUsers'
+import EditUserForm from '../components/manager/EditUserForm'
 
 const UserTablePage = () => {
   const { companyId } = useAuth()
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editUser, setEditUser] = useState<UserDTO | null>(null)
 
   const { data: users = [], isLoading, isFetching, error, refetch } = useUsers(companyId)
 
@@ -39,12 +41,25 @@ const UserTablePage = () => {
           rowKey={(u) => u.id}
           isLoading={isLoading && users.length === 0}
           error={error?.message || null}
-          emptyMessage="Ingen managers fundet"
+          emptyMessage="Ingen konti fundet"
+          onRowClick={(user) => setEditUser(user)}
         />
       </div>
 
+      {editUser && (
+        <Modal title="Rediger Konto" closeModal={() => setEditUser(null)}>
+          <EditUserForm
+            onSuccess={() => {
+              refetch()
+              setEditUser(null)
+            }}
+            user={editUser}
+          />
+        </Modal>
+      )}
+
       {showCreateModal && (
-        <Modal title="Opret ny Manager" closeModal={() => setShowCreateModal(false)}>
+        <Modal title="Opret ny konto" closeModal={() => setShowCreateModal(false)}>
           <CreateUserComponent
             onSuccess={() => {
               refetch()

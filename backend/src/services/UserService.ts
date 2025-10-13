@@ -124,9 +124,22 @@ export class UserService implements IUserService {
     }
   }
 
-  async updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>> {
+  async updateUser(id: number, companyId: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>> {
     try {
-      const updatedUser = await this.userRepository.updateUser(id, data)
+      const access = await this.userRepository.getUserCompanyAccess(id, companyId)
+      if (!access) {
+        return failure(new EntityNotFoundError('User does not belong to this company'))
+      }
+      const userPatch: Partial<Omit<User, 'id'>> = {
+        ...data,
+        password: data.password ? await argon2.hash(data.password) : undefined,
+      }
+      const updatedUser = await this.userRepository.updateUser(id, userPatch)
+
+      if (data.role) {
+        await this.userRepository.updateCompanyRole(id, companyId, data.role)
+      }
+
       return success(updatedUser)
     } catch (error) {
       console.error('Error updating user:', error)
@@ -134,10 +147,17 @@ export class UserService implements IUserService {
     }
   }
 
-  async deleteUser(id: number): Promise<Result<User, Error>> {
+  async deleteUser(id: number, companyId: number): Promise<Result<void, Error>> {
     try {
-      const deletedUser = await this.userRepository.softDeleteUser(id)
-      return success(deletedUser)
+      await this.userRepository.deleteUserCompanyAccess(id, companyId)
+
+      const remainingAccesses = await this.userRepository.getCompaniesForUserId(id)
+
+      if (remainingAccesses.length === 0) {
+        await this.userRepository.softDeleteUser(id)
+      }
+
+      return success(undefined)
     } catch (error) {
       console.error('Error deleting user:', error)
       return failure(new DatabaseError('Database error during deleting user'))

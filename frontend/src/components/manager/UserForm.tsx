@@ -4,12 +4,19 @@ import Modal from '../common/Modal'
 import { Role } from 'shared'
 import { translateRole } from '../../utils/roleTranslation'
 
+const roleExplanations: Record<Role, string> = {
+  [Role.MANAGER]: 'En leder kan administrere medarbejdere og tids registreringer.',
+  [Role.COMPANY]: 'En fælleskonti som kun har adgang til at tjekke ind og ud.',
+  [Role.ADMIN]:
+    'Super bruger, har adgang til alt, kan administrere medarbejder, ledere, fælleskonti, kan ændre indstillinger',
+}
+
 export type UserFormValues = {
-  email: string
+  email?: string
   username: string
   password?: string
   shouldChangePassword: boolean
-  userRole: Role
+  role: Role
 }
 
 interface Props {
@@ -21,15 +28,17 @@ interface Props {
 }
 
 const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDelete }: Props) => {
-  const [email, setEmail] = useState(initialValues.email)
+  const [email, setEmail] = useState(initialValues.email ?? '')
   const [username, setUsername] = useState(initialValues.username ?? '')
   const [password, setPassword] = useState(initialValues.password ?? '')
-  const [userRole, setUserRole] = useState<Role>(initialValues.userRole ?? Role.MANAGER)
+  const [userRole, setUserRole] = useState<Role>(initialValues.role ?? Role.MANAGER)
   const [shouldChangePassword, setShouldChangePassword] = useState(initialValues.shouldChangePassword ?? false)
 
   const [isSaving, setIsSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+
+  const [showRoleTooltip, setShowRoleTooltip] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,15 +51,18 @@ const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDe
       setErrors(newErrors)
       return
     }
+    const finalEmail = email.trim() === '' ? undefined : email.trim()
+    const finalPass = password.trim() === '' ? undefined : password.trim()
+
     setErrors({})
     setIsSaving(true)
     try {
       await onSubmit({
-        email,
+        email: finalEmail,
         username,
-        password: password || undefined,
+        password: finalPass,
         shouldChangePassword,
-        userRole,
+        role: userRole,
       })
     } finally {
       setIsSaving(false)
@@ -107,8 +119,34 @@ const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDe
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Brugerrolle</label>
+          <div className="relative">
+            <div className="flex items-center">
+              <label className="block text-sm font-medium text-gray-700">Brugerrolle</label>
+              <div
+                className="ml-2 flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-500"
+                onMouseEnter={() => setShowRoleTooltip(true)}
+                onMouseLeave={() => setShowRoleTooltip(false)}
+                onFocus={() => setShowRoleTooltip(true)}
+                onBlur={() => setShowRoleTooltip(false)}
+                tabIndex={0}
+                aria-describedby="role-explanation-tooltip"
+              >
+                ?
+              </div>
+            </div>
+            {showRoleTooltip && (
+              <div
+                id="role-explanation-tooltip"
+                className="absolute right-0 bottom-full z-10 mb-2 w-64 rounded-md border border-gray-300 bg-white p-3 text-xs shadow-lg"
+              >
+                <p className="mb-1 font-semibold">Rollebeskrivelser:</p>
+                {Object.values(Role).map((role) => (
+                  <p key={role} className="mb-1 last:mb-0">
+                    <span className="font-bold">{translateRole(role)}:</span> {roleExplanations[role]}
+                  </p>
+                ))}
+              </div>
+            )}
             <select
               value={userRole}
               onChange={(e) => {

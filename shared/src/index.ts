@@ -16,6 +16,13 @@ export type UserDTO = {
 	shouldChangePassword: boolean
 	role: Role | null
 }
+export type createUserDTO = {
+	email: string | null
+	password: string
+	username: string
+	shouldChangePassword: boolean
+	role: Role
+}
 export type DepartmentDTO = {
 	id: number
 	name: string

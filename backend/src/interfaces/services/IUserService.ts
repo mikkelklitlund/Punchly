@@ -29,8 +29,8 @@ export interface IUserService {
     >
   >
   getUserById(id: number): Promise<Result<User, Error>>
-  updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
-  deleteUser(id: number): Promise<Result<User, Error>>
+  updateUser(id: number, companyId: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
+  deleteUser(id: number, companyId: number): Promise<Result<void, Error>>
   changePassword(userId: number, newPassword: string): Promise<Result<User, Error>>
   refreshAccessToken(refreshToken: string): Promise<Result<{ accessToken: string; refreshToken: string }, Error>>
   revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>

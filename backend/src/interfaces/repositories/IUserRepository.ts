@@ -24,4 +24,6 @@ export interface IUserRepository {
   getUserCompanyAccess(userId: number, companyId: number): Promise<UserCompanyAccess | null>
   getUsersByCompanyAndRole(companyId: number, role: Role): Promise<User[]>
   getCompaniesForUserId(userId: number): Promise<Company[]>
+  updateCompanyRole(userId: number, companyId: number, newRole: Role): Promise<UserCompanyAccess>
+  deleteUserCompanyAccess(userId: number, companyId: number): Promise<UserCompanyAccess>
 }

@@ -185,4 +185,25 @@ export class UserRepository implements IUserRepository {
     })
     return rows.map((r) => this.toDomainCompany(r.company))
   }
+
+  async updateCompanyRole(userId: number, companyId: number, newRole: Role): Promise<UserCompanyAccess> {
+    const access = await this.prisma.userCompanyAccess.update({
+      where: {
+        userId_companyId: { userId, companyId },
+      },
+      data: {
+        role: newRole,
+      },
+    })
+    return this.toDomainAccess(access)
+  }
+
+  async deleteUserCompanyAccess(userId: number, companyId: number): Promise<UserCompanyAccess> {
+    const access = await this.prisma.userCompanyAccess.delete({
+      where: {
+        userId_companyId: { userId, companyId },
+      },
+    })
+    return this.toDomainAccess(access)
+  }
 }

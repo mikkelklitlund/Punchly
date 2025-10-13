@@ -16,6 +16,8 @@ import {
   toSimpleEmployeeDTO,
   toUserDTO,
 } from '../utils/mappers.js'
+import { ValidationError } from '../utils/Errors.js'
+import { logger } from '../logger.js'
 
 export class CompanyController {
   constructor(
@@ -266,6 +268,64 @@ export class CompanyController {
 
     if (result instanceof Failure) {
       return res.status(500).json({ message: result.error.message })
+    }
+
+    return res.status(204).send()
+  }
+
+  public createUser = async (req: Request, res: Response) => {
+    const companyId = req.companyId
+    if (!companyId) {
+      res.status(500).json({ message: 'CompanyId must be provided, try to log out and login again' })
+      return
+    }
+    const { email, password, username, shouldChangePassword, role } = req.body
+    const result = await this.userService.register(email, password, username, shouldChangePassword, role, companyId)
+
+    if (result instanceof Failure) {
+      const status = result.error instanceof ValidationError ? 409 : 500
+      logger.error({ error: result.error.message }, 'User registration failed')
+      return res.status(status).json({ error: result.error.message })
+    }
+
+    return res.status(204).send()
+  }
+
+  public updateUser = async (req: Request, res: Response) => {
+    const companyId = req.companyId
+    if (!companyId) {
+      return res.status(500).json({ message: 'CompanyId must be provided...' })
+    }
+    const { userId, email, password, username, shouldChangePassword, role } = req.body
+    const result = await this.userService.updateUser(userId, companyId, {
+      email,
+      password,
+      username,
+      shouldChangePassword,
+      role,
+    })
+
+    if (result instanceof Failure) {
+      const status = result.error instanceof ValidationError ? 409 : 500
+      logger.error({ error: result.error.message }, 'User update failed')
+      return res.status(status).json({ error: result.error.message })
+    }
+
+    return res.status(204).send()
+  }
+
+  public deleteUser = async (req: Request, res: Response) => {
+    const companyId = req.companyId
+    if (!companyId) {
+      return res.status(500).json({ message: 'CompanyId must be provided...' })
+    }
+    const id = parseInt(req.params.id, 10)
+    const result = await this.userService.deleteUser(id, companyId)
+
+    if (result instanceof Failure) {
+      const status = result.error instanceof ValidationError ? 409 : 500
+      logger.error({ error: result.error.message }, 'User deletion failed')
+      return res.status(status).json({ error: result.error.message })
     }
 
     return res.status(204).send()

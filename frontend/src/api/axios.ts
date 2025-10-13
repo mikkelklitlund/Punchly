@@ -91,7 +91,7 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    if (!config.url?.includes('/auth/') || config.url?.includes('/register')) {
+    if (!config.url?.includes('/auth/')) {
       const token = getStoredToken()
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`

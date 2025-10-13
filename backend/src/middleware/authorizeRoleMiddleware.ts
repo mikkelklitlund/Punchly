@@ -10,11 +10,7 @@ const authorizeRoles = (userService: IUserService, ...allowedRoles: Role[]) => {
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
-    const companyIdNum = Number.parseInt(req.companyId, 10)
-    if (Number.isNaN(companyIdNum)) {
-      req.log?.warn({ companyId: req.companyId }, 'Invalid companyId on request')
-      return res.status(401).json({ message: 'Unauthorized' })
-    }
+    const companyIdNum = req.companyId
 
     try {
       const access = await userService.userHasAccess(req.username, companyIdNum, allowedRoles)

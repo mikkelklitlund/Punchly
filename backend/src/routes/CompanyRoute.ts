@@ -84,5 +84,43 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   )
   router.delete('/:companyId/absence-types/:id', ...adminAuth, controller.deleteAbsenceType)
 
+  router.post(
+    '/users',
+    ...adminAuth,
+    [
+      body('email').isEmail().normalizeEmail().optional(),
+      body('password')
+        .isLength({ min: 8 })
+        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/)
+        .withMessage('Password must be at least 8 characters long and contain both letters and numbers'),
+      body('username').trim().isLength({ min: 3 }).escape(),
+      body('shouldChangePassword').isBoolean(),
+      body('role').isIn(['COMPANY', 'MANAGER', 'ADMIN']).withMessage('Invalid role provided'),
+    ],
+    checkValidationResult,
+    controller.createUser
+  )
+
+  router.patch(
+    '/users',
+    ...adminAuth,
+    [
+      body('userId').isNumeric(),
+      body('email').isEmail().normalizeEmail().optional(),
+      body('password')
+        .isLength({ min: 8 })
+        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/)
+        .withMessage('Password must be at least 8 characters long and contain both letters and numbers')
+        .optional(),
+      body('username').trim().isLength({ min: 3 }).escape(),
+      body('shouldChangePassword').isBoolean(),
+      body('role').isIn(Object.values(Role)).withMessage('Invalid role provided'),
+    ],
+    checkValidationResult,
+    controller.updateUser
+  )
+
+  router.delete('/users/:id', ...adminAuth, controller.deleteUser)
+
   return router
 }
