@@ -13,21 +13,23 @@ export default defineConfig([
   {
     ignores: ['dist/', 'node_modules/'],
   },
+
+  // Base JS + TS configs
+  pluginJs.configs.recommended,
+  ...tseslint.configs.recommended,
+  eslintPluginPrettierRecommended,
+
+  // Your custom overrides come last
   {
     files: ['src/**/*.{js,mjs,cjs,ts}', 'prisma/**/*.ts'],
     languageOptions: {
       sourceType: 'module',
       globals: globals.node,
       parserOptions: {
-        tsconfigRootDir: __dirname,
         project: ['./tsconfig.json'],
+        tsconfigRootDir: __dirname,
       },
     },
-  },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  eslintPluginPrettierRecommended,
-  {
     rules: {
       quotes: [2, 'single', { avoidEscape: true }],
       semi: [2, 'never'],

@@ -15,6 +15,7 @@ model Company {
   departments   Department[]
   employeeTypes EmployeeType[]
   absenceTypes  AbsenceType[]
+  absenceTypes  AbsenceType[]
   users         UserCompanyAccess[]
   managerInvites ManagerInvite[]
 

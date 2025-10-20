@@ -74,6 +74,14 @@ export class AttendanceService implements IAttendanceService {
         ...newAttendance,
       })
 
+      if (!newAttendance.checkIn || !newAttendance.checkOut) {
+        return failure(new ValidationError('When creating a full attendance record, all params must be present'))
+      }
+
+      if (isBefore(newAttendance.checkOut, newAttendance.checkIn)) {
+        return failure(new ValidationError('Checkout cannot be before checkin'))
+      }
+
       return success(attendanceRecord)
     } catch (error) {
       console.error('Error creating attendance record:', error)
@@ -163,6 +171,8 @@ export class AttendanceService implements IAttendanceService {
     } catch (error) {
       if (error instanceof ValidationError) return failure(error)
       console.error('Error fetching attendance records for employee by period:', error)
+      if (error instanceof ValidationError) return failure(error)
+      console.error('Error fetching attendance records for employee by period:', error)
       return failure(new DatabaseError('Database error occurred while fetching attendance records.'))
     }
   }
@@ -241,6 +251,7 @@ export class AttendanceService implements IAttendanceService {
   }
 
   // ---------------------- Report functions --------------------------
+  // ---------------------- Report functions --------------------------
 
   private centerAlignRow(row: ExcelJS.Row) {
     row.eachCell((cell) => {
@@ -292,6 +303,13 @@ export class AttendanceService implements IAttendanceService {
     sheet.getColumn(5).width = 20
     sheet.getColumn(6).width = 20
     sheet.getColumn(7).width = 20
+    sheet.getColumn(1).width = 20
+    sheet.getColumn(2).width = 25
+    sheet.getColumn(3).width = 20
+    sheet.getColumn(4).width = 30
+    sheet.getColumn(5).width = 20
+    sheet.getColumn(6).width = 20
+    sheet.getColumn(7).width = 20
 
     const grouped = this.groupByEmployeeType(data)
 
@@ -311,6 +329,7 @@ export class AttendanceService implements IAttendanceService {
         const row = sheet.addRow([
           em.department.name,
           em.name,
+          // birthdate is @db.Date in your schema, render as YYYY-MM-DD
           // birthdate is @db.Date in your schema, render as YYYY-MM-DD
           em.birthdate.toISOString().split('T')[0],
           em.address,
@@ -345,6 +364,7 @@ export class AttendanceService implements IAttendanceService {
               cur.setUTCDate(cur.getUTCDate() + 1)
             }
             return days
+            return days
           }),
         ])
       )
@@ -376,6 +396,8 @@ export class AttendanceService implements IAttendanceService {
         if (absence) {
           checkInRow.push(absence.absenceType.name)
           checkOutRow.push(absence.absenceType.name)
+          checkInRow.push(absence.absenceType.name)
+          checkOutRow.push(absence.absenceType.name)
         } else {
           const record = emp.attendanceRecords.find((r) => this.formatDateForTz(r.checkIn, tz) === date)
           checkInRow.push(record ? this.formatTimeForTz(record.checkIn, tz) : '')
@@ -395,6 +417,7 @@ export class AttendanceService implements IAttendanceService {
         const record = emp.attendanceRecords.find((r) => this.formatDateForTz(r.checkIn, tz) === date)
         if (record?.autoClosed) {
           const cell = checkOutRowObj.getCell(idx + 2)
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } }
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } }
         }
       })

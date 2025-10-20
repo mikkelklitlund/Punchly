@@ -8,9 +8,9 @@ import {
 } from '@prisma/client'
 
 import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
+import { UTCDateMini } from '@date-fns/utc'
 import { User, UserRefreshToken, UserCompanyAccess, Company } from '../types/index.js'
 import { Role } from 'shared'
-import { UTCDateMini } from '@date-fns/utc'
 
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}

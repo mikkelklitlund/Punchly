@@ -2,39 +2,41 @@ import { useMemo, useState } from 'react'
 import { CheckCircle, XCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
-import DataTable, { Column } from '../components/common/DataTable'
+import { Column } from '../components/common/DataTable'
+import DataTable from '../components/common/DataTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import EditAttendanceForm from '../components/attendance/EditAttendanceForm'
+import CreateAttendanceForm from '../components/attendance/CreateAttendanceForm'
 import { useAuth } from '../contexts/AuthContext'
+import { useCompany } from '../contexts/CompanyContext'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAttendanceRecords } from '../hooks/useAttendanceRecords'
 import { AttendanceRecordDTO } from 'shared'
-import CreateAttendanceForm from '../components/attendance/CreateAttendanceForm'
-import { useCompany } from '../contexts/CompanyContext'
 
 dayjs.extend(duration)
 
 const AttendanceOverviewPage = () => {
   const { companyId } = useAuth()
   const { departments } = useCompany()
-
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
   const [editRecord, setEditRecord] = useState<AttendanceRecordDTO | null>(null)
+  const [createRecord, setCreateRecord] = useState<boolean>(false)
+
   const [selectedStartDate, setSelectedStartDate] = useState<string>(
     dayjs().subtract(30, 'days').format('YYYY-MM-DDTHH:mm')
   )
   const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DDTHH:mm'))
+
   const {
     data: records = [],
     isLoading,
     error,
     refetch,
   } = useAttendanceRecords(selectedEmployeeId || undefined, selectedStartDate, selectedEndDate)
-  const [createRecord, setCreateRecord] = useState<boolean>(false)
 
   const selectedEmployee = useMemo(
     () => employees.find((e) => e.id === selectedEmployeeId),
@@ -44,7 +46,7 @@ const AttendanceOverviewPage = () => {
   const columns: Column<AttendanceRecordDTO>[] = [
     {
       header: 'Dato',
-      accessor: (rec: AttendanceRecordDTO) => {
+      accessor: (rec) => {
         const inD = dayjs(rec.checkIn)
         if (!rec.checkOut) return inD.format('DD/MM/YYYY')
         const outD = dayjs(rec.checkOut)
@@ -55,15 +57,15 @@ const AttendanceOverviewPage = () => {
     },
     {
       header: 'Check ind',
-      accessor: (rec: AttendanceRecordDTO) => dayjs(rec.checkIn).format('HH:mm'),
+      accessor: (rec) => dayjs(rec.checkIn).format('HH:mm'),
     },
     {
       header: 'Check ud',
-      accessor: (rec: AttendanceRecordDTO) => (rec.checkOut ? dayjs(rec.checkOut).format('HH:mm') : '-'),
+      accessor: (rec) => (rec.checkOut ? dayjs(rec.checkOut).format('HH:mm') : '-'),
     },
     {
       header: 'Varighed',
-      accessor: (rec: AttendanceRecordDTO) => {
+      accessor: (rec) => {
         if (!rec.checkOut) return '-'
         const minutes = dayjs(rec.checkOut).diff(dayjs(rec.checkIn), 'minute')
         const h = Math.floor(minutes / 60)
@@ -73,7 +75,7 @@ const AttendanceOverviewPage = () => {
     },
     {
       header: 'Skal gennemgås',
-      accessor: (rec: AttendanceRecordDTO) =>
+      accessor: (rec) =>
         rec.autoClosed ? (
           <CheckCircle className="inline-block text-orange-500" size={18} />
         ) : (
@@ -87,9 +89,11 @@ const AttendanceOverviewPage = () => {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <h1 className="text-2xl font-bold text-gray-800">Registrerede tider</h1>
 
+      {/* Filters */}
       <div className="space-y-2">
         <div className="flex items-end justify-between">
           <div className="flex gap-3">
+            {/* Department Select */}
             <div>
               <label htmlFor="department" className="block text-sm font-medium text-gray-700">
                 Vælg afdeling
@@ -97,7 +101,7 @@ const AttendanceOverviewPage = () => {
               <select
                 id="department"
                 className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-                onChange={(e) => setSelectedDepartmentId(Number(e.target.value))}
+                onChange={(e) => setSelectedDepartmentId(Number(e.target.value) || null)}
                 value={selectedDepartmentId || ''}
                 disabled={empLoading}
               >
@@ -111,6 +115,8 @@ const AttendanceOverviewPage = () => {
                 ))}
               </select>
             </div>
+
+            {/* Employee Select */}
             <div>
               <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
                 Vælg medarbejder
@@ -118,7 +124,7 @@ const AttendanceOverviewPage = () => {
               <select
                 id="employee"
                 className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-                onChange={(e) => setSelectedEmployeeId(Number(e.target.value))}
+                onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
                 value={selectedEmployeeId || ''}
                 disabled={empLoading}
               >
@@ -141,6 +147,7 @@ const AttendanceOverviewPage = () => {
           </button>
         </div>
 
+        {/* Date Filters */}
         <div className="flex gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700">Start dato</label>
@@ -178,6 +185,7 @@ const AttendanceOverviewPage = () => {
         {empError && <p className="text-red-500">{empError.message || 'Kunne ikke hente medarbejdere'}</p>}
       </div>
 
+      {/* Table or messages */}
       {isLoading && <LoadingSpinner message="Indlæser registreringer..." />}
       {error && <p className="text-red-500">{error.message || 'Kunne ikke hente registreringer'}</p>}
 
@@ -186,13 +194,12 @@ const AttendanceOverviewPage = () => {
           columns={columns}
           data={records}
           rowKey={(rec) => rec.id}
-          onRowClick={(rec) => {
-            setEditRecord(rec)
-          }}
+          onRowClick={(rec) => setEditRecord(rec)}
           emptyMessage="Ingen registreringer fundet for denne medarbejder de sidste 30 dage"
         />
       )}
 
+      {/* Edit Modal */}
       {editRecord && (
         <Modal title="Rediger registrering" closeModal={() => setEditRecord(null)}>
           <EditAttendanceForm
@@ -205,6 +212,7 @@ const AttendanceOverviewPage = () => {
         </Modal>
       )}
 
+      {/* Create Modal */}
       {createRecord && (
         <Modal title="Opret registrering" closeModal={() => setCreateRecord(false)}>
           <CreateAttendanceForm

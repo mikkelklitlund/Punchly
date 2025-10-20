@@ -17,9 +17,9 @@ import { attachPrismaLogging } from './prisma-logging.js'
 import { AuthController } from './controllers/authController.js'
 import { CompanyController } from './controllers/companyController.js'
 import { EmployeeController } from './controllers/employeeController.js'
-import { createAuthRoutes } from './routes/authRoute.js'
-import { createCompanyRoutes } from './routes/companyRoute.js'
-import { createEmployeeRoutes } from './routes/employeeRoute.js'
+import { createAuthRoutes } from './routes/AuthRoute.js'
+import { createCompanyRoutes } from './routes/CompanyRoute.js'
+import { createEmployeeRoutes } from './routes/EmployeeRoute.js'
 
 dotenv.config()
 
@@ -28,6 +28,7 @@ const isProd = process.env.NODE_ENV === 'production'
 const app = express()
 const FRONTEND_ORIGIN = process.env.CLIENT_URL ?? 'http://localhost:5173'
 
+// Trust proxy for accurate IP addresses
 // Request logging middleware
 app.use(httpLogger)
 if (!isProd)
@@ -43,6 +44,7 @@ if (!isProd)
 // Trust proxy for accurate IP addresses
 app.set('trust proxy', 1)
 
+// CORS configuration
 // CORS configuration
 const corsOptions: cors.CorsOptions = {
   origin: FRONTEND_ORIGIN,
@@ -107,7 +109,6 @@ const employeeRouter = createEmployeeRoutes(employeeController, serviceContainer
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
 // Routes
 app.use('/api/auth', authRouter)
 app.use('/api/companies', companyRouter)
@@ -176,8 +177,8 @@ const gracefulShutdown = async (signal: string) => {
   }, 30000)
 }
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
 process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
 
 const PORT = process.env.PORT || 3000
 

@@ -58,7 +58,7 @@ export interface AuthContextType extends AuthState {
 const initialState: AuthState = {
   user: null,
   role: null,
-  isLoading: true,
+  isLoading: false,
   companyId: undefined,
   error: null,
 }
@@ -67,6 +67,7 @@ type AuthAction =
   | { type: 'AUTH_START' }
   | { type: 'AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'AUTH_PASSWORD_REQUIRED'; payload: { user: string } }
+  | { type: 'SILENT_AUTH_SUCCESS'; payload: { user: string; role: Role; companyId?: number } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'AUTH_LOGOUT' }
   | { type: 'FORCE_LOGOUT' }
@@ -155,6 +156,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authService.login(username, password, companyId)
 
+      setStoredToken(data.accessToken)
       setStoredToken(data.accessToken)
 
       if (data.shouldChangePassword) {
@@ -255,6 +257,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authService.refresh()
       setStoredToken(data.accessToken)
+      setStoredToken(data.accessToken)
 
       const decoded = jwtDecode<AuthResponse>(data.accessToken)
 
@@ -268,6 +271,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       })
     } catch (error) {
       removeStoredToken()
+      removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
       throw error
     }
@@ -280,6 +284,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {
+      removeStoredToken()
       removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
     }
