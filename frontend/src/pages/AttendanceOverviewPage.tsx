@@ -11,15 +11,18 @@ import { useEmployees } from '../hooks/useEmployees'
 import { useAttendanceRecords } from '../hooks/useAttendanceRecords'
 import { AttendanceRecordDTO } from 'shared'
 import CreateAttendanceForm from '../components/attendance/CreateAttendanceForm'
+import { useCompany } from '../contexts/CompanyContext'
 
 dayjs.extend(duration)
 
 const AttendanceOverviewPage = () => {
   const { companyId } = useAuth()
+  const { departments } = useCompany()
 
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
   const [editRecord, setEditRecord] = useState<AttendanceRecordDTO | null>(null)
   const [selectedStartDate, setSelectedStartDate] = useState<string>(
     dayjs().subtract(30, 'days').format('YYYY-MM-DDTHH:mm')
@@ -86,26 +89,51 @@ const AttendanceOverviewPage = () => {
 
       <div className="space-y-2">
         <div className="flex items-end justify-between">
-          <div>
-            <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-              Vælg medarbejder
-            </label>
-            <select
-              id="employee"
-              className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-              onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
-              value={selectedEmployeeId || ''}
-              disabled={empLoading}
-            >
-              <option value="" hidden>
-                -- Vælg en medarbejder --
-              </option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name}
+          <div className="flex gap-3">
+            <div>
+              <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                Vælg afdeling
+              </label>
+              <select
+                id="department"
+                className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+                onChange={(e) => setSelectedDepartmentId(Number(e.target.value))}
+                value={selectedDepartmentId || ''}
+                disabled={empLoading}
+              >
+                <option value="" hidden>
+                  -- Vælg en afdeling --
                 </option>
-              ))}
-            </select>
+                {departments.map((dep) => (
+                  <option key={dep.id} value={dep.id}>
+                    {dep.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+                Vælg medarbejder
+              </label>
+              <select
+                id="employee"
+                className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+                onChange={(e) => setSelectedEmployeeId(Number(e.target.value))}
+                value={selectedEmployeeId || ''}
+                disabled={empLoading}
+              >
+                <option value="" hidden>
+                  -- Vælg en medarbejder --
+                </option>
+                {employees
+                  .filter((emp) => !selectedDepartmentId || emp.departmentId === selectedDepartmentId)
+                  .map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           <button className="btn btn-rust" onClick={() => setCreateRecord(true)}>
