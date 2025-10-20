@@ -3,6 +3,7 @@ import jwt, { type JwtPayload } from 'jsonwebtoken'
 import { Role } from 'shared'
 
 interface AuthJwtPayload extends JwtPayload {
+  userId: number
   username: string
   companyId: string | number
   role: Role | string
@@ -21,6 +22,7 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
   const [schemeRaw, token] = authHeader.split(/\s+/)
   const scheme = schemeRaw?.trim()
+
   if (!token || !scheme || scheme.toLowerCase() !== AUTH_SCHEME.toLowerCase()) {
     req.log?.warn({ scheme }, 'Invalid auth scheme or empty token')
     return res.status(401).json({ message: 'Invalid Authorization header' })
@@ -31,20 +33,27 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
       clockTolerance: 5,
     }) as AuthJwtPayload
 
-    const username = decoded.username
-    const companyIdNum = Number.parseInt(String(decoded.companyId), 10)
-    const role = (decoded.role as Role) ?? undefined
+    const { userId, username, companyId, role } = decoded
+    console.log({ userId, username, companyId, role })
 
-    if (!username || Number.isNaN(companyIdNum) || !role) {
-      req.log?.warn('JWT payload missing required claims')
+    if (
+      !userId ||
+      typeof userId !== 'number' ||
+      !username ||
+      !companyId ||
+      !role ||
+      (typeof companyId !== 'number' && typeof companyId !== 'string')
+    ) {
+      req.log?.warn('JWT payload missing required claims or invalid types')
       return res.status(401).json({ message: 'Invalid token payload' })
     }
 
+    req.userId = userId
     req.username = username
-    req.companyId = String(companyIdNum)
-    req.role = role
+    req.companyId = typeof companyId === 'string' ? parseInt(companyId, 10) : companyId
+    req.role = role as Role
 
-    if (req.log) req.log = req.log.child({ userId: username, companyId: companyIdNum, role })
+    if (req.log) req.log = req.log.child({ userId, companyId: req.companyId, role })
 
     return next()
   } catch (err: unknown) {

@@ -9,14 +9,19 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import EditAbsenceForm from '../components/absence/EditAbsenceForm'
 import CreateAbsenceForm from '../components/absence/CreateAbsenceForm'
+import { businessDaysDiff } from '../utils/businessdays'
+import { useCompany } from '../contexts/CompanyContext'
 
 const AbsenceOverviewPage = () => {
   const { companyId } = useAuth()
+  const { departments } = useCompany()
+
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
   const [editRecord, setEditRecord] = useState<AbsenceRecordDTO | null>(null)
   const [createRecord, setCreateRecord] = useState<boolean>(false)
   const [selectedStartDate, setSelectedStartDate] = useState<string>(dayjs().subtract(30, 'days').format('YYYY-MM-DD'))
   const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
   const {
@@ -40,9 +45,9 @@ const AbsenceOverviewPage = () => {
       },
     },
     {
-      header: 'Antal dage',
+      header: 'Antal hverdage',
       accessor: (rec) => {
-        return dayjs(rec.endDate).diff(dayjs(rec.startDate), 'd') + 1
+        return businessDaysDiff(rec.startDate, rec.endDate)
       },
     },
     {
@@ -59,26 +64,53 @@ const AbsenceOverviewPage = () => {
 
       <div className="space-y-2">
         <div className="flex items-end justify-between">
-          <div>
-            <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
-              Vælg medarbejder
-            </label>
-            <select
-              id="employee"
-              className="mt-1 w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-              onChange={(e) => setSelectedEmployeeId(Number(e.target.value) || null)}
-              value={selectedEmployeeId || ''}
-              disabled={empLoading}
-            >
-              <option value="" hidden>
-                -- Vælg en medarbejder --
-              </option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name}
-                </option>
-              ))}
-            </select>
+          <div className="flex gap-3">
+            <div className="flex gap-3">
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                  Vælg afdeling
+                </label>
+                <select
+                  id="department"
+                  className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+                  onChange={(e) => setSelectedDepartmentId(Number(e.target.value))}
+                  value={selectedDepartmentId || ''}
+                  disabled={empLoading}
+                >
+                  <option value="" hidden>
+                    -- Vælg en afdeling --
+                  </option>
+                  {departments.map((dep) => (
+                    <option key={dep.id} value={dep.id}>
+                      {dep.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="employee" className="block text-sm font-medium text-gray-700">
+                  Vælg medarbejder
+                </label>
+                <select
+                  id="employee"
+                  className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+                  onChange={(e) => setSelectedEmployeeId(Number(e.target.value))}
+                  value={selectedEmployeeId || ''}
+                  disabled={empLoading}
+                >
+                  <option value="" hidden>
+                    -- Vælg en medarbejder --
+                  </option>
+                  {employees
+                    .filter((emp) => !selectedDepartmentId || emp.departmentId === selectedDepartmentId)
+                    .map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
           </div>
           <button className="btn btn-rust" onClick={() => setCreateRecord(true)}>
             Nyt fravær

@@ -12,20 +12,29 @@ import { addDays } from 'date-fns'
 export class UserService implements IUserService {
   constructor(private readonly userRepository: IUserRepository) {}
 
-  async register(email: string, password: string, username: string): Promise<Result<User, Error>> {
+  async register(
+    email: string | undefined,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean,
+    role: Role,
+    companyId: number
+  ): Promise<Result<User, Error>> {
     try {
-      const emailAlreadyExists = await this.userRepository.getUserByEmail(email)
-      if (emailAlreadyExists) {
-        return failure(new ValidationError('User with email already exists', 'email'))
-      }
-
       const usernameAlreadyExists = await this.userRepository.getUserByUsername(username)
       if (usernameAlreadyExists) {
         return failure(new ValidationError('User with username already exists', 'username'))
       }
 
       const hashedPassword = await argon2.hash(password)
-      const user = await this.userRepository.createUser(email, hashedPassword, username)
+      const user = await this.userRepository.createUser(
+        email,
+        hashedPassword,
+        username,
+        shouldChangePassword,
+        role,
+        companyId
+      )
       return success(user)
     } catch (error) {
       console.error('Error creating user:', error)
@@ -38,7 +47,17 @@ export class UserService implements IUserService {
     password: string,
     companyId: number
   ): Promise<
-    Result<{ accessToken: string; refreshToken: string; username: string; role: string; companyId: number }, Error>
+    Result<
+      {
+        accessToken: string
+        refreshToken: string
+        username: string
+        role: string
+        companyId: number
+        shouldChangePassword: boolean
+      },
+      Error
+    >
   > {
     try {
       const user = await this.userRepository.getUserByUsername(username)
@@ -55,13 +74,13 @@ export class UserService implements IUserService {
       await this.userRepository.revokeAllActiveUserTokens(user.id)
 
       const accessToken = jwt.sign(
-        { username: user.username, companyId, role: userRole },
+        { username: user.username, companyId, role: userRole, userId: user.id },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
 
       const refreshToken = jwt.sign(
-        { username: user.username, companyId, role: userRole },
+        { username: user.username, companyId, role: userRole, userId: user.id },
         process.env.REFRESH_TOKEN_SECRET!,
         { expiresIn: '30d' }
       )
@@ -69,7 +88,14 @@ export class UserService implements IUserService {
       const expiryDate = addDays(new UTCDateMini(), 1)
       await this.userRepository.createRefreshToken(user.id, refreshToken, expiryDate)
 
-      return success({ accessToken, refreshToken, username: user.username, role: userRole, companyId })
+      return success({
+        accessToken,
+        refreshToken,
+        username: user.username,
+        role: userRole,
+        companyId,
+        shouldChangePassword: user.shouldChangePassword,
+      })
     } catch (err) {
       console.log(err)
       return failure(new Error((err as Error).message))
@@ -98,9 +124,22 @@ export class UserService implements IUserService {
     }
   }
 
-  async updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>> {
+  async updateUser(id: number, companyId: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>> {
     try {
-      const updatedUser = await this.userRepository.updateUser(id, data)
+      const access = await this.userRepository.getUserCompanyAccess(id, companyId)
+      if (!access) {
+        return failure(new EntityNotFoundError('User does not belong to this company'))
+      }
+      const userPatch: Partial<Omit<User, 'id'>> = {
+        ...data,
+        password: data.password ? await argon2.hash(data.password) : undefined,
+      }
+      const updatedUser = await this.userRepository.updateUser(id, userPatch)
+
+      if (data.role) {
+        await this.userRepository.updateCompanyRole(id, companyId, data.role)
+      }
+
       return success(updatedUser)
     } catch (error) {
       console.error('Error updating user:', error)
@@ -108,10 +147,17 @@ export class UserService implements IUserService {
     }
   }
 
-  async deleteUser(id: number): Promise<Result<User, Error>> {
+  async deleteUser(id: number, companyId: number): Promise<Result<void, Error>> {
     try {
-      const deletedUser = await this.userRepository.softDeleteUser(id)
-      return success(deletedUser)
+      await this.userRepository.deleteUserCompanyAccess(id, companyId)
+
+      const remainingAccesses = await this.userRepository.getCompaniesForUserId(id)
+
+      if (remainingAccesses.length === 0) {
+        await this.userRepository.softDeleteUser(id)
+      }
+
+      return success(undefined)
     } catch (error) {
       console.error('Error deleting user:', error)
       return failure(new DatabaseError('Database error during deleting user'))
@@ -149,7 +195,7 @@ export class UserService implements IUserService {
       }
 
       const newAccessToken = jwt.sign(
-        { username: user.username, companyId: decoded.companyId, role: userRole },
+        { username: user.username, companyId: decoded.companyId, role: userRole, userId: user.id },
         process.env.ACCESS_TOKEN_SECRET!,
         { expiresIn: '15m' }
       )
@@ -161,7 +207,7 @@ export class UserService implements IUserService {
         await this.revokeRefreshToken(refreshToken)
 
         newRefreshToken = jwt.sign(
-          { username: user.username, companyId: decoded.companyId, role: userRole },
+          { username: user.username, companyId: decoded.companyId, role: userRole, userId: user.id },
           process.env.REFRESH_TOKEN_SECRET!,
           { expiresIn: '30d' }
         )
@@ -182,6 +228,15 @@ export class UserService implements IUserService {
   async getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
     try {
       const users = await this.userRepository.getUsersByCompanyAndRole(companyId, Role.MANAGER)
+      return success(users)
+    } catch {
+      return failure(new Error('Error in database connection'))
+    }
+  }
+
+  async getAllUsersByCompanyId(companyId: number): Promise<Result<User[], Error>> {
+    try {
+      const users = await this.userRepository.getUsersForCompany(companyId)
       return success(users)
     } catch {
       return failure(new Error('Error in database connection'))
@@ -221,6 +276,30 @@ export class UserService implements IUserService {
     } catch (err) {
       console.error('Error fetching companies for username:', err)
       return failure(new DatabaseError('Database error while fetching companies for username'))
+    }
+  }
+
+  async changePassword(userId: number, newPassword: string): Promise<Result<User, Error>> {
+    try {
+      const user = await this.userRepository.getUserById(userId)
+
+      if (!user) {
+        return failure(new ValidationError('User not found.'))
+      }
+
+      const hashedNewPassword = await argon2.hash(newPassword)
+
+      const updatedUser = await this.userRepository.updateUser(userId, {
+        password: hashedNewPassword,
+        shouldChangePassword: false,
+      })
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = updatedUser
+      return success(userWithoutPassword as User)
+    } catch (err) {
+      console.error('Error changing password:', err)
+      return failure(new DatabaseError('Database error while changing password.'))
     }
   }
 }

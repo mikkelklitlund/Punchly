@@ -3,22 +3,41 @@ import { Company, User, UserRefreshToken } from '../../types/index.js'
 import { Result } from '../../utils/Result.js'
 
 export interface IUserService {
-  register(email: string, password: string, username: string): Promise<Result<User, Error>>
+  register(
+    email: string | undefined,
+    password: string,
+    username: string,
+    shouldChangePassword: boolean,
+    role: Role,
+    companyId: number
+  ): Promise<Result<User, Error>>
   login(
     username: string,
     password: string,
     companyId: number
   ): Promise<
-    Result<{ accessToken: string; refreshToken: string; username: string; role: string; companyId: number }, Error>
+    Result<
+      {
+        accessToken: string
+        refreshToken: string
+        username: string
+        role: string
+        companyId: number
+        shouldChangePassword: boolean
+      },
+      Error
+    >
   >
   getUserById(id: number): Promise<Result<User, Error>>
-  updateUser(id: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
-  deleteUser(id: number): Promise<Result<User, Error>>
+  updateUser(id: number, companyId: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
+  deleteUser(id: number, companyId: number): Promise<Result<void, Error>>
+  changePassword(userId: number, newPassword: string): Promise<Result<User, Error>>
   refreshAccessToken(refreshToken: string): Promise<Result<{ accessToken: string; refreshToken: string }, Error>>
   revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>
   getUserByUsername(username: string): Promise<Result<User, Error>>
   userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>>
   getAllManagersByCompanyId(companyId: number): Promise<Result<User[], Error>>
+  getAllUsersByCompanyId(companyId: number): Promise<Result<User[], Error>>
   getUserCompanyAccesses(userId: number): Promise<Result<Company[], Error>>
   getCompaniesForUsername(username: string): Promise<Result<Company[], Error>>
 }

@@ -1,4 +1,4 @@
-import { UserDTO } from 'shared'
+import { Role } from 'shared'
 
 export interface AuthTokens {
   accessToken: string
@@ -6,7 +6,10 @@ export interface AuthTokens {
 }
 
 export interface LoginResponse extends AuthTokens {
-  user: UserDTO
+  username: string
+  role: Role
+  companyId: number
+  shouldChangePassword: boolean
 }
 
 export interface AuthError extends Error {

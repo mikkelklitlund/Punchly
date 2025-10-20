@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { PasswordChangeRequiredError, useAuth } from '../contexts/AuthContext'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { authService } from '../services/authService'
 import { CompanyDTO } from 'shared'
@@ -69,8 +69,12 @@ function LoginPage() {
 
     try {
       await login(username, password, id)
-    } catch {
-      setErrorMessage('Login mislykkedes. Tjek brugernavn/adgangskode.')
+    } catch (error: unknown) {
+      if (error instanceof PasswordChangeRequiredError) {
+        navigate('/change-password')
+      } else {
+        console.error('An unknown error occurred.')
+      }
     }
   }
 
@@ -122,6 +126,13 @@ function LoginPage() {
           <form onSubmit={handleLoginSubmit} noValidate>
             {errorMessage && <p className="mb-4 text-center text-sm text-red-600">{errorMessage}</p>}
 
+            <div className="mb-6 border-y border-gray-200 pt-2 pb-1 text-center">
+              <p className="text-xl font-semibold text-zinc-800">
+                Hej <span className="font-bold">{username}</span>!
+              </p>
+              <p className="mt-1 mb-2 text-sm text-zinc-500">Vælg venligst din login lokation</p>
+            </div>
+
             <div className="mb-4">
               <label htmlFor="company" className="mb-2 block text-sm font-medium text-zinc-700">
                 Vælg virksomhed
@@ -141,17 +152,7 @@ function LoginPage() {
               </select>
             </div>
 
-            <div className="mb-4">
-              <label className="mb-2 block text-sm font-medium text-zinc-700">Brugernavn</label>
-              <input
-                type="text"
-                value={username}
-                disabled
-                className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 shadow-xs"
-              />
-            </div>
-
-            <div className="mb-4">
+            <div className="mb-8">
               <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-700">
                 Adgangskode
               </label>
@@ -166,12 +167,6 @@ function LoginPage() {
                 required
                 disabled={authLoading}
               />
-              <button
-                type="button"
-                className="focus:ring-mustard mt-1 text-xs text-zinc-700 hover:text-black focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
-              >
-                Glemt adgangskode?
-              </button>
             </div>
 
             <div className="flex gap-2">

@@ -21,6 +21,7 @@ export interface IAttendanceService {
     startDate: Date,
     endDate: Date,
     companyId: number,
+    tz: string,
     departmentId?: number
   ): Promise<Result<Buffer, Error>>
 }

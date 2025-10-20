@@ -1,3 +1,5 @@
+import { Role } from 'shared'
+
 export type Company = {
   id: number
   address: string
@@ -6,10 +8,12 @@ export type Company = {
 
 export type User = {
   id: number
-  email: string
+  email?: string
   password: string
   username: string
   deletedAt?: Date
+  shouldChangePassword: boolean
+  role?: Role
 }
 
 export type UserRefreshToken = {
@@ -122,4 +126,13 @@ export type EmployeeWithRecords = Employee & {
   absenceRecords: AbsenceRecord[]
   department: Department
   employeeType: EmployeeType
+}
+
+export type ManagerInvite = {
+  id: number
+  email: string
+  companyId: number
+  token: string
+  expiryDate: Date
+  used: boolean
 }

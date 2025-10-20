@@ -4,7 +4,7 @@ import { AbsenceRecordDTO, CalendarDate } from 'shared'
 
 export function useEmployeeAbsences(start: CalendarDate, end: CalendarDate, employeeId: number | undefined) {
   return useQuery<AbsenceRecordDTO[]>({
-    queryKey: ['absences', employeeId, start, end],
+    queryKey: ['absences', employeeId],
     queryFn: () => employeeService.getAbsences(employeeId!, start, end),
     enabled: !!employeeId,
   })

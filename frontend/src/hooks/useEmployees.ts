@@ -16,7 +16,13 @@ export function useEmployees(companyId: number | undefined, opts: UseEmployeesOp
     queryKey: qk.employees(companyId, departmentId),
     enabled: !!companyId,
     queryFn: () => employeeService.getEmployees(companyId!, departmentId),
-    select: (d) => d.employees,
+    select: (d) => {
+      return [...d.employees].sort((a, b) => {
+        if (a.absence && !b.absence) return 1
+        if (!a.absence && b.absence) return -1
+        return a.name.localeCompare(b.name)
+      })
+    },
     placeholderData: keepPreviousData,
     refetchInterval: live ? interval : false,
     refetchIntervalInBackground: false,
