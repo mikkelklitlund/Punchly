@@ -45,7 +45,6 @@ if (!isProd)
 app.set('trust proxy', 1)
 
 // CORS configuration
-// CORS configuration
 const corsOptions: cors.CorsOptions = {
   origin: FRONTEND_ORIGIN,
   credentials: true,
@@ -112,7 +111,7 @@ const __dirname = path.dirname(__filename)
 // Routes
 app.use('/api/auth', authRouter)
 app.use('/api/companies', companyRouter)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 app.use('/api/employees', employeeRouter)
 
 app.get('/health', async (req, res) => {
@@ -139,6 +138,33 @@ app.get('/health', async (req, res) => {
     })
   }
 })
+
+if (isProd) {
+  // Navigate up two levels from /dist/src to /app/backend, then find 'public'
+  const backendRoot = path.join(__dirname, '..', '..')
+  const frontendPath = path.join(backendRoot, 'public') // This resolves to /app/backend/public
+
+  app.use(express.static(frontendPath))
+
+  // ⬇️ THIS IS THE NEW CATCH-ALL BLOCK ⬇️
+  // Use app.use() as a final fallback middleware
+  app.use((req, res, next) => {
+    // Ensure this fallback is ONLY for unhandled non-API/non-upload paths
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      const indexHtml = path.join(frontendPath, 'index.html')
+
+      if (existsSync(indexHtml)) {
+        res.sendFile(indexHtml)
+      } else {
+        // If index.html is missing, the static serve failed
+        res.status(404).send('Frontend not found (index.html is missing)')
+      }
+    } else {
+      // Let the request continue down to the final error handler (for 404 APIs)
+      next()
+    }
+  })
+}
 
 let swaggerDoc: swaggerUi.JsonObject
 const candidates = [path.join(__dirname, '../openapi.json'), path.join(__dirname, '../dist/openapi.json')]

@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: punchly_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-testpass123}
+      POSTGRES_DB: ${DB_NAME:-punchly}
+    volumes:
+      - punchly_db_data:/var/lib/postgresql/data
+    ports:
+      - '6500:5432'
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: punchly:latest
+    container_name: punchly_api
+    restart: always
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-testpass123}@db:5432/${DB_NAME:-punchly}?schema=public
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+      PORT: 4000
+    ports:
+      - '4000:4000'
+    volumes:
+      - punchly_uploads:/app/backend/uploads
+
+volumes:
+  punchly_db_data:
+    driver: local
+  punchly_uploads:
+    driver: local
