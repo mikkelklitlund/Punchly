@@ -140,27 +140,21 @@ app.get('/health', async (req, res) => {
 })
 
 if (isProd) {
-  // Navigate up two levels from /dist/src to /app/backend, then find 'public'
   const backendRoot = path.join(__dirname, '..', '..')
-  const frontendPath = path.join(backendRoot, 'public') // This resolves to /app/backend/public
+  const frontendPath = path.join(backendRoot, 'public')
 
   app.use(express.static(frontendPath))
 
-  // ⬇️ THIS IS THE NEW CATCH-ALL BLOCK ⬇️
-  // Use app.use() as a final fallback middleware
   app.use((req, res, next) => {
-    // Ensure this fallback is ONLY for unhandled non-API/non-upload paths
     if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
       const indexHtml = path.join(frontendPath, 'index.html')
 
       if (existsSync(indexHtml)) {
         res.sendFile(indexHtml)
       } else {
-        // If index.html is missing, the static serve failed
         res.status(404).send('Frontend not found (index.html is missing)')
       }
     } else {
-      // Let the request continue down to the final error handler (for 404 APIs)
       next()
     }
   })

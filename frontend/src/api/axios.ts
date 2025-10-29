@@ -13,7 +13,7 @@ interface AuthResponse extends JwtPayload {
   role?: Role
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:4000/api')
 const STORAGE_TYPE = (import.meta.env.VITE_STORAGE_TYPE as 'localStorage' | 'sessionStorage') || 'localStorage'
 
 const axiosInstance = axios.create({
