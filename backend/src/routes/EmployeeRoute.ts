@@ -55,20 +55,6 @@ export function createEmployeeRoutes(controller: EmployeeController, userService
     controller.createEmployee
   )
 
-  router.get(
-    '/',
-    auth,
-    [
-      query('company').isNumeric().withMessage('Valid company ID is required'),
-      query('department').optional().isNumeric().withMessage('Valid department ID is required'),
-      query('type').optional().isNumeric().withMessage('Valid type ID is required'),
-    ],
-    checkValidationResult,
-    controller.getEmployeesByQueryParams
-  )
-
-  router.get('/:id', auth, controller.getEmployeeById)
-
   router.put(
     '/:id',
     ...adminManagerAuth,
@@ -203,6 +189,19 @@ export function createEmployeeRoutes(controller: EmployeeController, userService
     upload.single('profilePicture'),
     controller.uploadProfilePicture
   )
+  router.get(
+    '/',
+    auth,
+    [
+      query('company').isNumeric().withMessage('Valid company ID is required'),
+      query('department').optional().isNumeric().withMessage('Valid department ID is required'),
+      query('type').optional().isNumeric().withMessage('Valid type ID is required'),
+    ],
+    checkValidationResult,
+    controller.getEmployeesByQueryParams
+  )
+
+  router.get('/:id', auth, controller.getEmployeeById)
 
   return router
 }

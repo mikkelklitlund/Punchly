@@ -32,23 +32,25 @@ export const logger = pino({
     version: process.env.npm_package_version || '1.0.0',
   },
 
-  transport: !isProd
+  ...(isProd
     ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
-          singleLine: false,
-          ignore: 'pid,hostname,name',
-          messageFormat: '{msg}',
+        // Production: plain JSON logs
+        timestamp: pino.stdTimeFunctions.isoTime,
+        formatters: {
+          level: (label) => ({ level: label }),
         },
       }
-    : undefined,
-
-  ...(isProd && {
-    timestamp: pino.stdTimeFunctions.isoTime,
-    formatters: {
-      level: (label) => ({ level: label }),
-    },
-  }),
+    : {
+        // Development: pretty logs
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
+            singleLine: false,
+            ignore: 'pid,hostname,name',
+            messageFormat: '{msg}',
+          },
+        },
+      }),
 })
