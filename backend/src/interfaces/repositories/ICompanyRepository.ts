@@ -1,10 +1,10 @@
 import { Company } from '../../types/index.js'
 
 export interface ICompanyRepository {
-  createCompany(name: string, address: string): Promise<Company>
-  getCompanyById(id: number): Promise<Company | null>
-  getCompanyByName(name: string): Promise<Company | null>
   getAllCompanies(): Promise<Company[]>
-  updateCompany(id: number, data: Partial<Omit<Company, 'id'>>): Promise<Company>
+  getAllCompaniesByUser(userId: number): Promise<Company[]>
+  createCompany(name: string, address: string): Promise<Company>
+  createCompanyWithAdmin(userId: number, name: string, address: string): Promise<Company>
+  updateCompany(id: number, data: Partial<Company>): Promise<Company>
   deleteCompany(id: number): Promise<Company>
 }

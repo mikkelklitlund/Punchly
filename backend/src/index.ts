@@ -20,6 +20,8 @@ import { EmployeeController } from './controllers/employeeController.js'
 import { createAuthRoutes } from './routes/AuthRoute.js'
 import { createCompanyRoutes } from './routes/CompanyRoute.js'
 import { createEmployeeRoutes } from './routes/EmployeeRoute.js'
+import { AdminController } from './controllers/adminController.js'
+import { createAdminRoutes } from './routes/adminRoute.js'
 
 dotenv.config()
 
@@ -88,6 +90,9 @@ const serviceContainer = new ServiceContainer(repositoryContainer)
 const authController = new AuthController(serviceContainer.userService)
 const authRouter = createAuthRoutes(authController, serviceContainer.userService)
 
+const adminController = new AdminController(serviceContainer.companyService)
+const adminRouter = createAdminRoutes(adminController, serviceContainer.userService)
+
 const companyController = new CompanyController(
   serviceContainer.companyService,
   serviceContainer.employeeService,
@@ -110,6 +115,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 // Routes
 app.use('/api/auth', authRouter)
+app.use('/api/admin', adminRouter)
 app.use('/api/companies', companyRouter)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 app.use('/api/employees', employeeRouter)

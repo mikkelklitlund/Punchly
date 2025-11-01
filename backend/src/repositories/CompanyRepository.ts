@@ -1,4 +1,4 @@
-import { PrismaClient, Company as PrismaCompany } from '@prisma/client'
+import { PrismaClient, Company as PrismaCompany, Role as PrismaRole } from '@prisma/client'
 import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
 import { Company } from '../types/index.js'
 
@@ -59,5 +59,33 @@ export class CompanyRepository implements ICompanyRepository {
       where: { id },
     })
     return this.toDomain(company)
+  }
+
+  async createCompanyWithAdmin(userId: number, name: string, address: string): Promise<Company> {
+    const company = await this.prisma.company.create({
+      data: {
+        name,
+        address,
+        users: {
+          create: {
+            userId,
+            role: PrismaRole.ADMIN,
+          },
+        },
+      },
+      include: {
+        users: true,
+      },
+    })
+    return this.toDomain(company)
+  }
+
+  async getAllCompaniesByUser(userId: number): Promise<Company[]> {
+    const userCompanies = await this.prisma.userCompanyAccess.findMany({
+      where: { userId },
+      include: { company: true },
+    })
+
+    return userCompanies.map((uc) => this.toDomain(uc.company))
   }
 }
