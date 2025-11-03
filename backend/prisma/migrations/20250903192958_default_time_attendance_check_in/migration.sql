@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "AttendanceRecord" ALTER COLUMN "checkIn" SET DEFAULT CURRENT_TIMESTAMP;

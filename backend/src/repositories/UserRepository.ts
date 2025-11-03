@@ -4,7 +4,6 @@ import {
   RefreshToken as PrismaRefreshToken,
   UserCompanyAccess as PrismaUserCompanyAccess,
   Company as PrismaCompany,
-  Role as PrismaRole,
 } from '@prisma/client'
 
 import { IUserRepository } from '../interfaces/repositories/IUserRepository.js'
@@ -15,7 +14,7 @@ import { Role } from 'shared'
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  private toDomain(user: PrismaUser, role?: PrismaRole): User {
+  private toDomain(user: PrismaUser, role?: string): User {
     return {
       id: user.id,
       username: user.username,
@@ -172,7 +171,7 @@ export class UserRepository implements IUserRepository {
 
   async getUsersByCompanyAndRole(companyId: number, role: Role): Promise<User[]> {
     const accesses = await this.prisma.userCompanyAccess.findMany({
-      where: { companyId, role: role as PrismaRole },
+      where: { companyId, role },
       include: { user: true },
     })
     return accesses.map((acc) => this.toDomain(acc.user))

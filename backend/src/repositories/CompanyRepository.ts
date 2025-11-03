@@ -1,4 +1,4 @@
-import { PrismaClient, Company as PrismaCompany, Role as PrismaRole } from '@prisma/client'
+import { PrismaClient, Company as PrismaCompany } from '@prisma/client'
 import { ICompanyRepository } from '../interfaces/repositories/ICompanyRepository.js'
 import { Company } from '../types/index.js'
 
@@ -69,7 +69,7 @@ export class CompanyRepository implements ICompanyRepository {
         users: {
           create: {
             userId,
-            role: PrismaRole.ADMIN,
+            role: 'ADMIN',
           },
         },
       },
