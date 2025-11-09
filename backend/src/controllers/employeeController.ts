@@ -333,10 +333,11 @@ export class EmployeeController {
       return
     }
 
+    const profilePictureUrl = `${req.protocol}://${req.get('host')}/uploads/${filePath}`
     res.status(200).json({
       message: 'Profile picture updated successfully',
       employee: result.value,
-      profilePictureUrl: `http://localhost:4000/uploads/${filePath}`,
+      profilePictureUrl,
     })
   }
 }

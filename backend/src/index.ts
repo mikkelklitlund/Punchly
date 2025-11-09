@@ -117,7 +117,17 @@ const __dirname = path.dirname(__filename)
 app.use('/api/auth', authRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/companies', companyRouter)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
+
+const uploadsDir = path.join(process.cwd(), 'uploads')
+
+app.use(
+  '/api/uploads',
+  express.static(uploadsDir, {
+    dotfiles: 'deny',
+    fallthrough: false,
+  })
+)
+
 app.use('/api/employees', employeeRouter)
 
 app.get('/health', async (req, res) => {
