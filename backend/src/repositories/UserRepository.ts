@@ -79,8 +79,8 @@ export class UserRepository implements IUserRepository {
         shouldChangePassword,
         companies: {
           create: {
-            companyId: companyId,
-            role: role,
+            companyId,
+            role,
           },
         },
       },

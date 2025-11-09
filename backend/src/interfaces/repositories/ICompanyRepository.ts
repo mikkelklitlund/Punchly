@@ -7,4 +7,5 @@ export interface ICompanyRepository {
   createCompanyWithAdmin(userId: number, name: string, address: string): Promise<Company>
   updateCompany(id: number, data: Partial<Company>): Promise<Company>
   deleteCompany(id: number): Promise<Company>
+  getCompanyById(id: number): Promise<Company | null>
 }
