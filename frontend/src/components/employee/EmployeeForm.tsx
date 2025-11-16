@@ -35,8 +35,9 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
   const [city, setCity] = useState(initialValues.city ?? '')
   const [departmentId, setDepartmentId] = useState<number | ''>(initialValues.departmentId ?? '')
   const [employeeTypeId, setEmployeeTypeId] = useState<number | ''>(initialValues.employeeTypeId ?? '')
-  const [monthlySalary, setMonthlySalary] = useState<number>(initialValues.monthlySalary ?? 0)
-  const [hourlySalary, setHourlySalary] = useState<number>(initialValues.hourlySalary ?? 0)
+
+  const [monthlySalary, setMonthlySalary] = useState<string>(initialValues.monthlySalary?.toString() ?? '')
+  const [hourlySalary, setHourlySalary] = useState<string>(initialValues.hourlySalary?.toString() ?? '')
   const [monthlyHours, setMonthlyHours] = useState<number | undefined>(initialValues.monthlyHours ?? undefined)
 
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -64,7 +65,11 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
     if (!name) newErrors.name = 'Navn er påkrævet'
     if (!departmentId) newErrors.departmentId = 'Vælg en afdeling'
     if (!employeeTypeId) newErrors.employeeTypeId = 'Vælg en medarbejdertype'
-    if ((monthlySalary ?? 0) > 0 && (hourlySalary ?? 0) > 0) {
+
+    const parsedMonthlySalary = monthlySalary ? Number(monthlySalary) : 0
+    const parsedHourlySalary = hourlySalary ? Number(hourlySalary) : 0
+
+    if ((parsedMonthlySalary ?? 0) > 0 && (parsedHourlySalary ?? 0) > 0) {
       newErrors.salary = 'Udfyld kun én af lønfelterne'
     }
 
@@ -84,8 +89,8 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
           city,
           departmentId,
           employeeTypeId,
-          monthlySalary: monthlySalary,
-          hourlySalary: hourlySalary,
+          monthlySalary: parsedMonthlySalary > 0 ? parsedMonthlySalary : undefined,
+          hourlySalary: parsedHourlySalary > 0 ? parsedHourlySalary : undefined,
           monthlyHours: monthlyHours,
           profilePicturePath: initialValues.profilePicturePath,
         },
@@ -237,12 +242,11 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
               type="number"
               value={monthlySalary}
               onChange={(e) => {
-                setMonthlySalary(Number(e.target.value))
+                setMonthlySalary(e.target.value)
                 setErrors((prev) => ({ ...prev, salary: '' }))
               }}
-              disabled={hourlySalary > 0 || isSaving}
+              disabled={Number(hourlySalary) > 0 || isSaving}
               className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm disabled:bg-gray-100 ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
-              min={0}
             />
           </div>
 
@@ -253,12 +257,11 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
               type="number"
               value={hourlySalary}
               onChange={(e) => {
-                setHourlySalary(Number(e.target.value))
+                setHourlySalary(e.target.value)
                 setErrors((prev) => ({ ...prev, salary: '' }))
               }}
-              disabled={monthlySalary > 0 || isSaving}
+              disabled={Number(monthlySalary) > 0 || isSaving}
               className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm disabled:bg-gray-100 ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
-              min={0}
             />
           </div>
 

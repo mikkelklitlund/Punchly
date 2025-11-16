@@ -85,7 +85,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   router.delete('/:companyId/absence-types/:id', ...adminAuth, controller.deleteAbsenceType)
 
   router.post(
-    '/users',
+    '/:companyId/users',
     ...adminAuth,
     [
       body('email').isEmail().normalizeEmail().optional(),
@@ -102,7 +102,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   )
 
   router.patch(
-    '/users',
+    '/:companyId/users',
     ...adminAuth,
     [
       body('userId').isNumeric(),
@@ -120,7 +120,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
     controller.updateUser
   )
 
-  router.delete('/users/:id', ...adminAuth, controller.deleteUser)
+  router.delete('/:companyId/users/:id', ...adminAuth, controller.deleteUser)
 
   return router
 }

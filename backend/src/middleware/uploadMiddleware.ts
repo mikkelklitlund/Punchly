@@ -19,7 +19,7 @@ const allowedExt = ['.jpg', '.jpeg', '.png', '.gif']
 
 const upload = multer({
   storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     const fileExt = path.extname(file.originalname).toLowerCase()
 
