@@ -7,7 +7,7 @@
     "start": "node dist/src/index.js",
     "dev": "nodemon --exec tsx src/index.ts",
     "lint": "eslint .",
-    "build": "tsc && tsx ./scripts/build-openapi.ts"
+    "build": "tsc"
   },
   "prisma": {
     "seed": "tsx --loader ts-node/esm prisma/seed.ts"
