@@ -24,4 +24,6 @@ export interface IAttendanceService {
     tz: string,
     departmentId?: number
   ): Promise<Result<Buffer, Error>>
+
+  getDailyOverview(companyId: number, dayStart: Date, dayEnd: Date): Promise<Result<AttendanceRecord[], Error>>
 }

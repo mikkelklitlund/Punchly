@@ -523,4 +523,18 @@ export class AttendanceService implements IAttendanceService {
       return failure(new DatabaseError('Failed to generate employee attendance report'))
     }
   }
+
+  async getDailyOverview(companyId: number, dayStart: Date, dayEnd: Date): Promise<Result<AttendanceRecord[], Error>> {
+    try {
+      const records = await this.attendanceRecordRepository.getRecordsByCompanyIdAndDateRange(
+        companyId,
+        dayStart,
+        dayEnd
+      )
+      return success(records)
+    } catch (error) {
+      console.error('Error fetching daily overview:', error)
+      return failure(new DatabaseError('Database error occurred while fetching daily overview.'))
+    }
+  }
 }

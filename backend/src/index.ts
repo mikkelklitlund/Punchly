@@ -99,7 +99,8 @@ const companyController = new CompanyController(
   serviceContainer.departmentService,
   serviceContainer.userService,
   serviceContainer.employeeTypeService,
-  serviceContainer.absenceTypeService
+  serviceContainer.absenceTypeService,
+  serviceContainer.attendanceService
 )
 const companyRouter = createCompanyRoutes(companyController, serviceContainer.userService)
 

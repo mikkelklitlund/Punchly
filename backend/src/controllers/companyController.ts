@@ -18,6 +18,8 @@ import {
 } from '../utils/mappers.js'
 import { ValidationError } from '../utils/Errors.js'
 import { logger } from '../logger.js'
+import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
+import { UTCDateMini } from '@date-fns/utc'
 
 export class CompanyController {
   constructor(
@@ -26,7 +28,8 @@ export class CompanyController {
     private readonly departmentService: IDepartmentService,
     private readonly userService: IUserService,
     private readonly employeeTypeService: IEmployeeTypeService,
-    private readonly absenceTypeService: IAbsenceTypeService
+    private readonly absenceTypeService: IAbsenceTypeService,
+    private readonly attendanceService: IAttendanceService
   ) {}
 
   public getAllCompanies = async (req: Request, res: Response) => {
@@ -329,5 +332,30 @@ export class CompanyController {
     }
 
     return res.status(204).send()
+  }
+
+  public getDailyOverview = async (req: Request, res: Response) => {
+    const companyId = req.companyId
+    const { date } = req.query
+
+    if (!companyId) {
+      return res.status(500).json({ message: 'CompanyId must be provided...' })
+    }
+
+    if (!date) {
+      return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
+    }
+
+    const dayStart = new UTCDateMini(`${date}T00:00:00`)
+    const dayEnd = new UTCDateMini(`${date}T23:59:59`)
+
+    const recs = await this.attendanceService.getDailyOverview(companyId, dayStart, dayEnd)
+    if (recs instanceof Failure) {
+      const status = recs.error instanceof ValidationError ? 409 : 500
+      logger.error({ error: recs.error.message }, 'Fetching daily overview failed')
+      return res.status(status).json({ error: recs.error.message })
+    }
+
+    return res.status(200).json({ records: recs.value })
   }
 }

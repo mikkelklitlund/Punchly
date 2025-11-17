@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage'
 import AbsenceOverviewPage from './pages/AbsenceOverviewPage'
 import queryClient from './utils/queryClient'
 import PasswordChangePage from './pages/PasswordChangePage'
+import DailyOverviewPage from './pages/DailyOverviewPage'
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/attendance" element={<AttendanceOverviewPage />} />
                 <Route path="/attendance-report" element={<AttendanceReportPage />} />
                 <Route path="/absence" element={<AbsenceOverviewPage />} />
+                <Route path="/daily-overview" element={<DailyOverviewPage />} />
               </Route>
               <Route element={<RoleLayout allowedRoles={[Role.ADMIN]} />}>
                 <Route path="/users" element={<UserTablePage />} />
