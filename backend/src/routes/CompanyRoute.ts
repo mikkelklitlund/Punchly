@@ -18,10 +18,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   router.post(
     '/',
     ...adminAuth,
-    [
-      body('name').notEmpty().withMessage('Name is required'),
-      body('address').notEmpty().withMessage('Address is required'),
-    ],
+    [body('name').notEmpty().withMessage('Name is required')],
     checkValidationResult,
     controller.createCompany
   )

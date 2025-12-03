@@ -9,8 +9,7 @@ datasource db {
 
 model Company {
   id            Int                 @id @default(autoincrement())
-  name          String
-  address       String
+  name          String              @unique
   employees     Employee[]
   departments   Department[]
   employeeTypes EmployeeType[]
@@ -18,7 +17,6 @@ model Company {
   users         UserCompanyAccess[]
   managerInvites ManagerInvite[]
 
-  @@unique(name: "addressName", [name, address])
 }
 
 model User {
@@ -83,11 +81,6 @@ model Employee {
   birthdate          DateTime           @db.Date
   employeeTypeId     Int
   employeeType       EmployeeType       @relation(fields: [employeeTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  monthlySalary      Float?
-  monthlyHours       Float?
-  hourlySalary       Float?
-  address            String
-  city               String
   absenceRecords     AbsenceRecord[]
   attendanceRecords  AttendanceRecord[]
   deletedAt          DateTime?

@@ -42,8 +42,8 @@ export class CompanyController {
   }
 
   public createCompany = async (req: Request, res: Response) => {
-    const { name, address } = fromCompanyDTO(req.body)
-    const result = await this.companyService.createCompany(name, address)
+    const { name } = fromCompanyDTO(req.body)
+    const result = await this.companyService.createCompany(name)
 
     if (result instanceof Failure) {
       res.status(500).json({ message: result.error.message })

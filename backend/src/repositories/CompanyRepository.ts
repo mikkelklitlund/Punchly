@@ -8,21 +8,19 @@ export class CompanyRepository implements ICompanyRepository {
   private toDomain(prismaCompany: PrismaCompany): Company {
     return {
       id: prismaCompany.id,
-      address: prismaCompany.address,
       name: prismaCompany.name,
     }
   }
 
   private toPrismaUpdateData(patch: Partial<Omit<Company, 'id'>>): Partial<Omit<Company, 'id'>> {
     const data: Partial<Omit<Company, 'id'>> = {}
-    if (patch.address !== undefined) data.address = patch.address
     if (patch.name !== undefined) data.name = patch.name
     return data
   }
 
-  async createCompany(name: string, address: string): Promise<Company> {
+  async createCompany(name: string): Promise<Company> {
     const company = await this.prisma.company.create({
-      data: { name, address },
+      data: { name },
     })
     return this.toDomain(company)
   }
@@ -61,11 +59,10 @@ export class CompanyRepository implements ICompanyRepository {
     return this.toDomain(company)
   }
 
-  async createCompanyWithAdmin(userId: number, name: string, address: string): Promise<Company> {
+  async createCompanyWithAdmin(userId: number, name: string): Promise<Company> {
     const company = await this.prisma.company.create({
       data: {
         name,
-        address,
         users: {
           create: {
             userId,

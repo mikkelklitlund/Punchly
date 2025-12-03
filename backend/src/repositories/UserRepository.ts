@@ -41,7 +41,6 @@ export class UserRepository implements IUserRepository {
     return {
       id: company.id,
       name: company.name,
-      address: company.address,
     }
   }
 

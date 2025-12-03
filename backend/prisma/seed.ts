@@ -28,11 +28,10 @@ async function ensureCompanyAbsenceTypes(companyId: number) {
 async function main() {
   // Create companies (with employee types & departments)
   const companyNBV = await prisma.company.upsert({
-    where: { addressName: { name: 'NBV', address: 'Poulsensvej 89' } },
+    where: { name: 'NBV' },
     update: {},
     create: {
       name: 'NBV',
-      address: 'Poulsensvej 89',
       employeeTypes: {
         create: [{ name: 'Full-Time' }, { name: 'Part-Time' }, { name: 'Contract' }, { name: 'Seasonal' }],
       },
@@ -49,11 +48,10 @@ async function main() {
   })
 
   const companyARK = await prisma.company.upsert({
-    where: { addressName: { name: 'ARK Design', address: 'Industrivej 42' } },
+    where: { name: 'ARK Design' },
     update: {},
     create: {
       name: 'ARK Design',
-      address: 'Industrivej 42',
       employeeTypes: {
         create: [{ name: 'Full-Time' }, { name: 'Part-Time' }, { name: 'Freelance' }],
       },
@@ -198,9 +196,6 @@ async function main() {
         employeeTypeId: fullTimeNBV?.id || 1,
         checkedIn: true,
         birthdate: new Date('1990-01-01'),
-        hourlySalary: 64,
-        address: 'Larsensvej 123',
-        city: 'Hjørring',
       },
       {
         name: 'Anna Hansen',
@@ -210,9 +205,6 @@ async function main() {
         employeeTypeId: partTimeNBV?.id || 1,
         checkedIn: false,
         birthdate: new Date('1985-05-15'),
-        hourlySalary: 45,
-        address: 'Nørregade 45',
-        city: 'Aalborg',
       },
       {
         name: 'Peter Nielsen',
@@ -222,9 +214,6 @@ async function main() {
         employeeTypeId: partTimeNBV?.id || 1,
         checkedIn: false,
         birthdate: new Date('1992-07-07'),
-        hourlySalary: 50,
-        address: 'Vestergade 10',
-        city: 'Aarhus',
       },
       {
         name: 'Mette Pedersen',
@@ -234,9 +223,6 @@ async function main() {
         employeeTypeId: fullTimeNBV?.id || 1,
         checkedIn: true,
         birthdate: new Date('1988-03-12'),
-        hourlySalary: 58,
-        address: 'Søndergade 78',
-        city: 'Aalborg',
       },
       {
         name: 'Lars Jensen',
@@ -246,9 +232,6 @@ async function main() {
         employeeTypeId: fullTimeNBV?.id || 1,
         checkedIn: true,
         birthdate: new Date('1975-11-30'),
-        hourlySalary: 68,
-        address: 'Borgergade 15',
-        city: 'København',
       },
       {
         name: 'Sofie Andersen',
@@ -258,9 +241,6 @@ async function main() {
         employeeTypeId: fullTimeNBV?.id || 1,
         checkedIn: false,
         birthdate: new Date('1993-09-22'),
-        monthlySalary: 32000,
-        address: 'Frederiksalle 67',
-        city: 'Aalborg',
       },
       {
         name: 'Thomas Christensen',
@@ -270,9 +250,6 @@ async function main() {
         employeeTypeId: contractNBV?.id || 1,
         checkedIn: false,
         birthdate: new Date('1987-06-14'),
-        monthlySalary: 38000,
-        address: 'Strandvej 45',
-        city: 'Aalborg',
       },
       {
         name: 'Emma Rasmussen',
@@ -282,9 +259,6 @@ async function main() {
         employeeTypeId: seasonalNBV?.id || 1,
         checkedIn: true,
         birthdate: new Date('1995-02-28'),
-        hourlySalary: 42,
-        address: 'Danmarksgade 23',
-        city: 'Aalborg',
       },
       {
         name: 'Mikkel Larsen',
@@ -294,9 +268,6 @@ async function main() {
         employeeTypeId: fullTimeNBV?.id || 1,
         checkedIn: false,
         birthdate: new Date('1979-12-03'),
-        hourlySalary: 60,
-        address: 'Østergade 12',
-        city: 'Hjørring',
         deletedAt: new Date(),
       },
     ],
@@ -313,9 +284,6 @@ async function main() {
         employeeTypeId: fullTimeARK?.id || 1,
         checkedIn: true,
         birthdate: new Date('1991-04-17'),
-        monthlySalary: 34000,
-        address: 'Havnegade 8',
-        city: 'København',
       },
       {
         name: 'Nikolaj Hansen',
@@ -325,9 +293,6 @@ async function main() {
         employeeTypeId: fullTimeARK?.id || 1,
         checkedIn: true,
         birthdate: new Date('1985-08-24'),
-        monthlySalary: 36000,
-        address: 'Vimmelskaftet 43',
-        city: 'København',
       },
       {
         name: 'Maria Poulsen',
@@ -337,9 +302,6 @@ async function main() {
         employeeTypeId: partTimeARK?.id || 1,
         checkedIn: false,
         birthdate: new Date('1994-01-12'),
-        hourlySalary: 52,
-        address: 'Nyhavn 18',
-        city: 'København',
       },
       {
         name: 'Anders Johansen',
@@ -349,9 +311,6 @@ async function main() {
         employeeTypeId: fullTimeARK?.id || 1,
         checkedIn: false,
         birthdate: new Date('1982-05-30'),
-        monthlySalary: 38000,
-        address: 'Gammel Kongevej 123',
-        city: 'København',
       },
       {
         name: 'Camilla Svendsen',
@@ -361,9 +320,6 @@ async function main() {
         employeeTypeId: freelanceARK?.id || 1,
         checkedIn: false,
         birthdate: new Date('1989-11-05'),
-        hourlySalary: 65,
-        address: 'Vesterbrogade 89',
-        city: 'København',
       },
     ],
   })

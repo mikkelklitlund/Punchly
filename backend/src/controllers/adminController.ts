@@ -22,14 +22,14 @@ export class AdminController {
   }
 
   createCompany = async (req: Request, res: Response) => {
-    const { name, address } = req.body
+    const { name } = req.body
     const userId = req.userId
 
     if (!userId) {
       return res.status(400).json({ message: 'No user id provided, logout and back in.' })
     }
 
-    const result = await this.companyService.createCompanyWithAdmin(userId, name, address)
+    const result = await this.companyService.createCompanyWithAdmin(userId, name)
     if (result instanceof Failure) {
       req.log?.error({ error: result.error?.message }, 'Failed to create company')
       return res.status(400).json({ message: result.error?.message })
@@ -40,9 +40,9 @@ export class AdminController {
 
   updateCompany = async (req: Request, res: Response) => {
     const companyId = Number(req.params.id)
-    const { name, address } = req.body
+    const { name } = req.body
 
-    const result = await this.companyService.updateCompany(companyId, { name, address })
+    const result = await this.companyService.updateCompany(companyId, { name })
     if (result instanceof Failure) {
       req.log?.warn({ error: result.error?.message }, 'Failed to update company')
       return res.status(400).json({ message: result.error?.message })

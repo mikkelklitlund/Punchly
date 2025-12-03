@@ -50,16 +50,6 @@ export class EmployeeService implements IEmployeeService {
       return failure(new ValidationError('Invalid employee type', 'employeeTypeId'))
     }
 
-    if (data.monthlySalary && data.hourlySalary) {
-      return failure(new ValidationError('Both monthly and hourly salary are filled', 'salary'))
-    }
-    if (data.monthlySalary && data.monthlySalary < 0) {
-      return failure(new ValidationError('Monthly salary must be positive', 'monthlySalary'))
-    }
-    if (data.hourlySalary && data.hourlySalary < 0) {
-      return failure(new ValidationError('Hourly salary must be positive', 'hourlySalary'))
-    }
-
     const age = this.ageOnTodayUTC(data.birthdate)
     if (age < 13) {
       return failure(new ValidationError('Must be over the age of 13 to be employed', 'birthday'))
@@ -139,18 +129,6 @@ export class EmployeeService implements IEmployeeService {
         if (!employeeTypeExists) {
           return failure(new ValidationError('Invalid employee type ID', 'employeeTypeId'))
         }
-      }
-
-      if (data.monthlySalary && data.hourlySalary) {
-        return failure(
-          new ValidationError('Both monthly and hourly salary cannot be filled at the same time', 'salary')
-        )
-      }
-      if (data.monthlySalary && data.monthlySalary < 0) {
-        return failure(new ValidationError('Monthly salary must be a positive number', 'monthlySalary'))
-      }
-      if (data.hourlySalary && data.hourlySalary < 0) {
-        return failure(new ValidationError('Hourly salary must be a positive number', 'hourlySalary'))
       }
 
       if (data.birthdate) {

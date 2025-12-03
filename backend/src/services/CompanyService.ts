@@ -27,9 +27,9 @@ export class CompanyService implements ICompanyService {
     }
   }
 
-  async createCompanyWithAdmin(userId: number, name: string, address: string): Promise<Result<Company, Error>> {
+  async createCompanyWithAdmin(userId: number, name: string): Promise<Result<Company, Error>> {
     try {
-      const company = await this.companyRepository.createCompanyWithAdmin(userId, name, address)
+      const company = await this.companyRepository.createCompanyWithAdmin(userId, name)
       return success(company)
     } catch (error) {
       console.error('Database error during creation of company with admin:', error)
@@ -37,9 +37,9 @@ export class CompanyService implements ICompanyService {
     }
   }
 
-  async createCompany(name: string, address: string): Promise<Result<Company, Error>> {
+  async createCompany(name: string): Promise<Result<Company, Error>> {
     try {
-      const company = await this.companyRepository.createCompany(name, address)
+      const company = await this.companyRepository.createCompany(name)
       return success(company)
     } catch (error) {
       console.log('Database error during creation of company: ', error)

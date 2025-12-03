@@ -315,28 +315,10 @@ export class AttendanceService implements IAttendanceService {
 
     for (const [type, employees] of Object.entries(grouped)) {
       this.addSectionHeader(sheet, type, 7)
-      this.addTableHeader(sheet, [
-        'Afdeling',
-        'Navn',
-        'Fødselsdato',
-        'Adresse',
-        'Timeløn (kr.)',
-        'Månedsløn (kr.)',
-        'Månedlige timer',
-      ])
+      this.addTableHeader(sheet, ['Afdeling', 'Navn', 'Fødselsdato'])
 
       for (const em of employees) {
-        const row = sheet.addRow([
-          em.department.name,
-          em.name,
-          // birthdate is @db.Date in your schema, render as YYYY-MM-DD
-          // birthdate is @db.Date in your schema, render as YYYY-MM-DD
-          em.birthdate.toISOString().split('T')[0],
-          em.address,
-          em.hourlySalary ?? '',
-          em.monthlySalary ?? '',
-          em.monthlyHours ?? '',
-        ])
+        const row = sheet.addRow([em.department.name, em.name, em.birthdate.toISOString().split('T')[0]])
         this.centerAlignRow(row)
       }
 
@@ -443,43 +425,6 @@ export class AttendanceService implements IAttendanceService {
     return workbook
   }
 
-  private generateSalarySheet(workbook: ExcelJS.Workbook, data: EmployeeWithRecords[]): ExcelJS.Workbook {
-    const sheet = workbook.addWorksheet('Samlet løn')
-    const grouped = this.groupByEmployeeType(data)
-
-    for (const [type, employees] of Object.entries(grouped)) {
-      this.addSectionHeader(sheet, type, 6)
-      this.addTableHeader(sheet, [
-        'Navn',
-        'Timeløn (kr.)',
-        'Månedsløn (kr.)',
-        'Månedlige timer',
-        'Registrerede timer (hh,mm)',
-        'Total løn (kr.)',
-      ])
-
-      for (const emp of employees) {
-        const totalMinutes = this.calculateTotalMinutes(emp.attendanceRecords)
-        const totalHours = totalMinutes / 60
-        const totalEarnings = emp.hourlySalary ? totalHours * emp.hourlySalary : (emp.monthlySalary ?? 0)
-
-        const row = sheet.addRow([
-          emp.name,
-          emp.hourlySalary ?? '',
-          emp.monthlySalary ?? '',
-          emp.monthlyHours ?? '',
-          this.formatMinutesToHHmm(totalMinutes),
-          emp.hourlySalary ? totalEarnings.toFixed(2) : (emp.monthlySalary?.toFixed(2) ?? ''),
-        ])
-        this.centerAlignRow(row)
-      }
-      sheet.addRow([])
-    }
-
-    this.autoFitColumns(sheet)
-    return workbook
-  }
-
   async generateEmployeeAttendanceReport(
     startDate: Date,
     endDate: Date,
@@ -498,7 +443,6 @@ export class AttendanceService implements IAttendanceService {
       let workbook = new ExcelJS.Workbook()
       workbook = this.generateEmployeeOverviewSheet(workbook, data)
       workbook = this.generateRecordSheet(workbook, data, tz)
-      workbook = this.generateSalarySheet(workbook, data)
 
       for (const sheet of workbook.worksheets) {
         await sheet.protect('YourPasswordHere', {
