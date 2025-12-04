@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle, XCircle } from 'lucide-react'
-import dayjs from 'dayjs'
-import duration from 'dayjs/plugin/duration'
 import { Column } from '../components/common/DataTable'
 import DataTable from '../components/common/DataTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -13,8 +11,7 @@ import { useCompany } from '../contexts/CompanyContext'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAttendanceRecords } from '../hooks/useAttendanceRecords'
 import { AttendanceRecordDTO } from 'shared'
-
-dayjs.extend(duration)
+import { differenceInMinutes, format, isSameDay, subDays } from 'date-fns'
 
 const AttendanceOverviewPage = () => {
   const { companyId } = useAuth()
@@ -27,9 +24,9 @@ const AttendanceOverviewPage = () => {
   const [createRecord, setCreateRecord] = useState<boolean>(false)
 
   const [selectedStartDate, setSelectedStartDate] = useState<string>(
-    dayjs().subtract(30, 'days').format('YYYY-MM-DDTHH:mm')
+    format(subDays(new Date(), 30), "yyyy-MM-dd'T'HH:mm")
   )
-  const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DDTHH:mm'))
+  const [selectedEndDate, setSelectedEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd'T'HH:mm"))
 
   const {
     data: records = [],
@@ -47,27 +44,27 @@ const AttendanceOverviewPage = () => {
     {
       header: 'Dato',
       accessor: (rec) => {
-        const inD = dayjs(rec.checkIn)
-        if (!rec.checkOut) return inD.format('DD/MM/YYYY')
-        const outD = dayjs(rec.checkOut)
-        return inD.isSame(outD, 'day')
-          ? inD.format('DD/MM/YYYY')
-          : `${inD.format('DD/MM/YYYY')} - ${outD.format('DD/MM/YYYY')}`
+        const inD = new Date(rec.checkIn)
+        if (!rec.checkOut) return format(inD, 'dd/MM/yyyy')
+        const outD = new Date(rec.checkOut)
+        return isSameDay(inD, outD)
+          ? format(inD, 'dd/MM/yyyy')
+          : `${format(inD, 'dd/MM/yyyy')} - ${format(outD, 'dd/MM/yyyy')}`
       },
     },
     {
       header: 'Check ind',
-      accessor: (rec) => dayjs(rec.checkIn).format('HH:mm'),
+      accessor: (rec) => format(new Date(rec.checkIn), 'HH:mm'),
     },
     {
       header: 'Check ud',
-      accessor: (rec) => (rec.checkOut ? dayjs(rec.checkOut).format('HH:mm') : '-'),
+      accessor: (rec) => (rec.checkOut ? format(new Date(rec.checkOut), 'HH:mm') : '-'),
     },
     {
       header: 'Varighed',
       accessor: (rec) => {
         if (!rec.checkOut) return '-'
-        const minutes = dayjs(rec.checkOut).diff(dayjs(rec.checkIn), 'minute')
+        const minutes = differenceInMinutes(new Date(rec.checkOut), new Date(rec.checkIn))
         const h = Math.floor(minutes / 60)
         const m = minutes % 60
         return `${h}t ${m}m`

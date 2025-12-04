@@ -15,11 +15,11 @@
     "@tanstack/react-query": "^5.69.0",
     "axios": "^1.7.7",
     "cors": "^2.8.5",
-    "dayjs": "^1.11.13",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.483.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "date-fns": "^4.1.0",
     "react-router-dom": "^6.27.0",
     "react-toastify": "^11.0.5",
     "shared": "1.0.0"

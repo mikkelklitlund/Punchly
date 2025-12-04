@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import dayjs from 'dayjs'
 import { Column } from '../components/common/DataTable'
 import DataTable from '../components/common/DataTable'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -8,6 +7,7 @@ import { useCompany } from '../contexts/CompanyContext'
 import { useEmployees } from '../hooks/useEmployees'
 import { useDailyOverview } from '../hooks/useDailyOverview'
 import { AttendanceRecordDTO, EmployeeDTO } from 'shared'
+import { differenceInMinutes, format } from 'date-fns'
 
 const DailyOverviewPage = () => {
   const { companyId } = useAuth()
@@ -15,7 +15,7 @@ const DailyOverviewPage = () => {
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
 
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
-  const [selectedDate, setSelectedDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
 
   const { data: records = [], isLoading, error } = useDailyOverview(companyId, selectedDate)
 
@@ -38,16 +38,16 @@ const DailyOverviewPage = () => {
 
   const columns: Column<DailyRow>[] = [
     { header: 'Medarbejder', accessor: (row) => row.name },
-    { header: 'Check ind', accessor: (row) => (row.record ? dayjs(row.record.checkIn).format('HH:mm') : '-') },
+    { header: 'Check ind', accessor: (row) => (row.record ? format(new Date(row.record.checkIn), 'HH:mm') : '-') },
     {
       header: 'Check ud',
-      accessor: (row) => (row.record?.checkOut ? dayjs(row.record.checkOut).format('HH:mm') : '-'),
+      accessor: (row) => (row.record?.checkOut ? format(new Date(row.record.checkOut), 'HH:mm') : '-'),
     },
     {
       header: 'Varighed',
       accessor: (row) => {
         if (!row.record?.checkOut) return '-'
-        const minutes = dayjs(row.record.checkOut).diff(dayjs(row.record.checkIn), 'minute')
+        const minutes = differenceInMinutes(new Date(row.record.checkOut), new Date(row.record.checkIn))
         return `${Math.floor(minutes / 60)}t ${minutes % 60}m`
       },
     },

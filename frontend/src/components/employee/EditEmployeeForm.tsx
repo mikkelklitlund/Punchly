@@ -1,13 +1,13 @@
-import dayjs from 'dayjs'
 import EmployeeForm, { EmployeeFormValues } from './EmployeeForm'
 import { EmployeeDTO } from 'shared'
 import { employeeService } from '../../services/employeeService'
 import { toast } from 'react-toastify'
+import { format } from 'date-fns'
 
 const EditEmployeeForm = ({ employee, onSuccess }: { employee: EmployeeDTO; onSuccess: () => void }) => {
   const initial: EmployeeFormValues = {
     name: employee.name,
-    birthdate: employee.birthdate ? dayjs(employee.birthdate).format('YYYY-MM-DD') : '',
+    birthdate: employee.birthdate ? format(new Date(employee.birthdate), 'yyyy-MM-dd') : '',
     departmentId: employee.departmentId,
     employeeTypeId: employee.employeeTypeId,
     profilePicturePath: employee.profilePicturePath || '',
