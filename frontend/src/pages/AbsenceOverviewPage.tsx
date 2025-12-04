@@ -4,13 +4,12 @@ import { AbsenceRecordDTO } from 'shared'
 import { useEmployees } from '../hooks/useEmployees'
 import { useAuth } from '../contexts/AuthContext'
 import DataTable, { Column } from '../components/common/DataTable'
-import dayjs from 'dayjs'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import Modal from '../components/common/Modal'
 import EditAbsenceForm from '../components/absence/EditAbsenceForm'
 import CreateAbsenceForm from '../components/absence/CreateAbsenceForm'
-import { businessDaysDiff } from '../utils/businessdays'
 import { useCompany } from '../contexts/CompanyContext'
+import { format, subDays, differenceInBusinessDays } from 'date-fns'
 
 const AbsenceOverviewPage = () => {
   const { companyId } = useAuth()
@@ -19,8 +18,8 @@ const AbsenceOverviewPage = () => {
   const { data: employees = [], isLoading: empLoading, error: empError } = useEmployees(companyId, { live: false })
   const [editRecord, setEditRecord] = useState<AbsenceRecordDTO | null>(null)
   const [createRecord, setCreateRecord] = useState<boolean>(false)
-  const [selectedStartDate, setSelectedStartDate] = useState<string>(dayjs().subtract(30, 'days').format('YYYY-MM-DD'))
-  const [selectedEndDate, setSelectedEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
+  const [selectedStartDate, setSelectedStartDate] = useState<string>(format(subDays(new Date(), 30), 'yyyy-MM-dd'))
+  const [selectedEndDate, setSelectedEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null)
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
@@ -35,19 +34,19 @@ const AbsenceOverviewPage = () => {
     {
       header: 'Første fraværs dag',
       accessor: (rec) => {
-        return dayjs(rec.startDate).format('DD/MM/YYYY')
+        return format(new Date(rec.startDate), 'dd/MM/yyyy')
       },
     },
     {
       header: 'Sidste fraværs dag',
       accessor: (rec) => {
-        return dayjs(rec.endDate).format('DD/MM/YYYY')
+        return format(new Date(rec.endDate), 'dd/MM/yyyy')
       },
     },
     {
       header: 'Antal hverdage',
       accessor: (rec) => {
-        return businessDaysDiff(rec.startDate, rec.endDate)
+        return differenceInBusinessDays(new Date(rec.startDate), new Date(rec.endDate))
       },
     },
     {
