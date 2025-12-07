@@ -32,10 +32,6 @@ export function createEmployeeRoutes(controller: EmployeeController, userService
       body('departmentId').isInt().toInt().withMessage('Valid department ID is required'),
       body('employeeTypeId').isInt().toInt().withMessage('Valid employee type ID is required'),
       body('name').trim().notEmpty().withMessage('Name is required'),
-      body('address').trim().notEmpty(),
-      body('city').trim().notEmpty(),
-      body('monthlySalary').optional({ nullable: true }).isFloat({ gt: 0 }).toFloat(),
-      body('hourlySalary').optional({ nullable: true }).isFloat({ gt: 0 }).toFloat(),
       body('birthdate')
         .notEmpty()
         .isISO8601()

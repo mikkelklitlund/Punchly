@@ -2,7 +2,6 @@ import { Role } from 'shared'
 
 export type Company = {
   id: number
-  address: string
   name: string
 }
 
@@ -56,11 +55,6 @@ export type Employee = {
   checkedIn: boolean
   birthdate: Date
   employeeTypeId: number
-  monthlySalary?: number
-  monthlyHours?: number
-  hourlySalary?: number
-  address: string
-  city: string
   absenceRecords?: AbsenceRecord[]
   attendanceRecords?: AttendanceRecord[]
 }
@@ -72,11 +66,6 @@ export type CreateEmployee = {
   checkedIn: boolean
   birthdate: Date
   employeeTypeId: number
-  monthlySalary?: number
-  monthlyHours?: number
-  hourlySalary?: number
-  address: string
-  city: string
 }
 
 export type EmployeeType = {

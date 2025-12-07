@@ -3,9 +3,13 @@ import { failure, Result, success } from '../utils/Result.js'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
 import { AbsenceRecord, CreateAbsenceRecord } from '../types/index.js'
+import { Logger } from 'pino'
 
 export class AbsenceService implements IAbsenceService {
-  constructor(private readonly absenceRecordRepository: IAbsenceRecordRepository) {}
+  constructor(
+    private readonly absenceRecordRepository: IAbsenceRecordRepository,
+    private readonly logger: Logger
+  ) {}
 
   private overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
     return aStart <= bEnd && aEnd >= bStart
@@ -13,30 +17,46 @@ export class AbsenceService implements IAbsenceService {
 
   async createAbsenceRecord(data: CreateAbsenceRecord): Promise<Result<AbsenceRecord, Error>> {
     if (data.endDate < data.startDate) {
+      this.logger.warn(
+        { employeeId: data.employeeId, startDate: data.startDate, endDate: data.endDate },
+        'Absence creation failed: endDate before startDate'
+      )
       return failure(new ValidationError('endDate cannot be before startDate'))
     }
 
-    const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(
-      data.employeeId,
-      data.startDate,
-      data.endDate
-    )
+    try {
+      const overlaps = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeIdAndRange(
+        data.employeeId,
+        data.startDate,
+        data.endDate
+      )
 
-    if (overlaps.length > 0) {
-      return failure(new ValidationError('Employee already has an absence overlapping this period.'))
+      if (overlaps.length > 0) {
+        this.logger.warn(
+          { employeeId: data.employeeId, startDate: data.startDate, endDate: data.endDate, overlaps: overlaps.length },
+          'Absence creation failed: overlapping period found'
+        )
+        return failure(new ValidationError('Employee already has an absence overlapping this period.'))
+      }
+
+      const created = await this.absenceRecordRepository.createAbsenceRecord(data)
+      return success(created)
+    } catch (error) {
+      this.logger.error({ error, data }, 'Database error during creation of absence record')
+      return failure(new DatabaseError('Database error occurred while creating the absence record.'))
     }
-
-    const created = await this.absenceRecordRepository.createAbsenceRecord(data)
-    return success(created)
   }
 
   async getAbsenceRecordById(id: number): Promise<Result<AbsenceRecord, Error>> {
     try {
       const absence = await this.absenceRecordRepository.getAbsenceRecordById(id)
-      if (!absence) return failure(new EntityNotFoundError(`Absence record with ID ${id} not found.`))
+      if (!absence) {
+        this.logger.debug({ id }, 'Absence record not found by ID')
+        return failure(new EntityNotFoundError(`Absence record with ID ${id} not found.`))
+      }
       return success(absence)
     } catch (error) {
-      console.error('Error fetching absence record by ID:', error)
+      this.logger.error({ error, id }, 'Error fetching absence record by ID')
       return failure(new DatabaseError('Database error occurred while fetching the absence record.'))
     }
   }
@@ -46,7 +66,7 @@ export class AbsenceService implements IAbsenceService {
       const absences = await this.absenceRecordRepository.getAbsenceRecordsByEmployeeId(employeeId)
       return success(absences)
     } catch (error) {
-      console.error('Error fetching absence records for employee:', error)
+      this.logger.error({ error, employeeId }, 'Error fetching absence records for employee')
       return failure(new DatabaseError('Database error occurred while fetching absence records.'))
     }
   }
@@ -61,7 +81,7 @@ export class AbsenceService implements IAbsenceService {
       return success(absences)
     } catch (error) {
       if (error instanceof ValidationError) return failure(error)
-      console.error('Error fetching absence records by date range:', error)
+      this.logger.error({ error, employeeId, start, end }, 'Error fetching absence records by date range')
       return failure(new DatabaseError('Database error occurred while fetching absence records.'))
     }
   }
@@ -72,9 +92,16 @@ export class AbsenceService implements IAbsenceService {
   ): Promise<Result<AbsenceRecord, Error>> {
     try {
       const existing = await this.absenceRecordRepository.getAbsenceRecordById(id)
-      if (!existing) return failure(new EntityNotFoundError('Absence record not found'))
+      if (!existing) {
+        this.logger.warn({ id, patch }, 'Absence record update failed: entity not found')
+        return failure(new EntityNotFoundError('Absence record not found'))
+      }
 
       if (patch.employeeId && patch.employeeId !== existing.employeeId) {
+        this.logger.warn(
+          { id, existingEmployeeId: existing.employeeId, newEmployeeId: patch.employeeId },
+          'Absence update failed: attempt to change employeeId'
+        )
         return failure(new ValidationError('Cannot change employee on an existing absence record.', 'employeeId'))
       }
 
@@ -82,6 +109,7 @@ export class AbsenceService implements IAbsenceService {
       const endDate = patch.endDate ?? existing.endDate
 
       if (endDate < startDate) {
+        this.logger.warn({ id, startDate, endDate }, 'Absence update failed: endDate before startDate')
         return failure(new ValidationError('endDate cannot be before startDate'))
       }
 
@@ -94,6 +122,10 @@ export class AbsenceService implements IAbsenceService {
       const hasOther = overlaps.some((r) => r.id !== id && this.overlaps(startDate, endDate, r.startDate, r.endDate))
 
       if (hasOther) {
+        this.logger.warn(
+          { id, employeeId: existing.employeeId, startDate, endDate, overlaps: overlaps.length },
+          'Absence update failed: overlapping period found'
+        )
         return failure(new ValidationError('Employee already has an absence overlapping this period.'))
       }
 
@@ -105,7 +137,7 @@ export class AbsenceService implements IAbsenceService {
       return success(updated)
     } catch (err) {
       if (err instanceof ValidationError) return failure(err)
-      console.error('Error updating absence record:', err)
+      this.logger.error({ error: err, id, patch }, 'Error updating absence record')
       return failure(new DatabaseError('Database error occurred while updating the absence record.'))
     }
   }
@@ -115,7 +147,7 @@ export class AbsenceService implements IAbsenceService {
       const deleted = await this.absenceRecordRepository.deleteAbsenceRecord(id)
       return success(deleted)
     } catch (e) {
-      console.error('Error deleting absence record:', e)
+      this.logger.error({ error: e, id }, 'Error deleting absence record')
       return failure(new DatabaseError('Database error occurred while deleting the absence record.'))
     }
   }

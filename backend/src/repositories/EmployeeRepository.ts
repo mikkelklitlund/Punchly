@@ -186,11 +186,6 @@ export class EmployeeRepository implements IEmployeeRepository {
       checkedIn: employee.checkedIn,
       birthdate: employee.birthdate,
       employeeTypeId: employee.employeeTypeId,
-      monthlySalary: employee.monthlySalary ?? undefined,
-      monthlyHours: employee.monthlyHours ?? undefined,
-      hourlySalary: employee.hourlySalary ?? undefined,
-      address: employee.address,
-      city: employee.city,
     }
   }
 
@@ -260,11 +255,6 @@ export class EmployeeRepository implements IEmployeeRepository {
     if (patch.checkedIn !== undefined) data.checkedIn = patch.checkedIn
     if (patch.birthdate !== undefined) data.birthdate = patch.birthdate
     if (patch.employeeTypeId !== undefined) data.employeeTypeId = patch.employeeTypeId
-    if (patch.monthlySalary !== undefined) data.monthlySalary = patch.monthlySalary
-    if (patch.monthlyHours !== undefined) data.monthlyHours = patch.monthlyHours
-    if (patch.hourlySalary !== undefined) data.hourlySalary = patch.hourlySalary
-    if (patch.address !== undefined) data.address = patch.address
-    if (patch.city !== undefined) data.city = patch.city
     return data
   }
 }

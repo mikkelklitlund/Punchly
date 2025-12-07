@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "AbsenceRecord" ALTER COLUMN "startDate" SET DATA TYPE DATE,
-ALTER COLUMN "endDate" SET DATA TYPE DATE;

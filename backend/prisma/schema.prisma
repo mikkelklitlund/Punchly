@@ -3,14 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlserver"
   url      = env("DATABASE_URL")
 }
 
 model Company {
   id            Int                 @id @default(autoincrement())
-  name          String
-  address       String
+  name          String              @unique
   employees     Employee[]
   departments   Department[]
   employeeTypes EmployeeType[]
@@ -18,7 +17,6 @@ model Company {
   users         UserCompanyAccess[]
   managerInvites ManagerInvite[]
 
-  @@unique(name: "addressName", [name, address])
 }
 
 model User {
@@ -26,7 +24,7 @@ model User {
   email     String?   
   password  String
   username  String    @unique
-  deletedAt DateTime? @db.Timestamptz(3)
+  deletedAt DateTime?
   shouldChangePassword Boolean @default(false)
 
   companies    UserCompanyAccess[]
@@ -42,8 +40,8 @@ model RefreshToken {
   token      String   @unique
   userId     Int
   user       User     @relation(fields: [userId], references: [id])
-  expiryDate DateTime @db.Timestamptz(3)
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  expiryDate DateTime
+  createdAt  DateTime @default(now())
   revoked    Boolean  @default(false)
 
   @@index([userId])
@@ -54,7 +52,7 @@ model RefreshToken {
 model UserCompanyAccess {
   userId    Int
   companyId Int
-  role      Role
+  role      String
   user      User    @relation(fields: [userId], references: [id])
   company   Company @relation(fields: [companyId], references: [id])
 
@@ -65,7 +63,7 @@ model Department {
   id        Int        @id @default(autoincrement())
   name      String
   companyId Int
-  company   Company    @relation(fields: [companyId], references: [id])
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   employees Employee[]
 
   @@unique(name: "departmentCompany", [name, companyId])
@@ -76,21 +74,16 @@ model Employee {
   name               String
   profilePicturePath String             @default("default-avatar.jpg")
   companyId          Int
-  company            Company            @relation(fields: [companyId], references: [id])
+  company            Company            @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   departmentId       Int
-  department         Department         @relation(fields: [departmentId], references: [id])
+  department         Department         @relation(fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   checkedIn          Boolean            @default(false)
   birthdate          DateTime           @db.Date
   employeeTypeId     Int
-  employeeType       EmployeeType       @relation(fields: [employeeTypeId], references: [id])
-  monthlySalary      Float?
-  monthlyHours       Float?
-  hourlySalary       Float?
-  address            String
-  city               String
+  employeeType       EmployeeType       @relation(fields: [employeeTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   absenceRecords     AbsenceRecord[]
   attendanceRecords  AttendanceRecord[]
-  deletedAt          DateTime?          @db.Timestamptz(3)
+  deletedAt          DateTime?
 
   @@index([companyId])
   @@index([departmentId])
@@ -100,7 +93,7 @@ model EmployeeType {
   id        Int        @id @default(autoincrement())
   name      String
   companyId Int
-  company   Company    @relation(fields: [companyId], references: [id])
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   employees Employee[]
 
   @@unique(name: "typeCompany", [name, companyId])
@@ -109,11 +102,11 @@ model EmployeeType {
 model AbsenceRecord {
   id          Int         @id @default(autoincrement())
   employeeId  Int
-  employee    Employee    @relation(fields: [employeeId], references: [id])
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   startDate    DateTime @db.Date
   endDate      DateTime @db.Date
   absenceTypeId  Int
-  absenceType    AbsenceType  @relation(fields: [absenceTypeId], references: [id])
+  absenceType    AbsenceType  @relation(fields: [absenceTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([employeeId])
   @@index([absenceTypeId])
@@ -124,9 +117,9 @@ model AbsenceRecord {
 model AttendanceRecord {
   id         Int       @id @default(autoincrement())
   employeeId Int
-  employee   Employee  @relation(fields: [employeeId], references: [id])
-  checkIn    DateTime  @default(now()) @db.Timestamptz(3)
-  checkOut   DateTime? @db.Timestamptz(3)
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  checkIn    DateTime  @default(now())
+  checkOut   DateTime?
   autoClosed Boolean   @default(false)
 
   @@index([employeeId])
@@ -149,14 +142,8 @@ model ManagerInvite {
   companyId  Int
   company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   token      String   @unique
-  expiryDate DateTime @db.Timestamptz(3)
+  expiryDate DateTime
   used       Boolean  @default(false)
 
   @@index([companyId])
-}
-
-enum Role {
-  COMPANY
-  MANAGER
-  ADMIN
 }

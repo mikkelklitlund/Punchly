@@ -1,20 +1,21 @@
 import { Result, success, failure } from '../utils/Result.js'
 import { ValidationError, DatabaseError, EntityNotFoundError } from '../utils/Errors.js'
 import { IAttendanceRecordRepository } from '../interfaces/repositories/IAttendanceRecordRepository.js'
-import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
 import ExcelJS from 'exceljs'
 import { differenceInMinutes, endOfDay, startOfDay, isBefore } from 'date-fns'
 import { IAbsenceRecordRepository } from '../interfaces/repositories/IAbsenceRecordRepository.js'
 import { AttendanceRecord, CreateAttendanceRecord, EmployeeWithRecords } from '../types/index.js'
-import { UTCDateMini } from '@date-fns/utc'
 import { format, toZonedTime } from 'date-fns-tz'
+import { IEmployeeRepository } from '../interfaces/repositories/IEmployeeRepositry.js'
+import { Logger } from 'pino'
 
 export class AttendanceService implements IAttendanceService {
   constructor(
     private readonly attendanceRecordRepository: IAttendanceRecordRepository,
     private readonly employeeRepository: IEmployeeRepository,
-    private readonly absenceRecordRepository: IAbsenceRecordRepository
+    private readonly absenceRecordRepository: IAbsenceRecordRepository,
+    private readonly logger: Logger
   ) {}
 
   private async hasAbsenceOnDate(employeeId: number, date: Date): Promise<boolean> {
@@ -31,7 +32,7 @@ export class AttendanceService implements IAttendanceService {
   private formatMinutesToHHmm(totalMinutes: number): string {
     const hours = Math.floor(totalMinutes / 60)
     const minutes = totalMinutes % 60
-    return `${hours},${minutes.toString().padStart(2, '0')}`
+    return `${hours}:${minutes.toString().padStart(2, '0')}`
   }
 
   private formatTimeForTz(date: Date, tz: string) {
@@ -47,7 +48,7 @@ export class AttendanceService implements IAttendanceService {
   private groupByEmployeeType(data: EmployeeWithRecords[]): Record<string, EmployeeWithRecords[]> {
     return data.reduce(
       (acc, emp) => {
-        const type = emp.employeeType.name
+        const type = emp.employeeType?.name ?? 'Unknown'
         if (!acc[type]) acc[type] = []
         acc[type].push(emp)
         return acc
@@ -57,16 +58,29 @@ export class AttendanceService implements IAttendanceService {
   }
 
   async createAttendanceRecord(newAttendance: CreateAttendanceRecord): Promise<Result<AttendanceRecord, Error>> {
+    // Validate required params before attempting DB operations
     if (!newAttendance.checkIn || !newAttendance.checkOut) {
+      this.logger.warn(
+        { employeeId: newAttendance.employeeId },
+        'Attempt to create full attendance record failed: missing checkIn/checkOut'
+      )
       return failure(new ValidationError('When creating a full attendance record, all params must be present'))
     }
 
     if (isBefore(newAttendance.checkOut, newAttendance.checkIn)) {
+      this.logger.warn(
+        { employeeId: newAttendance.employeeId, checkIn: newAttendance.checkIn, checkOut: newAttendance.checkOut },
+        'Attempt to create full attendance record failed: checkout before checkin'
+      )
       return failure(new ValidationError('Checkout cannot be before checkin'))
     }
 
     try {
       if (await this.hasAbsenceOnDate(newAttendance.employeeId, newAttendance.checkIn)) {
+        this.logger.warn(
+          { employeeId: newAttendance.employeeId, checkIn: newAttendance.checkIn },
+          'Attempt to create attendance record failed: active absence found on date'
+        )
         return failure(new ValidationError('Employee has an active absence on this date.'))
       }
 
@@ -74,31 +88,28 @@ export class AttendanceService implements IAttendanceService {
         ...newAttendance,
       })
 
-      if (!newAttendance.checkIn || !newAttendance.checkOut) {
-        return failure(new ValidationError('When creating a full attendance record, all params must be present'))
-      }
-
-      if (isBefore(newAttendance.checkOut, newAttendance.checkIn)) {
-        return failure(new ValidationError('Checkout cannot be before checkin'))
-      }
-
       return success(attendanceRecord)
-    } catch (error) {
-      console.error('Error creating attendance record:', error)
+    } catch (err) {
+      this.logger.error({ error: err, data: newAttendance }, 'Database error during creation of attendance record')
       return failure(new DatabaseError('Database error occurred while creating the attendance record.'))
     }
   }
 
   async checkInEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
-      const now = new UTCDateMini()
+      const now = new Date()
 
       if (await this.hasAbsenceOnDate(employeeId, now)) {
+        this.logger.warn({ employeeId, date: now }, 'Check-in failed: employee has active absence today')
         return failure(new ValidationError('Employee has an active absence today and cannot check in.'))
       }
 
       const openRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId)
       if (openRecord) {
+        this.logger.warn(
+          { employeeId, openRecordId: openRecord.id },
+          'Auto-closing previous open record during check-in'
+        )
         await this.attendanceRecordRepository.updateAttendanceRecord(openRecord.id, {
           checkOut: now,
           autoClosed: true,
@@ -107,27 +118,30 @@ export class AttendanceService implements IAttendanceService {
 
       const attendanceRecord = await this.attendanceRecordRepository.createAttendanceRecord({
         employeeId,
+        checkIn: now,
       })
 
       await this.employeeRepository.updateEmployee(employeeId, { checkedIn: true })
 
       return success(attendanceRecord)
-    } catch (error) {
-      console.error('Error during employee check-in:', error)
+    } catch (err) {
+      this.logger.error({ error: err, employeeId }, 'Database error during employee check-in')
       return failure(new DatabaseError('Database error occurred during check-in.'))
     }
   }
 
   async checkOutEmployee(employeeId: number): Promise<Result<AttendanceRecord, Error>> {
     try {
-      const now = new UTCDateMini()
+      const now = new Date()
 
       if (await this.hasAbsenceOnDate(employeeId, now)) {
+        this.logger.warn({ employeeId, date: now }, 'Check-out failed: employee has active absence today')
         return failure(new ValidationError('Employee has an active absence today and cannot check out.'))
       }
 
       const attendanceRecord = await this.attendanceRecordRepository.getOngoingAttendanceRecord(employeeId)
       if (!attendanceRecord) {
+        this.logger.warn({ employeeId }, 'Check-out failed: no ongoing record found')
         return failure(new EntityNotFoundError('No ongoing attendance record found for this employee.'))
       }
 
@@ -137,8 +151,8 @@ export class AttendanceService implements IAttendanceService {
 
       await this.employeeRepository.updateEmployee(employeeId, { checkedIn: false })
       return success(updatedRecord)
-    } catch (error) {
-      console.error('Error during employee check-out:', error)
+    } catch (err) {
+      this.logger.error({ error: err, employeeId }, 'Database error during employee check-out')
       return failure(new DatabaseError('Database error occurred during check-out.'))
     }
   }
@@ -147,11 +161,12 @@ export class AttendanceService implements IAttendanceService {
     try {
       const attendanceRecord = await this.attendanceRecordRepository.getAttendanceRecordById(id)
       if (!attendanceRecord) {
+        this.logger.debug({ id }, 'Attendance record not found by ID')
         return failure(new EntityNotFoundError(`Attendance record with ID ${id} not found.`))
       }
       return success(attendanceRecord)
-    } catch (error) {
-      console.error('Error fetching attendance record by ID:', error)
+    } catch (err) {
+      this.logger.error({ error: err, id }, 'Error fetching attendance record by ID')
       return failure(new DatabaseError('Database error occurred while fetching the attendance record.'))
     }
   }
@@ -168,11 +183,12 @@ export class AttendanceService implements IAttendanceService {
         periodEnd
       )
       return success(attendanceRecords)
-    } catch (error) {
-      if (error instanceof ValidationError) return failure(error)
-      console.error('Error fetching attendance records for employee by period:', error)
-      if (error instanceof ValidationError) return failure(error)
-      console.error('Error fetching attendance records for employee by period:', error)
+    } catch (err) {
+      if (err instanceof ValidationError) return failure(err)
+      this.logger.error(
+        { error: err, employeeId, periodStart, periodEnd },
+        'Error fetching attendance records for employee by period'
+      )
       return failure(new DatabaseError('Database error occurred while fetching attendance records.'))
     }
   }
@@ -182,6 +198,7 @@ export class AttendanceService implements IAttendanceService {
     data: Partial<Omit<AttendanceRecord, 'id'>>
   ): Promise<Result<AttendanceRecord, Error>> {
     if (!data) {
+      this.logger.warn({ id }, 'Update attendance record failed: missing update data')
       return failure(new ValidationError('Update data is required.'))
     }
 
@@ -189,32 +206,43 @@ export class AttendanceService implements IAttendanceService {
       const attendanceRecord = await this.attendanceRecordRepository.getAttendanceRecordById(id)
 
       if (!attendanceRecord) {
+        this.logger.warn({ id }, 'Update attendance record failed: record not found')
         return failure(new ValidationError('Found no record with id'))
       }
 
       if (data.employeeId && data.employeeId !== attendanceRecord.employeeId) {
+        this.logger.warn(
+          { id, existingEmployeeId: attendanceRecord.employeeId, newEmployeeId: data.employeeId },
+          'Update attendance record failed: attempt to change employeeId'
+        )
         return failure(new ValidationError('Cannot change employee on existing attendance record'))
       }
 
-      if (data.checkIn) {
-        attendanceRecord.checkIn = data.checkIn
-      }
+      const newCheckIn = data.checkIn ?? attendanceRecord.checkIn
+      const newCheckOut = data.checkOut ?? attendanceRecord.checkOut
 
-      if (data.checkOut) {
-        attendanceRecord.checkOut = data.checkOut
-        attendanceRecord.autoClosed = false
-      }
-
-      if (await this.hasAbsenceOnDate(attendanceRecord.employeeId, attendanceRecord.checkIn)) {
+      if (await this.hasAbsenceOnDate(attendanceRecord.employeeId, newCheckIn)) {
+        this.logger.warn(
+          { id, checkIn: newCheckIn },
+          'Update attendance record failed: active absence found on checkIn date'
+        )
         return failure(new ValidationError('Employee has an active absence on this date.'))
       }
 
-      if (attendanceRecord.checkOut) {
-        if (attendanceRecord.checkIn >= attendanceRecord.checkOut) {
+      if (newCheckOut) {
+        if (newCheckIn >= newCheckOut) {
+          this.logger.warn(
+            { id, checkIn: newCheckIn, checkOut: newCheckOut },
+            'Update attendance record failed: Check in after checkout'
+          )
           return failure(new ValidationError('Check in cannot be after checkout'))
         }
 
-        if (await this.hasAbsenceOnDate(attendanceRecord.employeeId, attendanceRecord.checkOut)) {
+        if (await this.hasAbsenceOnDate(attendanceRecord.employeeId, newCheckOut)) {
+          this.logger.warn(
+            { id, checkOut: newCheckOut },
+            'Update attendance record failed: active absence found on checkOut date'
+          )
           return failure(new ValidationError('Employee has an active absence on this date.'))
         }
       }
@@ -224,8 +252,8 @@ export class AttendanceService implements IAttendanceService {
         ...(data.checkOut ? { checkOut: data.checkOut, autoClosed: false } : {}),
       })
       return success(updatedAttendanceRecord)
-    } catch (error) {
-      console.error('Error updating attendance record:', error)
+    } catch (err) {
+      this.logger.error({ error: err, id, data }, 'Database error during update of attendance record')
       return failure(new DatabaseError('Database error occurred while updating the attendance record.'))
     }
   }
@@ -234,8 +262,8 @@ export class AttendanceService implements IAttendanceService {
     try {
       const deletedAttendanceRecord = await this.attendanceRecordRepository.deleteAttendanceRecord(id)
       return success(deletedAttendanceRecord)
-    } catch (error) {
-      console.error('Error deleting attendance record:', error)
+    } catch (err) {
+      this.logger.error({ error: err, id }, 'Error deleting attendance record')
       return failure(new DatabaseError('Database error occurred while deleting the attendance record.'))
     }
   }
@@ -244,13 +272,12 @@ export class AttendanceService implements IAttendanceService {
     try {
       const records = await this.attendanceRecordRepository.getLast30ByEmployeeId(employeeId)
       return success(records)
-    } catch (error) {
-      console.error('Error fetching last 30 attendance records:', error)
+    } catch (err) {
+      this.logger.error({ error: err, employeeId }, 'Error fetching last 30 attendance records')
       return failure(new DatabaseError('Database error occurred while fetching recent attendance records.'))
     }
   }
 
-  // ---------------------- Report functions --------------------------
   // ---------------------- Report functions --------------------------
 
   private centerAlignRow(row: ExcelJS.Row) {
@@ -296,47 +323,15 @@ export class AttendanceService implements IAttendanceService {
   private generateEmployeeOverviewSheet(workbook: ExcelJS.Workbook, data: EmployeeWithRecords[]): ExcelJS.Workbook {
     const sheet = workbook.addWorksheet('Medarbejdere')
 
-    sheet.getColumn(1).width = 20
-    sheet.getColumn(2).width = 25
-    sheet.getColumn(3).width = 20
-    sheet.getColumn(4).width = 30
-    sheet.getColumn(5).width = 20
-    sheet.getColumn(6).width = 20
-    sheet.getColumn(7).width = 20
-    sheet.getColumn(1).width = 20
-    sheet.getColumn(2).width = 25
-    sheet.getColumn(3).width = 20
-    sheet.getColumn(4).width = 30
-    sheet.getColumn(5).width = 20
-    sheet.getColumn(6).width = 20
-    sheet.getColumn(7).width = 20
-
     const grouped = this.groupByEmployeeType(data)
 
     for (const [type, employees] of Object.entries(grouped)) {
       this.addSectionHeader(sheet, type, 7)
-      this.addTableHeader(sheet, [
-        'Afdeling',
-        'Navn',
-        'Fødselsdato',
-        'Adresse',
-        'Timeløn (kr.)',
-        'Månedsløn (kr.)',
-        'Månedlige timer',
-      ])
+      this.addTableHeader(sheet, ['Afdeling', 'Navn', 'Fødselsdato'])
 
       for (const em of employees) {
-        const row = sheet.addRow([
-          em.department.name,
-          em.name,
-          // birthdate is @db.Date in your schema, render as YYYY-MM-DD
-          // birthdate is @db.Date in your schema, render as YYYY-MM-DD
-          em.birthdate.toISOString().split('T')[0],
-          em.address,
-          em.hourlySalary ?? '',
-          em.monthlySalary ?? '',
-          em.monthlyHours ?? '',
-        ])
+        const birth = em.birthdate ? new Date(em.birthdate).toISOString().split('T')[0] : ''
+        const row = sheet.addRow([em.department?.name ?? '', em.name ?? '', birth])
         this.centerAlignRow(row)
       }
 
@@ -363,7 +358,6 @@ export class AttendanceService implements IAttendanceService {
               days.push(this.formatDateForTz(cur, tz))
               cur.setUTCDate(cur.getUTCDate() + 1)
             }
-            return days
             return days
           }),
         ])
@@ -394,10 +388,8 @@ export class AttendanceService implements IAttendanceService {
         )
 
         if (absence) {
-          checkInRow.push(absence.absenceType.name)
-          checkOutRow.push(absence.absenceType.name)
-          checkInRow.push(absence.absenceType.name)
-          checkOutRow.push(absence.absenceType.name)
+          checkInRow.push(absence.absenceType?.name ?? '')
+          checkOutRow.push(absence.absenceType?.name ?? '')
         } else {
           const record = emp.attendanceRecords.find((r) => this.formatDateForTz(r.checkIn, tz) === date)
           checkInRow.push(record ? this.formatTimeForTz(record.checkIn, tz) : '')
@@ -417,7 +409,6 @@ export class AttendanceService implements IAttendanceService {
         const record = emp.attendanceRecords.find((r) => this.formatDateForTz(r.checkIn, tz) === date)
         if (record?.autoClosed) {
           const cell = checkOutRowObj.getCell(idx + 2)
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } }
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } }
         }
       })
@@ -443,43 +434,6 @@ export class AttendanceService implements IAttendanceService {
     return workbook
   }
 
-  private generateSalarySheet(workbook: ExcelJS.Workbook, data: EmployeeWithRecords[]): ExcelJS.Workbook {
-    const sheet = workbook.addWorksheet('Samlet løn')
-    const grouped = this.groupByEmployeeType(data)
-
-    for (const [type, employees] of Object.entries(grouped)) {
-      this.addSectionHeader(sheet, type, 6)
-      this.addTableHeader(sheet, [
-        'Navn',
-        'Timeløn (kr.)',
-        'Månedsløn (kr.)',
-        'Månedlige timer',
-        'Registrerede timer (hh,mm)',
-        'Total løn (kr.)',
-      ])
-
-      for (const emp of employees) {
-        const totalMinutes = this.calculateTotalMinutes(emp.attendanceRecords)
-        const totalHours = totalMinutes / 60
-        const totalEarnings = emp.hourlySalary ? totalHours * emp.hourlySalary : (emp.monthlySalary ?? 0)
-
-        const row = sheet.addRow([
-          emp.name,
-          emp.hourlySalary ?? '',
-          emp.monthlySalary ?? '',
-          emp.monthlyHours ?? '',
-          this.formatMinutesToHHmm(totalMinutes),
-          emp.hourlySalary ? totalEarnings.toFixed(2) : (emp.monthlySalary?.toFixed(2) ?? ''),
-        ])
-        this.centerAlignRow(row)
-      }
-      sheet.addRow([])
-    }
-
-    this.autoFitColumns(sheet)
-    return workbook
-  }
-
   async generateEmployeeAttendanceReport(
     startDate: Date,
     endDate: Date,
@@ -498,7 +452,6 @@ export class AttendanceService implements IAttendanceService {
       let workbook = new ExcelJS.Workbook()
       workbook = this.generateEmployeeOverviewSheet(workbook, data)
       workbook = this.generateRecordSheet(workbook, data, tz)
-      workbook = this.generateSalarySheet(workbook, data)
 
       for (const sheet of workbook.worksheets) {
         await sheet.protect('YourPasswordHere', {
@@ -519,8 +472,25 @@ export class AttendanceService implements IAttendanceService {
       return success(Buffer.from(buffer))
     } catch (err) {
       if (err instanceof ValidationError) return failure(err)
-      console.error(err)
+      this.logger.error(
+        { error: err, startDate, endDate, companyId, departmentId },
+        'Failed to generate employee attendance report'
+      )
       return failure(new DatabaseError('Failed to generate employee attendance report'))
+    }
+  }
+
+  async getDailyOverview(companyId: number, dayStart: Date, dayEnd: Date): Promise<Result<AttendanceRecord[], Error>> {
+    try {
+      const records = await this.attendanceRecordRepository.getRecordsByCompanyIdAndDateRange(
+        companyId,
+        dayStart,
+        dayEnd
+      )
+      return success(records)
+    } catch (err) {
+      this.logger.error({ error: err, companyId, dayStart, dayEnd }, 'Error fetching daily overview')
+      return failure(new DatabaseError('Database error occurred while fetching daily overview.'))
     }
   }
 }

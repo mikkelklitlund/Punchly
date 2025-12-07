@@ -1,4 +1,4 @@
-import { useReducer, useCallback, createContext, useContext, ReactNode, useEffect } from 'react'
+import { useReducer, useCallback, createContext, useContext, ReactNode, useEffect, useRef } from 'react'
 import { jwtDecode, JwtPayload } from 'jwt-decode'
 import { AxiosError } from 'axios'
 import { authService } from '../services/authService'
@@ -12,9 +12,7 @@ import {
 } from '../api/axios'
 import { Role } from 'shared'
 
-// ---------------------
-// Error Class & Types
-// ---------------------
+// ... (keep all your existing types and error classes)
 
 export class PasswordChangeRequiredError extends Error {
   constructor(message = 'Password change is required.') {
@@ -50,10 +48,6 @@ export interface AuthContextType extends AuthState {
   refresh: () => Promise<void>
   changePassword: (newPassword: string) => Promise<void>
 }
-
-// ---------------------
-// State & Reducer
-// ---------------------
 
 const initialState: AuthState = {
   user: null,
@@ -126,12 +120,9 @@ const handleAxiosError = (error: unknown): string => {
   return 'An unexpected error occurred'
 }
 
-// ---------------------
-// AuthProvider Component
-// ---------------------
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
+  const initializingRef = useRef(false) // Prevent double initialization
 
   const updateAuthContext = useCallback((user: string, role: Role, companyId?: number) => {
     dispatch({
@@ -155,8 +146,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'AUTH_START' })
     try {
       const data = await authService.login(username, password, companyId)
-
-      setStoredToken(data.accessToken)
       setStoredToken(data.accessToken)
 
       if (data.shouldChangePassword) {
@@ -181,9 +170,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const decoded = jwtDecode<AuthResponse>(accessToken)
-
         dispatch({ type: 'AUTH_PASSWORD_REQUIRED', payload: { user: decoded.username || username } })
-
         throw error
       }
       const errorMessage = handleAxiosError(error)
@@ -232,7 +219,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       await authService.changePassword(newPassword)
-
       const { accessToken } = await authService.login(username, newPassword, companyId)
 
       setStoredToken(accessToken)
@@ -257,10 +243,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const data = await authService.refresh()
       setStoredToken(data.accessToken)
-      setStoredToken(data.accessToken)
 
       const decoded = jwtDecode<AuthResponse>(data.accessToken)
-
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
@@ -270,7 +254,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         },
       })
     } catch (error) {
-      removeStoredToken()
       removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
       throw error
@@ -285,23 +268,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout failed:', error)
     } finally {
       removeStoredToken()
-      removeStoredToken()
       dispatch({ type: 'AUTH_LOGOUT' })
     }
   }, [])
 
   useEffect(() => {
+    if (initializingRef.current) {
+      return
+    }
+    initializingRef.current = true
+
     const initializeAuth = async () => {
       try {
-        await refresh()
+        const token = getStoredToken()
+        if (!token) {
+          dispatch({ type: 'AUTH_INITIALIZED' })
+          return
+        }
+
+        const data = await authService.refresh()
+        setStoredToken(data.accessToken)
+
+        const decoded = jwtDecode<AuthResponse>(data.accessToken)
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: {
+            user: decoded.username || '',
+            role: decoded.role || Role.COMPANY,
+            companyId: decoded.companyId,
+          },
+        })
       } catch {
-        console.log('Failed to refresh token, falling back to unauthenticated state.')
+        removeStoredToken()
       } finally {
         dispatch({ type: 'AUTH_INITIALIZED' })
       }
     }
+
     initializeAuth()
-  }, [refresh])
+  }, [])
 
   return (
     <AuthContext.Provider

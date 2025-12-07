@@ -111,14 +111,17 @@ function Sidebar() {
                   showSubMenuAttendance ? 'max-h-96 pt-2 opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
+                <Link
+                  to={'/daily-overview'}
+                  className="w-full rounded px-2 py-1 text-left text-sm transition duration-150"
+                >
+                  <span className="block truncate overflow-hidden whitespace-nowrap" title="Fravær">
+                    Daglig oversigt
+                  </span>
+                </Link>
                 <Link to={'/attendance'} className="w-full rounded px-2 py-1 text-left text-sm transition duration-150">
                   <span className="block truncate overflow-hidden whitespace-nowrap" title="Medarbejder tider">
                     Medarbejder tider
-                  </span>
-                </Link>
-                <Link to={'/absence'} className="w-full rounded px-2 py-1 text-left text-sm transition duration-150">
-                  <span className="block truncate overflow-hidden whitespace-nowrap" title="Fravær">
-                    Fravær
                   </span>
                 </Link>
                 <Link to={'/absence'} className="w-full rounded px-2 py-1 text-left text-sm transition duration-150">
