@@ -8,13 +8,15 @@ import { IEmployeeService } from '../interfaces/services/IEmployeeService.js'
 import { CreateEmployee, Employee, SimpleEmployee } from '../types/index.js'
 import { UTCDateMini } from '@date-fns/utc'
 import { differenceInYears, endOfDay, startOfDay } from 'date-fns'
+import { Logger } from 'pino'
 
 export class EmployeeService implements IEmployeeService {
   constructor(
     private readonly employeeRepository: IEmployeeRepository,
     private readonly companyRepository: ICompanyRepository,
     private readonly departmentRepository: IDepartmentRepository,
-    private readonly employeeTypeRepository: IEmployeeTypeRepository
+    private readonly employeeTypeRepository: IEmployeeTypeRepository,
+    private readonly logger: Logger
   ) {}
 
   private ageOnTodayUTC(birthdate: Date): number {
@@ -32,26 +34,37 @@ export class EmployeeService implements IEmployeeService {
 
   async createEmployee(data: CreateEmployee): Promise<Result<Employee, Error>> {
     if (!data.name || data.name.trim().length === 0) {
+      this.logger.warn({ data }, 'Employee creation failed: name is required')
       return failure(new ValidationError('Name is required', 'name'))
     }
 
     const companyExists = await this.companyRepository.getCompanyById(data.companyId)
     if (!companyExists) {
+      this.logger.warn({ companyId: data.companyId }, 'Employee creation failed: invalid company ID')
       return failure(new ValidationError('Invalid company ID', 'companyId'))
     }
 
     const departmentExists = await this.departmentRepository.getDepartmentById(data.departmentId)
     if (!departmentExists) {
+      this.logger.warn(
+        { companyId: data.companyId, departmentId: data.departmentId },
+        'Employee creation failed: invalid department ID'
+      )
       return failure(new ValidationError('Invalid department ID', 'departmentId'))
     }
 
     const employeeTypeExists = await this.employeeTypeRepository.getEmployeeTypeById(data.employeeTypeId)
     if (!employeeTypeExists) {
+      this.logger.warn(
+        { companyId: data.companyId, employeeTypeId: data.employeeTypeId },
+        'Employee creation failed: invalid employee type'
+      )
       return failure(new ValidationError('Invalid employee type', 'employeeTypeId'))
     }
 
     const age = this.ageOnTodayUTC(data.birthdate)
     if (age < 13) {
+      this.logger.warn({ birthdate: data.birthdate, age }, 'Employee creation failed: age is below 13')
       return failure(new ValidationError('Must be over the age of 13 to be employed', 'birthday'))
     }
 
@@ -61,7 +74,7 @@ export class EmployeeService implements IEmployeeService {
       })
       return success(employee)
     } catch (error) {
-      console.error('Error creating employee:', error)
+      this.logger.error({ error, data }, 'Error creating employee')
       return failure(new DatabaseError('Database error occurred while creating the employee'))
     }
   }
@@ -70,11 +83,12 @@ export class EmployeeService implements IEmployeeService {
     try {
       const employee = await this.employeeRepository.getEmployeeById(id)
       if (!employee) {
+        this.logger.debug({ id }, 'Employee not found by ID')
         return failure(new EntityNotFoundError(`Employee with ID ${id} not found`))
       }
       return success(employee)
     } catch (error) {
-      console.error('Error fetching employee by ID:', error)
+      this.logger.error({ error, id }, 'Error fetching employee by ID')
       return failure(new DatabaseError('Database error occurred while fetching the employee'))
     }
   }
@@ -84,7 +98,7 @@ export class EmployeeService implements IEmployeeService {
       const employees = await this.employeeRepository.getAllEmployees()
       return success(employees)
     } catch (error) {
-      console.error('Error fetching all employees:', error)
+      this.logger.error({ error }, 'Error fetching all employees')
       return failure(new DatabaseError('Database error occurred while fetching employees'))
     }
   }
@@ -94,7 +108,7 @@ export class EmployeeService implements IEmployeeService {
       const employees = await this.employeeRepository.getActiveEmployeesByCompanyId(companyId)
       return success(employees)
     } catch (error) {
-      console.error('Error fetching all employees:', error)
+      this.logger.error({ error, companyId }, 'Error fetching all employees by company ID')
       return failure(new DatabaseError('Database error occurred while fetching employees'))
     }
   }
@@ -103,16 +117,19 @@ export class EmployeeService implements IEmployeeService {
     try {
       const existingEmployee = await this.employeeRepository.getEmployeeById(id)
       if (!existingEmployee) {
+        this.logger.warn({ id }, 'Employee update failed: entity not found')
         return failure(new EntityNotFoundError(`Employee with ID ${id} not found`))
       }
 
       if (data.name && data.name.trim().length === 0) {
+        this.logger.warn({ id, data }, 'Employee update failed: name cannot be empty')
         return failure(new ValidationError('Name cannot be empty', 'name'))
       }
 
       if (data.companyId) {
         const companyExists = await this.companyRepository.getCompanyById(data.companyId)
         if (!companyExists) {
+          this.logger.warn({ id, companyId: data.companyId }, 'Employee update failed: invalid company ID')
           return failure(new ValidationError('Invalid company ID', 'companyId'))
         }
       }
@@ -120,6 +137,7 @@ export class EmployeeService implements IEmployeeService {
       if (data.departmentId) {
         const departmentExists = await this.departmentRepository.getDepartmentById(data.departmentId)
         if (!departmentExists) {
+          this.logger.warn({ id, departmentId: data.departmentId }, 'Employee update failed: invalid department ID')
           return failure(new ValidationError('Invalid department ID', 'departmentId'))
         }
       }
@@ -127,6 +145,10 @@ export class EmployeeService implements IEmployeeService {
       if (data.employeeTypeId) {
         const employeeTypeExists = await this.employeeTypeRepository.getEmployeeTypeById(data.employeeTypeId)
         if (!employeeTypeExists) {
+          this.logger.warn(
+            { id, employeeTypeId: data.employeeTypeId },
+            'Employee update failed: invalid employee type ID'
+          )
           return failure(new ValidationError('Invalid employee type ID', 'employeeTypeId'))
         }
       }
@@ -134,6 +156,7 @@ export class EmployeeService implements IEmployeeService {
       if (data.birthdate) {
         const age = this.ageOnTodayUTC(data.birthdate)
         if (age < 13) {
+          this.logger.warn({ id, birthdate: data.birthdate, age }, 'Employee update failed: age is below 13')
           return failure(new ValidationError('Employee must be at least 13 years old', 'birthday'))
         }
       }
@@ -141,7 +164,7 @@ export class EmployeeService implements IEmployeeService {
       const updatedEmployee = await this.employeeRepository.updateEmployee(id, data)
       return success(updatedEmployee)
     } catch (error) {
-      console.error(`Error updating employee with ID ${id}:`, error)
+      this.logger.error({ error, id, data }, `Error updating employee with ID ${id}`)
       return failure(new DatabaseError('Database error occurred while updating the employee'))
     }
   }
@@ -150,6 +173,7 @@ export class EmployeeService implements IEmployeeService {
     try {
       const existingEmployee = await this.employeeRepository.getEmployeeById(id)
       if (!existingEmployee) {
+        this.logger.warn({ id }, 'Profile picture update failed: employee not found')
         return failure(new EntityNotFoundError(`Employee with ID ${id} not found`))
       }
 
@@ -160,7 +184,7 @@ export class EmployeeService implements IEmployeeService {
 
       return success(updatedEmployee)
     } catch (error) {
-      console.error(`Error updating profile picture for employee with ID ${id}:`, error)
+      this.logger.error({ error, id, filePath }, `Error updating profile picture for employee with ID ${id}`)
       return failure(new DatabaseError('Database error occurred while updating the profile picture'))
     }
   }
@@ -170,7 +194,7 @@ export class EmployeeService implements IEmployeeService {
       const deletedEmployee = await this.employeeRepository.softDeleteEmployee(id)
       return success(deletedEmployee)
     } catch (error) {
-      console.error(`Error deleting employee with ID ${id}:`, error)
+      this.logger.error({ error, id }, `Error deleting employee with ID ${id}`)
       return failure(new DatabaseError('Database error occurred while deleting the employee'))
     }
   }
@@ -183,7 +207,7 @@ export class EmployeeService implements IEmployeeService {
       const employees = await this.employeeRepository.getAllEmployeesByCompanyIdAndDepartmentId(companyId, departmentId)
       return success(employees)
     } catch (error) {
-      console.error('Error fetching employees: ', error)
+      this.logger.error({ error, companyId, departmentId }, 'Error fetching employees by company and department ID')
       return failure(new DatabaseError('Database error while fetching employees'))
     }
   }
@@ -194,7 +218,7 @@ export class EmployeeService implements IEmployeeService {
       const emps = await this.employeeRepository.getSimpleEmployeesByCompanyIdWithTodayAbsence(companyId, start, end)
       return success(emps)
     } catch (error) {
-      console.error('Error fetching simple employees:', error)
+      this.logger.error({ error, companyId }, 'Error fetching simple employees by company')
       return failure(new DatabaseError('Database error while fetching simple employees'))
     }
   }
@@ -213,7 +237,7 @@ export class EmployeeService implements IEmployeeService {
       )
       return success(emps)
     } catch (error) {
-      console.error('Error fetching simple employees by department:', error)
+      this.logger.error({ error, companyId, departmentId }, 'Error fetching simple employees by department')
       return failure(new DatabaseError('Database error while fetching simple employees by department'))
     }
   }

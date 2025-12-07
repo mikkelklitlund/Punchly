@@ -24,6 +24,7 @@ export interface IUserService {
         role: string
         companyId: number
         shouldChangePassword: boolean
+        userId: number
       },
       Error
     >
@@ -32,7 +33,9 @@ export interface IUserService {
   updateUser(id: number, companyId: number, data: Partial<Omit<User, 'id'>>): Promise<Result<User, Error>>
   deleteUser(id: number, companyId: number): Promise<Result<void, Error>>
   changePassword(userId: number, newPassword: string): Promise<Result<User, Error>>
-  refreshAccessToken(refreshToken: string): Promise<Result<{ accessToken: string; refreshToken: string }, Error>>
+  refreshAccessToken(
+    refreshToken: string
+  ): Promise<Result<{ accessToken: string; refreshToken: string; userId: number }, Error>>
   revokeRefreshToken(token: string): Promise<Result<UserRefreshToken, Error>>
   getUserByUsername(username: string): Promise<Result<User, Error>>
   userHasAccess(username: string, companyId: number, allowedRoles: Role[]): Promise<Result<true, Error>>
