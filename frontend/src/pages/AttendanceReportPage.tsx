@@ -1,16 +1,16 @@
 import { useState } from 'react'
-import dayjs from 'dayjs'
 import { useCompany } from '../contexts/CompanyContext'
 import { employeeService } from '../services/employeeService'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
+import { format, startOfMonth, endOfMonth, isBefore } from 'date-fns'
 
 const AttendanceReportPage = () => {
   const { departments } = useCompany()
 
-  const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'))
-  const [endDate, setEndDate] = useState(dayjs().endOf('month').format('YYYY-MM-DD'))
+  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'))
+  const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'))
   const [departmentId, setDepartmentId] = useState<number | ''>('')
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -21,14 +21,10 @@ const AttendanceReportPage = () => {
   })
 
   const handleDownload = async () => {
-    const start = dayjs(startDate)
-    const end = dayjs(endDate)
+    const start = new Date(startDate)
+    const end = new Date(endDate)
 
-    if (!start.isValid() || !end.isValid()) {
-      toast.error('Ugyldige datoer')
-      return
-    }
-    if (end.isBefore(start, 'day')) {
+    if (isBefore(end, start)) {
       toast.error('Slutdato må ikke være før startdato')
       return
     }
@@ -48,7 +44,7 @@ const AttendanceReportPage = () => {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `attendance-report-${start.format('YYYY-MM-DD')}-to-${end.format('YYYY-MM-DD')}.xlsx`
+      a.download = `attendance-report-${format(start, 'yyyy-MM-dd')}-to-${format(end, 'yyyy-MM-dd')}.xlsx`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

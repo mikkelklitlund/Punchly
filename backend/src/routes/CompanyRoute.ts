@@ -18,10 +18,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   router.post(
     '/',
     ...adminAuth,
-    [
-      body('name').notEmpty().withMessage('Name is required'),
-      body('address').notEmpty().withMessage('Address is required'),
-    ],
+    [body('name').notEmpty().withMessage('Name is required')],
     checkValidationResult,
     controller.createCompany
   )
@@ -32,6 +29,12 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   router.get('/:companyId/simple-employees', auth, controller.getSimpleEmployees)
   router.get('/:companyId/managers', auth, authorizeRoles(userService, Role.ADMIN), controller.getAllManagers)
   router.get('/:companyId/users', auth, authorizeRoles(userService, Role.ADMIN), controller.getAllUsers)
+  router.get(
+    '/:companyId/daily-overview',
+    auth,
+    authorizeRoles(userService, Role.ADMIN, Role.MANAGER),
+    controller.getDailyOverview
+  )
 
   router.get('/:companyId/departments', auth, controller.getDepartmentsByCompanyId)
   router.post(
@@ -85,7 +88,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   router.delete('/:companyId/absence-types/:id', ...adminAuth, controller.deleteAbsenceType)
 
   router.post(
-    '/users',
+    '/:companyId/users',
     ...adminAuth,
     [
       body('email').isEmail().normalizeEmail().optional(),
@@ -102,7 +105,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
   )
 
   router.patch(
-    '/users',
+    '/:companyId/users',
     ...adminAuth,
     [
       body('userId').isNumeric(),
@@ -120,7 +123,7 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
     controller.updateUser
   )
 
-  router.delete('/users/:id', ...adminAuth, controller.deleteUser)
+  router.delete('/:companyId/users/:id', ...adminAuth, controller.deleteUser)
 
   return router
 }

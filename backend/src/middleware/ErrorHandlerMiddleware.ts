@@ -1,35 +1,55 @@
-import { NextFunction, Request, Response } from 'express'
-import { DatabaseError, EntityNotFoundError, ValidationError } from '../utils/Errors.js'
-import { logger as baseLogger } from '../logger.js'
+import { Request, Response, NextFunction } from 'express'
+import { Prisma } from '@prisma/client'
 
 export const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
-  const log = req.log ?? baseLogger
-
-  log.error(
+  req.log.error(
     {
       err,
-      reqId: req.id,
+      url: req.url,
       method: req.method,
-      url: req.originalUrl,
+      body: req.body,
+      params: req.params,
+      query: req.query,
     },
-    'Unhandled error'
+    'Request error'
   )
 
-  if (err instanceof EntityNotFoundError) {
-    res.status(404).send({ errors: [{ message: err.message }] })
-  } else if (err instanceof ValidationError) {
-    res.status(400).send({ errors: [{ message: err.message, field: err.field }] })
-  } else if (err instanceof DatabaseError) {
-    res.status(500).send({
-      errors: [{ message: process.env.NODE_ENV === 'production' ? 'Database error' : err.message }],
-    })
-  } else {
-    res.status(500).send({
-      errors: [
-        {
-          message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
-        },
-      ],
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (err.code) {
+      case 'P2002':
+        return res.status(409).json({
+          error: 'Unique constraint violation',
+          field: err.meta?.target,
+        })
+      case 'P2003':
+        return res.status(400).json({
+          error: 'Foreign key constraint violation',
+          field: err.meta?.field_name,
+        })
+      case 'P2025':
+        return res.status(404).json({
+          error: 'Record not found',
+        })
+      default:
+        req.log.error({ code: err.code, meta: err.meta }, 'Prisma error')
+        return res.status(400).json({
+          error: 'Database error',
+          code: err.code,
+        })
+    }
+  }
+
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    return res.status(400).json({
+      error: 'Validation error',
+      message: process.env.NODE_ENV === 'production' ? 'Invalid request data' : err.message,
     })
   }
+
+  const statusCode = res.statusCode !== 200 ? res.statusCode : 500
+
+  res.status(statusCode).json({
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+  })
 }

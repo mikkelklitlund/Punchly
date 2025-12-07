@@ -9,13 +9,8 @@ const CreateEmployeeForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const initial: EmployeeFormValues = {
     name: '',
     birthdate: '',
-    address: '',
-    city: '',
     departmentId: '',
     employeeTypeId: '',
-    monthlySalary: 0,
-    hourlySalary: 0,
-    monthlyHours: undefined,
     profilePicturePath: '',
   }
 
@@ -28,22 +23,13 @@ const CreateEmployeeForm = ({ onSuccess }: { onSuccess: () => void }) => {
       toast.error('Der skal vælges fødselsdato')
       return
     }
-    if ((v.monthlySalary ?? 0) > 0 && (v.hourlySalary ?? 0) > 0) {
-      toast.error('Vælg enten månedsløn eller timeløn (ikke begge).')
-      return
-    }
 
     const created = await toast.promise(
       employeeService.createEmployee({
         checkedIn: false,
         name: v.name,
-        address: v.address,
-        city: v.city,
         departmentId: Number(v.departmentId),
         employeeTypeId: Number(v.employeeTypeId),
-        monthlySalary: v.monthlySalary ?? null,
-        hourlySalary: v.hourlySalary ?? null,
-        monthlyHours: v.monthlyHours ?? null,
         birthdate: v.birthdate,
         companyId,
       }),

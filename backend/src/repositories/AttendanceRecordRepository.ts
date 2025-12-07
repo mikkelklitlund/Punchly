@@ -82,4 +82,23 @@ export class AttendanceRecordRepository implements IAttendanceRecordRepository {
     const ar = await this.prisma.attendanceRecord.delete({ where: { id } })
     return this.toDomain(ar)
   }
+
+  async getRecordsByCompanyIdAndDateRange(
+    companyId: number,
+    dayStart: Date,
+    dayEnd: Date
+  ): Promise<AttendanceRecord[]> {
+    const ars = await this.prisma.attendanceRecord.findMany({
+      where: {
+        employee: {
+          companyId,
+        },
+        checkIn: {
+          gte: dayStart,
+          lte: dayEnd,
+        },
+      },
+    })
+    return ars.map(this.toDomain)
+  }
 }

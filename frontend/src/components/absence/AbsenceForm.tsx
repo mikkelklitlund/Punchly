@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useAbsenceTypes } from '../../hooks/useAbsenceTypes'
-import dayjs from 'dayjs'
 import { useEmployees } from '../../hooks/useEmployees'
 import LoadingSpinner from '../common/LoadingSpinner'
 import Modal from '../common/Modal'
 import { useAuth } from '../../contexts/AuthContext'
 import { CalendarDate } from 'shared'
+import { format, isBefore } from 'date-fns'
 
 export type AbsenceFormValues = {
   employeeId: number | null
@@ -28,8 +28,8 @@ const AbsenceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, o
   const { data: employees = [], isLoading: empLoading } = useEmployees(companyId)
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(initialValues?.employeeId ?? null)
-  const [startDate, setStartDate] = useState<CalendarDate>(initialValues?.startDate ?? dayjs().format('YYYY-MM-DD'))
-  const [endDate, setEndDate] = useState<CalendarDate>(initialValues?.endDate ?? dayjs().format('YYYY-MM-DD'))
+  const [startDate, setStartDate] = useState<CalendarDate>(initialValues?.startDate ?? format(new Date(), 'yyyy-MM-dd'))
+  const [endDate, setEndDate] = useState<CalendarDate>(initialValues?.endDate ?? format(new Date(), 'yyyy-MM-dd'))
   const [absenceTypeId, setAbsenceTypeId] = useState<number>(initialValues?.absenceTypeId ?? 0)
 
   const [isSaving, setIsSaving] = useState(false)
@@ -45,7 +45,8 @@ const AbsenceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, o
     if (!absenceTypeId) newErrors.absenceTypeId = 'Vælg en fraværsårsag'
     if (!startDate) newErrors.startDate = 'Vælg startdato'
     if (!endDate) newErrors.endDate = 'Vælg slutdato'
-    if (dayjs(endDate).isBefore(dayjs(startDate))) newErrors.dateError = 'Slutdato kan ikke være før startdato'
+
+    if (isBefore(new Date(endDate), new Date(startDate))) newErrors.dateError = 'Slutdato kan ikke være før startdato'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -101,7 +102,7 @@ const AbsenceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, o
           <label className="block text-sm font-medium text-gray-700">Første fraværs dag</label>
           <input
             type="date"
-            value={dayjs(startDate).format('YYYY-MM-DD')}
+            value={format(new Date(startDate), 'yyyy-MM-dd')}
             onChange={(e) => {
               setStartDate(e.target.value)
               setErrors((prev) => ({ ...prev, startDate: '', dateError: '' }))
@@ -117,7 +118,7 @@ const AbsenceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, o
           <label className="block text-sm font-medium text-gray-700">Sidste fraværs dag</label>
           <input
             type="date"
-            value={dayjs(endDate).format('YYYY-MM-DD')}
+            value={format(new Date(endDate), 'yyyy-MM-dd')}
             onChange={(e) => {
               setEndDate(e.target.value)
               setErrors((prev) => ({ ...prev, endDate: '', dateError: '' }))

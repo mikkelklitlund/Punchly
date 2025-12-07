@@ -1,5 +1,13 @@
 import axiosInstance from '../api/axios'
-import { AbsenceTypeDTO, CompanyDTO, createUserDTO, DepartmentDTO, EmployeeTypeDTO, UserDTO } from 'shared'
+import {
+  AbsenceTypeDTO,
+  AttendanceRecordDTO,
+  CompanyDTO,
+  createUserDTO,
+  DepartmentDTO,
+  EmployeeTypeDTO,
+  UserDTO,
+} from 'shared'
 
 export const companyService = {
   async getAllCompanies(): Promise<{ companies: CompanyDTO[] }> {
@@ -79,6 +87,11 @@ export const companyService = {
 
   async deleteUser(companyId: number, userId: number) {
     const { data } = await axiosInstance.delete(`/companies/${companyId}/users/${userId}`)
+    return data
+  },
+
+  async getDailyOverview(companyId: number, date: string): Promise<{ records: AttendanceRecordDTO[] }> {
+    const { data } = await axiosInstance.get(`/companies/${companyId}/daily-overview`, { params: { date } })
     return data
   },
 }

@@ -15,7 +15,63 @@ env:
   NODE_VERSION: '22'
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install (workspaces)
+        run: npm ci
+
+      - name: Generate Prisma client (types only)
+        working-directory: backend
+        env:
+          DATABASE_URL: file:./dev.db
+        run: npx prisma generate
+
+      - name: Build shared (needed for tests)
+        run: npm run build --workspace=shared
+
+      - name: Run tests
+        run: npm run test --workspace=backend
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install (workspaces)
+        run: npm ci
+
+      - name: Generate Prisma client (types only)
+        working-directory: backend
+        env:
+          DATABASE_URL: file:./dev.db
+        run: npx prisma generate
+
+      - name: Build shared (needed for linting)
+        run: npm run build --workspace=shared
+
+      - name: Lint backend
+        run: npm run lint --workspace=backend
+
+      - name: Lint frontend
+        run: npm run lint --workspace=frontend
+
   build:
+    needs: [test, lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

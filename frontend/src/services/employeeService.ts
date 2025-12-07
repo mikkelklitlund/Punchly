@@ -9,7 +9,7 @@ import {
   CreateAttendanceRecordDTO,
 } from 'shared'
 import axiosInstance from '../api/axios'
-import dayjs from 'dayjs'
+import { formatISO } from 'date-fns'
 
 export interface EmployeeResponse {
   employees: SimpleEmployeeDTO[]
@@ -74,8 +74,8 @@ export const employeeService = {
 
   async getAttendanceRecords(employeeId: number, startDate: string, endDate: string): Promise<AttendanceRecordDTO[]> {
     const params: Record<string, string> = {
-      startDate: dayjs(startDate).toISOString(),
-      endDate: dayjs(endDate).toISOString(),
+      startDate: formatISO(new Date(startDate)),
+      endDate: formatISO(new Date(endDate)),
     }
     const res = await axiosInstance.get<{ records: AttendanceRecordDTO[] }>(`/employees/${employeeId}/attendances`, {
       params,
@@ -103,10 +103,10 @@ export const employeeService = {
 
   async createAttendance(data: CreateAttendanceRecordDTO): Promise<AttendanceRecordDTO> {
     if (data.checkIn) {
-      data.checkIn = dayjs(data.checkIn).toISOString()
+      data.checkIn = formatISO(new Date(data.checkIn))
     }
     if (data.checkOut) {
-      data.checkOut = dayjs(data.checkOut).toISOString()
+      data.checkOut = formatISO(new Date(data.checkOut))
     }
     const res = await axiosInstance.post(`/employees/attendance-records/${data.employeeId}`, data)
     return res.data.record
@@ -117,10 +117,10 @@ export const employeeService = {
     data: Partial<Pick<AttendanceRecordDTO, 'checkIn' | 'checkOut' | 'autoClosed'>>
   ): Promise<AttendanceRecordDTO> {
     if (data.checkIn) {
-      data.checkIn = dayjs(data.checkIn).toISOString()
+      data.checkIn = formatISO(new Date(data.checkIn))
     }
     if (data.checkOut) {
-      data.checkOut = dayjs(data.checkOut).toISOString()
+      data.checkOut = formatISO(new Date(data.checkOut))
     }
     const res = await axiosInstance.put(`/employees/attendance-records/${id}`, data)
     return res.data.record

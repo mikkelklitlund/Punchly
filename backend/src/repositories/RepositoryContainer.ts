@@ -26,7 +26,7 @@ export class RepositoryContainer {
   public departmentRepository: IDepartmentRepository
   public userRepository: IUserRepository
   public employeeTypeRepository: IEmployeeTypeRepository
-  public absenceTypeRpository: IAbsenceTypeRepository
+  public absenceTypeRepository: IAbsenceTypeRepository
   public managerInviteRepository: IManagerInviteRepository
 
   constructor(prisma: PrismaClient) {
@@ -37,7 +37,7 @@ export class RepositoryContainer {
     this.departmentRepository = new DepartmentRepository(prisma)
     this.userRepository = new UserRepository(prisma)
     this.employeeTypeRepository = new EmployeeTypeRepository(prisma)
-    this.absenceTypeRpository = new AbsenceTypeRepository(prisma)
+    this.absenceTypeRepository = new AbsenceTypeRepository(prisma)
     this.managerInviteRepository = new ManagerInviteRepository(prisma)
   }
 }

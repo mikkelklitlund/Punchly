@@ -34,7 +34,6 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     }) as AuthJwtPayload
 
     const { userId, username, companyId, role } = decoded
-    console.log({ userId, username, companyId, role })
 
     if (
       !userId ||

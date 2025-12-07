@@ -1,3 +1,4 @@
+import { Logger } from 'pino'
 import { IAbsenceService } from '../interfaces/services/IAbsenceService.js'
 import { IAbsenceTypeService } from '../interfaces/services/IAbsenceTypeService.js'
 import { IAttendanceService } from '../interfaces/services/IAttendanceService.js'
@@ -29,24 +30,26 @@ export class ServiceContainer {
   public absenceTypeService: IAbsenceTypeService
   public managerInviteService: IManagerInviteService
 
-  constructor(repositoryContainer: RepositoryContainer) {
-    this.absenceService = new AbsenceService(repositoryContainer.absenceRepository)
+  constructor(repositoryContainer: RepositoryContainer, logger: Logger) {
+    this.absenceService = new AbsenceService(repositoryContainer.absenceRepository, logger)
     this.attendanceService = new AttendanceService(
       repositoryContainer.attendanceRepository,
       repositoryContainer.employeeRepository,
-      repositoryContainer.absenceRepository
+      repositoryContainer.absenceRepository,
+      logger
     )
-    this.companyService = new CompanyService(repositoryContainer.companyRepository)
-    this.departmentService = new DepartmentService(repositoryContainer.departmentRepository)
+    this.companyService = new CompanyService(repositoryContainer.companyRepository, logger)
+    this.departmentService = new DepartmentService(repositoryContainer.departmentRepository, logger)
     this.employeeService = new EmployeeService(
       repositoryContainer.employeeRepository,
       repositoryContainer.companyRepository,
       repositoryContainer.departmentRepository,
-      repositoryContainer.employeeTypeRepository
+      repositoryContainer.employeeTypeRepository,
+      logger
     )
-    this.employeeTypeService = new EmployeeTypeService(repositoryContainer.employeeTypeRepository)
-    this.userService = new UserService(repositoryContainer.userRepository)
-    this.absenceTypeService = new AbsenceTypeService(repositoryContainer.absenceTypeRpository)
+    this.employeeTypeService = new EmployeeTypeService(repositoryContainer.employeeTypeRepository, logger)
+    this.userService = new UserService(repositoryContainer.userRepository, logger)
+    this.absenceTypeService = new AbsenceTypeService(repositoryContainer.absenceTypeRepository, logger)
     this.managerInviteService = new ManagerInviteService(repositoryContainer.managerInviteRepository)
   }
 }

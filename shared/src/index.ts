@@ -5,7 +5,6 @@ export enum Role {
 }
 export type CompanyDTO = {
 	id: number
-	address: string
 	name: string
 }
 export type UserDTO = {
@@ -47,11 +46,6 @@ export type EmployeeDTO = {
 	checkedIn: boolean
 	birthdate: CalendarDate
 	employeeTypeId: number
-	monthlySalary: number | null
-	monthlyHours: number | null
-	hourlySalary: number | null
-	address: string
-	city: string
 	absenceRecords: AbsenceRecordDTO[]
 	attendanceRecords: AttendanceRecordDTO[]
 }
@@ -62,11 +56,6 @@ export type CreateEmployeeDTO = {
 	checkedIn: boolean
 	birthdate: CalendarDate
 	employeeTypeId: number
-	monthlySalary: number | null
-	monthlyHours: number | null
-	hourlySalary: number | null
-	address: string
-	city: string
 }
 export type EmployeeTypeDTO = {
 	id: number

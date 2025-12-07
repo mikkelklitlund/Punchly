@@ -8,13 +8,8 @@ import { CalendarDate } from 'shared'
 export type EmployeeFormValues = {
   name: string
   birthdate?: CalendarDate
-  address: string
-  city: string
   departmentId?: number | ''
   employeeTypeId?: number | ''
-  monthlySalary?: number
-  hourlySalary?: number
-  monthlyHours?: number
   profilePicturePath?: string
 }
 
@@ -31,13 +26,8 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
 
   const [name, setName] = useState(initialValues.name ?? '')
   const [birthdate, setBirthdate] = useState(initialValues.birthdate ?? '')
-  const [address, setAddress] = useState(initialValues.address ?? '')
-  const [city, setCity] = useState(initialValues.city ?? '')
   const [departmentId, setDepartmentId] = useState<number | ''>(initialValues.departmentId ?? '')
   const [employeeTypeId, setEmployeeTypeId] = useState<number | ''>(initialValues.employeeTypeId ?? '')
-  const [monthlySalary, setMonthlySalary] = useState<number>(initialValues.monthlySalary ?? 0)
-  const [hourlySalary, setHourlySalary] = useState<number>(initialValues.hourlySalary ?? 0)
-  const [monthlyHours, setMonthlyHours] = useState<number | undefined>(initialValues.monthlyHours ?? undefined)
 
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string>(initialValues.profilePicturePath ?? '')
@@ -64,9 +54,6 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
     if (!name) newErrors.name = 'Navn er påkrævet'
     if (!departmentId) newErrors.departmentId = 'Vælg en afdeling'
     if (!employeeTypeId) newErrors.employeeTypeId = 'Vælg en medarbejdertype'
-    if ((monthlySalary ?? 0) > 0 && (hourlySalary ?? 0) > 0) {
-      newErrors.salary = 'Udfyld kun én af lønfelterne'
-    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -80,13 +67,8 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
         {
           name,
           birthdate,
-          address,
-          city,
           departmentId,
           employeeTypeId,
-          monthlySalary: monthlySalary,
-          hourlySalary: hourlySalary,
-          monthlyHours: monthlyHours,
           profilePicturePath: initialValues.profilePicturePath,
         },
         imageFile
@@ -158,30 +140,6 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
             />
           </div>
 
-          {/* Address */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Adresse</label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-              disabled={isSaving}
-            />
-          </div>
-
-          {/* City */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">By</label>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-              disabled={isSaving}
-            />
-          </div>
-
           {/* Department */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Afdeling</label>
@@ -229,55 +187,9 @@ const EmployeeForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, 
             </select>
             {errors.employeeTypeId && <p className="mt-1 text-sm text-red-600">{errors.employeeTypeId}</p>}
           </div>
-
-          {/* Monthly Salary */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Månedsløn (DKK)</label>
-            <input
-              type="number"
-              value={monthlySalary}
-              onChange={(e) => {
-                setMonthlySalary(Number(e.target.value))
-                setErrors((prev) => ({ ...prev, salary: '' }))
-              }}
-              disabled={hourlySalary > 0 || isSaving}
-              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm disabled:bg-gray-100 ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
-              min={0}
-            />
-          </div>
-
-          {/* Hourly Salary */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Timeløn (DKK)</label>
-            <input
-              type="number"
-              value={hourlySalary}
-              onChange={(e) => {
-                setHourlySalary(Number(e.target.value))
-                setErrors((prev) => ({ ...prev, salary: '' }))
-              }}
-              disabled={monthlySalary > 0 || isSaving}
-              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm disabled:bg-gray-100 ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
-              min={0}
-            />
-          </div>
-
-          {/* Monthly Hours */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Månedlige timer</label>
-            <input
-              type="number"
-              value={monthlyHours ?? ''}
-              onChange={(e) => setMonthlyHours(e.target.value ? Number(e.target.value) : undefined)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
-              min={0}
-              disabled={isSaving}
-            />
-          </div>
         </div>
 
         {errors.salary && <p className="mt-2 text-sm text-red-600">{errors.salary}</p>}
-        <p className="mt-2 text-xs text-gray-500 italic">Udfyld kun én af lønfelterne: månedsløn eller timeløn.</p>
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-4">

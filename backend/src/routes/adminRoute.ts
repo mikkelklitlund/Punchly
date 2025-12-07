@@ -17,10 +17,7 @@ export function createAdminRoutes(controller: AdminController, userService: IUse
   router.post(
     '/companies',
     ...adminAuth,
-    [
-      body('name').trim().notEmpty().withMessage('Company name is required'),
-      body('address').trim().notEmpty().withMessage('Address is required'),
-    ],
+    [body('name').trim().notEmpty().withMessage('Company name is required')],
     checkValidationResult,
     controller.createCompany
   )
@@ -28,10 +25,7 @@ export function createAdminRoutes(controller: AdminController, userService: IUse
   router.patch(
     '/companies/:id',
     ...adminAuth,
-    [
-      body('name').optional().trim().isLength({ min: 1 }).withMessage('Name must not be empty'),
-      body('address').optional().trim().isLength({ min: 1 }).withMessage('Address must not be empty'),
-    ],
+    [body('name').optional().trim().isLength({ min: 1 }).withMessage('Name must not be empty')],
     checkValidationResult,
     controller.updateCompany
   )

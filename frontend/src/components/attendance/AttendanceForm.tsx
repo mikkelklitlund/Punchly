@@ -1,9 +1,9 @@
-import dayjs from 'dayjs'
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useEmployees } from '../../hooks/useEmployees'
 import LoadingSpinner from '../common/LoadingSpinner'
 import Modal from '../common/Modal'
+import { format, isBefore } from 'date-fns'
 
 export type AttendanceFormValues = {
   employeeId: number | null
@@ -24,10 +24,10 @@ const AttendanceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel
   const { data: employees = [], isLoading: empLoading } = useEmployees(companyId)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(initialValues?.employeeId ?? null)
   const [checkIn, setCheckIn] = useState<string | undefined>(
-    initialValues ? dayjs(initialValues.checkIn).format('YYYY-MM-DDTHH:mm') : ''
+    initialValues?.checkIn ? format(new Date(initialValues.checkIn), "yyyy-MM-dd'T'HH:mm") : ''
   )
   const [checkOut, setCheckOut] = useState<string | undefined>(
-    initialValues ? dayjs(initialValues.checkOut).format('YYYY-MM-DDTHH:mm') : ''
+    initialValues?.checkOut ? format(new Date(initialValues.checkOut), "yyyy-MM-dd'T'HH:mm") : ''
   )
 
   const [isSaving, setIsSaving] = useState(false)
@@ -42,7 +42,13 @@ const AttendanceForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel
     if (!selectedEmployeeId) newErrors.employeeId = 'Vælg en medarbejder'
     if (!checkIn) newErrors.checkIn = 'Vælg tjek ind tidspunkt'
     if (!checkOut) newErrors.checkOut = 'Vælg tjek ud tidspunkt'
-    if (dayjs(checkOut).isBefore(dayjs(checkIn))) newErrors.timeError = 'Tjek ud kan ikke være før tjek ind'
+
+    if (newErrors.checkIn || newErrors.checkOut) {
+      setErrors(newErrors)
+      return
+    }
+
+    if (isBefore(new Date(checkOut!), new Date(checkIn!))) newErrors.timeError = 'Tjek ud kan ikke være før tjek ind'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
