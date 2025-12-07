@@ -20,7 +20,7 @@ export class DatabaseError extends Error {
 export class EntityNotFoundError extends Error {
   constructor(public message: string) {
     super(message)
-    this.name = 'DatabaseError'
-    Object.setPrototypeOf(this, DatabaseError.prototype)
+    this.name = 'EntityNotFoundError'
+    Object.setPrototypeOf(this, EntityNotFoundError.prototype)
   }
 }
