@@ -1,16 +1,22 @@
 services:
   db:
-    image: postgres:15-alpine
+    image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: punchly_db
     restart: always
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-testpass123}
-      POSTGRES_DB: ${DB_NAME:-punchly}
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:-YourStrong@Passw0rd}
+      MSSQL_PID: ${MSSQL_PID:-Developer}
     volumes:
-      - punchly_db_data:/var/lib/postgresql/data
+      - punchly_db_data:/var/opt/mssql
     ports:
-      - '6500:5432'
+      - '6500:1433'
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${DB_PASSWORD:-YourStrong@Passw0rd}" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
   api:
     build:
@@ -23,7 +29,8 @@ services:
       - db
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-testpass123}@db:5432/${DB_NAME:-punchly}?schema=public
+      DATABASE_URL: sqlserver://db:1433;database=${DB_NAME:-punchly};user=sa;password=${DB_PASSWORD:-YourStrong@Passw0rd};encrypt=true;trustServerCertificate=true
+
       CLIENT_URL: ${CLIENT_URL:-http://localhost:4000}
       PORT: 4000
       TZ: UTC
