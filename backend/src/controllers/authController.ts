@@ -11,7 +11,7 @@ export class AuthController {
     const isProd = process.env.NODE_ENV === 'production'
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: isProd ? 'strict' : 'lax',
       secure: isProd,
       path: '/api',
       maxAge: 24 * 60 * 60 * 1000,
@@ -22,7 +22,7 @@ export class AuthController {
     const isProd = process.env.NODE_ENV === 'production'
     res.clearCookie('jwt', {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: isProd ? 'strict' : 'lax',
       secure: isProd,
       path: '/api',
     })
