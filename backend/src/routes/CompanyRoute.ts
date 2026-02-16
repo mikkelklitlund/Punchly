@@ -108,13 +108,13 @@ export function createCompanyRoutes(controller: CompanyController, userService: 
     '/:companyId/users',
     ...adminAuth,
     [
-      body('userId').isNumeric(),
+      body('id').isNumeric().withMessage('User id is required'),
       body('email').isEmail().normalizeEmail().optional(),
       body('password')
+        .optional()
         .isLength({ min: 8 })
         .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/)
-        .withMessage('Password must be at least 8 characters long and contain both letters and numbers')
-        .optional(),
+        .withMessage('Password must be at least 8 characters long and contain both letters and numbers'),
       body('username').trim().isLength({ min: 3 }).escape(),
       body('shouldChangePassword').isBoolean(),
       body('role').isIn(Object.values(Role)).withMessage('Invalid role provided'),
