@@ -47,6 +47,10 @@ const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDe
 
     if (!username.trim()) newErrors.username = 'Brugernavn er påkrævet'
 
+    if (password.trim() !== '' && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password)) {
+      newErrors.password = 'Adgangskoden skal være mindst 8 tegn og indeholde både bogstaver og tal'
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
@@ -108,10 +112,17 @@ const UserForm = ({ initialValues, onSubmit, submitLabel = 'Gem', onCancel, onDe
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setErrors((prev) => ({ ...prev, password: '' }))
+              }}
+              className={`mt-1 w-full rounded-md border px-3 py-2 shadow-sm ${
+                errors.password ? 'border-red-500' : 'border-gray-300'
+              }`}
               disabled={isSaving}
             />
+            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+
             {onDelete && (
               <p className="mt-1 text-xs text-gray-500 italic">
                 Lad feltet være tomt for at beholde den nuværende adgangskode.

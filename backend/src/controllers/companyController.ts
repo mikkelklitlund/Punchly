@@ -419,16 +419,16 @@ export class CompanyController {
 
   public updateUser = async (req: Request, res: Response) => {
     const companyId = req.companyId
-    const { userId, email, password, username, shouldChangePassword, role } = req.body
+    const { id, email, password, username, shouldChangePassword, role } = req.body
 
-    req.log?.info({ userId, companyId }, 'Attempting to update user (admin action)')
+    req.log?.info({ userId: id, companyId }, 'Attempting to update user (admin action)')
 
     if (!companyId) {
       req.log?.error('CompanyId missing during admin user update')
       return res.status(500).json({ message: 'CompanyId must be provided...' })
     }
 
-    const result = await this.userService.updateUser(userId, companyId, {
+    const result = await this.userService.updateUser(id, companyId, {
       email,
       password,
       username,
@@ -439,13 +439,13 @@ export class CompanyController {
     if (result instanceof Failure) {
       const status = result.error instanceof ValidationError ? 409 : 500
       if (status === 409) {
-        req.log?.warn({ userId, error: result.error.message }, 'User update failed (Conflict)')
+        req.log?.warn({ userId: id, error: result.error.message }, 'User update failed (Conflict)')
       } else {
-        req.log?.error({ userId, error: result.error.message }, 'User update failed (Internal Server Error)')
+        req.log?.error({ userId: id, error: result.error.message }, 'User update failed (Internal Server Error)')
       }
       return res.status(status).json({ error: result.error.message })
     }
-    req.log?.info({ userId }, 'User updated successfully')
+    req.log?.info({ userId: id }, 'User updated successfully')
     return res.status(204).send()
   }
 
