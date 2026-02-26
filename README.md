@@ -25,7 +25,7 @@
 
 ### Backend
 
-- **Dependency Injection Container:** Services and repositories are injected, enabling easy mocking for unit tests and adherence to SOLID principles
+- **Dependency Injection Container:** Services and repositories are injected, enabling easy mocking for unit tests
 - **Repository Pattern:** Abstracts data access logic, making the codebase database-agnostic
 - **Service Layer:** Encapsulates business rules, keeping controllers thin and focused on HTTP concerns
 - **Prisma ORM:** Type-safe database queries with automatic migration management
@@ -41,7 +41,7 @@
 
 The frontend emphasizes component composition and separation of data fetching from UI logic:
 
-- **TanStack Query:** Server state management with automatic caching, background refetching, and optimistic updates
+- **TanStack Query:** Server state management with automatic caching, background refetching
 - **Custom Hooks:** Reusable logic encapsulation (e.g., `useAuth`, `useEmployees`)
 - **Component Composition:** Small, focused components following Single Responsibility Principle (e.g., `DataTable`)
 - **Type Safety:** Shared types between frontend and backend for contract validation
